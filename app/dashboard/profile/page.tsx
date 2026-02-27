@@ -19,7 +19,9 @@ export default function Profile() {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
 
-  // 🔹 Load profile
+  const [usernameError, setUsernameError] = useState("");
+
+  // Load profile
   useEffect(() => {
     const load = async () => {
       const { data: auth } = await supabase.auth.getUser();
@@ -30,19 +32,15 @@ export default function Profile() {
 
       setUser(auth.user);
 
-      // Ensure profile exists
-      const { data: profile, error } = await supabase
+      const { data: profile } = await supabase
         .from("profiles")
         .select("*")
         .eq("id", auth.user.id)
         .single();
 
       if (!profile) {
-        // Create empty profile row
         await supabase.from("profiles").insert({
           id: auth.user.id,
-          username: "",
-          bio: "",
         });
       } else {
         setUsername(profile.username || "");
@@ -56,12 +54,33 @@ export default function Profile() {
     load();
   }, [router]);
 
-  // 🔹 Clean preview memory
+  // Live username check
   useEffect(() => {
-    return () => {
-      if (avatarPreview) URL.revokeObjectURL(avatarPreview);
+    const checkUsername = async () => {
+      if (!username.trim()) {
+        setUsernameError("");
+        return;
+      }
+
+      const clean = username.trim().toLowerCase();
+
+      const { data } = await supabase
+        .from("profiles")
+        .select("id")
+        .eq("username", clean)
+        .neq("id", user?.id)
+        .maybeSingle();
+
+      if (data) {
+        setUsernameError("Username already taken");
+      } else {
+        setUsernameError("");
+      }
     };
-  }, [avatarPreview]);
+
+    const timeout = setTimeout(checkUsername, 500);
+    return () => clearTimeout(timeout);
+  }, [username, user]);
 
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -73,9 +92,11 @@ export default function Profile() {
 
   const save = async () => {
     if (!username.trim()) {
-      alert("Username is required");
+      setUsernameError("Username is required");
       return;
     }
+
+    if (usernameError) return;
 
     setSaving(true);
     setSaved(false);
@@ -83,30 +104,13 @@ export default function Profile() {
     try {
       let finalAvatarUrl = avatarUrl;
 
-      // 🔹 Check username uniqueness
-      const { data: existing } = await supabase
-        .from("profiles")
-        .select("id")
-        .eq("username", username.trim().toLowerCase())
-        .neq("id", user.id)
-        .maybeSingle();
-
-      if (existing) {
-        alert("Username already taken");
-        setSaving(false);
-        return;
-      }
-
-      // 🔹 Upload avatar if changed
       if (avatarFile) {
         const ext = avatarFile.name.split(".").pop();
         const path = `avatars/${user.id}.${ext}`;
 
-        const { error: uploadError } = await supabase.storage
+        await supabase.storage
           .from("avatars")
           .upload(path, avatarFile, { upsert: true });
-
-        if (uploadError) throw uploadError;
 
         const { data } = supabase.storage
           .from("avatars")
@@ -115,7 +119,6 @@ export default function Profile() {
         finalAvatarUrl = data.publicUrl + `?t=${Date.now()}`;
       }
 
-      // 🔹 Update profile
       const { error } = await supabase
         .from("profiles")
         .update({
@@ -128,8 +131,6 @@ export default function Profile() {
 
       if (error) throw error;
 
-      setAvatarUrl(finalAvatarUrl);
-      setAvatarFile(null);
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
     } catch (err: any) {
@@ -139,106 +140,55 @@ export default function Profile() {
     setSaving(false);
   };
 
-  if (loading) {
-    return <div className="p-10 text-gray-500">Loading...</div>;
-  }
-
-  const currentAvatar = avatarPreview || avatarUrl;
+  if (loading) return <div className="p-10">Loading...</div>;
 
   return (
     <div className="min-h-screen bg-[#f9f9f8] p-10">
       <h1 className="text-3xl font-bold mb-8">Profile</h1>
 
       <div className="bg-white border border-gray-200 rounded-2xl p-8 max-w-3xl">
-        <h2 className="text-xl font-bold mb-6">Profile information</h2>
-
-        {/* Avatar */}
-        <div className="mb-8">
-          <div className="relative inline-block">
-            <div className="w-24 h-24 rounded-full overflow-hidden bg-gray-900 flex items-center justify-center">
-              {currentAvatar ? (
-                <img
-                  src={currentAvatar}
-                  alt="Avatar"
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <span className="text-white text-3xl font-bold">
-                  {username?.[0]?.toUpperCase() || "?"}
-                </span>
-              )}
-            </div>
-
-            <button
-              onClick={() => fileInputRef.current?.click()}
-              className="absolute bottom-0 right-0 w-8 h-8 bg-white border border-gray-200 rounded-full flex items-center justify-center shadow-sm hover:bg-gray-50 transition"
-            >
-              ✏️
-            </button>
-
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*"
-              onChange={handleAvatarChange}
-              className="hidden"
-            />
-          </div>
-        </div>
-
-        {/* Username */}
         <div className="mb-6">
           <label className="block text-sm font-semibold mb-2">
             Username
           </label>
+
           <input
             value={username}
             onChange={(e) => setUsername(e.target.value)}
-            className="w-full border rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-gray-200"
+            className={`w-full border rounded-xl px-4 py-3 focus:outline-none ${
+              usernameError
+                ? "border-red-500 focus:ring-red-200"
+                : "focus:ring-2 focus:ring-gray-200"
+            }`}
             placeholder="your-username"
           />
+
+          {usernameError && (
+            <p className="text-red-500 text-sm mt-2">
+              {usernameError}
+            </p>
+          )}
         </div>
 
-        {/* Bio */}
         <div className="mb-6">
-          <label className="block text-sm font-semibold mb-2">
-            Bio
-          </label>
+          <label className="block text-sm font-semibold mb-2">Bio</label>
           <textarea
             value={bio}
             onChange={(e) => setBio(e.target.value)}
-            className="w-full border rounded-xl px-4 py-3 h-32 focus:outline-none focus:ring-2 focus:ring-gray-200 resize-none"
-            placeholder="Tell people about yourself..."
+            className="w-full border rounded-xl px-4 py-3 h-32 resize-none"
           />
         </div>
 
-        {/* Email */}
-        <div>
-          <label className="block text-sm font-semibold mb-2">
-            Email
-          </label>
-          <input
-            value={user?.email || ""}
-            readOnly
-            className="w-full border rounded-xl px-4 py-3 bg-gray-50 text-gray-500"
-          />
-        </div>
-      </div>
-
-      {/* Save */}
-      <div className="mt-8 flex items-center gap-4">
         <button
           onClick={save}
-          disabled={saving}
-          className="bg-black text-white px-8 py-3 rounded-xl font-semibold disabled:opacity-50 hover:bg-gray-900 transition"
+          disabled={saving || !!usernameError}
+          className="bg-black text-white px-8 py-3 rounded-xl disabled:opacity-50"
         >
           {saving ? "Saving..." : "Save"}
         </button>
 
         {saved && (
-          <span className="text-green-600 font-medium">
-            ✓ Saved successfully!
-          </span>
+          <p className="text-green-600 mt-4">✓ Saved successfully</p>
         )}
       </div>
     </div>
