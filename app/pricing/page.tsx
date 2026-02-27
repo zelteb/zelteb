@@ -7,7 +7,7 @@ export default function Pricing() {
       <header className="bg-white border-b border-gray-100">
         <div className="max-w-7xl mx-auto flex items-center justify-between px-8 py-5">
           <Link href="/" className="text-3xl font-black tracking-tighter">
-            Kuduka
+            Zelteb
           </Link>
           <nav className="hidden md:flex gap-10 text-[15px] font-medium text-gray-600">
             <Link href="/" className="hover:text-black">Home</Link>
