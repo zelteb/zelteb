@@ -72,7 +72,7 @@ export default function Profile() {
         .maybeSingle();
 
       if (data) {
-        setUsernameError("Username already taken");
+        setUsernameError("the username is taken");
       } else {
         setUsernameError("");
       }
@@ -92,7 +92,7 @@ export default function Profile() {
 
   const save = async () => {
     if (!username.trim()) {
-      setUsernameError("Username is required");
+      setUsernameError("username is required");
       return;
     }
 
@@ -129,7 +129,15 @@ export default function Profile() {
         })
         .eq("id", user.id);
 
-      if (error) throw error;
+      if (error) {
+        // Handle duplicate username (race condition between live check and save)
+        if (error.code === "23505" || error.message.includes("profiles_username_key")) {
+          setUsernameError("the username is taken");
+          setSaving(false);
+          return;
+        }
+        throw error;
+      }
 
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
@@ -157,7 +165,7 @@ export default function Profile() {
             onChange={(e) => setUsername(e.target.value)}
             className={`w-full border rounded-xl px-4 py-3 focus:outline-none ${
               usernameError
-                ? "border-red-500 focus:ring-red-200"
+                ? "border-red-500 focus:ring-2 focus:ring-red-200"
                 : "focus:ring-2 focus:ring-gray-200"
             }`}
             placeholder="your-username"
@@ -178,6 +186,15 @@ export default function Profile() {
             className="w-full border rounded-xl px-4 py-3 h-32 resize-none"
           />
         </div>
+
+        {/* Avatar upload (hidden input, trigger via button if needed) */}
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={handleAvatarChange}
+        />
 
         <button
           onClick={save}
