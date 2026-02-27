@@ -35,7 +35,7 @@ export default function Pricing() {
             {/* LEFT: DIRECT SALES */}
             <div className="bg-[#9bb3f4] p-12 md:p-20 text-center flex flex-col justify-center border-b md:border-b-0 md:border-r border-black/5">
               <h2 className="text-7xl md:text-8xl font-black mb-8 tracking-tighter">
-                6%
+                4%
               </h2>
               <p className="text-xl md:text-2xl font-medium leading-relaxed max-w-sm mx-auto text-black/80">
                 Per transaction for all sales through your profile
