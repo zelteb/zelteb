@@ -121,7 +121,7 @@ export default function Dashboard() {
               Hi, {username || "there"}
             </h1>
             <p className="text-gray-400 text-sm">
-              Zelteb.shop/{username || "username"}
+              Zelteeb.shop/{username || "username"}
             </p>
           </div>
         </div>
