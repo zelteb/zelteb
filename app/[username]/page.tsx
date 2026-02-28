@@ -6,23 +6,36 @@ export default async function UserPage({
 }: {
   params: { username: string };
 }) {
-  const { data: profile } = await supabase
+  // ── Debug: log what username is being looked up ──────────────────────────
+  console.log("[UserPage] Looking up username:", params.username);
+
+  const { data: profile, error } = await supabase
     .from("profiles")
     .select("*")
     .ilike("username", params.username)
     .single();
 
+  // ── Debug: log the result ─────────────────────────────────────────────────
+  console.log("[UserPage] profile:", profile);
+  console.log("[UserPage] error:", error);
+
   if (!profile) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-50">
+      <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50 gap-3">
         <p className="text-gray-500 text-lg">User not found</p>
+        {/* Shows error details in dev mode — remove once fixed */}
+        {process.env.NODE_ENV === "development" && (
+          <pre className="text-xs text-red-400 bg-red-50 p-4 rounded max-w-lg w-full overflow-auto">
+            {JSON.stringify({ lookedUp: params.username, error }, null, 2)}
+          </pre>
+        )}
       </div>
     );
   }
 
   return (
     <div className="min-h-screen bg-[#f4f4f0] font-serif">
-      {/* Cover / Banner */}
+      {/* ── Cover / Banner ─────────────────────────────────────────────────── */}
       <div className="relative w-full h-56 md:h-72 bg-stone-300 overflow-hidden">
         {profile.cover_url ? (
           <Image
@@ -33,7 +46,6 @@ export default async function UserPage({
             priority
           />
         ) : (
-          /* Fallback ornamental gradient when no cover is set */
           <div
             className="absolute inset-0"
             style={{
@@ -41,7 +53,6 @@ export default async function UserPage({
                 "linear-gradient(135deg, #1a1a2e 0%, #2d2d44 40%, #4a3728 70%, #2c1810 100%)",
             }}
           >
-            {/* Subtle arch / cathedral SVG decoration */}
             <svg
               className="absolute inset-0 w-full h-full opacity-10"
               viewBox="0 0 1440 288"
@@ -51,16 +62,14 @@ export default async function UserPage({
               <ellipse cx="720" cy="300" rx="600" ry="280" fill="none" stroke="#d4af37" strokeWidth="1.5" />
               <ellipse cx="720" cy="300" rx="500" ry="230" fill="none" stroke="#d4af37" strokeWidth="1" />
               <ellipse cx="720" cy="300" rx="400" ry="180" fill="none" stroke="#d4af37" strokeWidth="0.75" />
-              <line x1="0" y1="0" x2="1440" y2="0" stroke="#d4af37" strokeWidth="2" />
-              <line x1="0" y1="288" x2="1440" y2="288" stroke="#d4af37" strokeWidth="2" />
             </svg>
           </div>
         )}
       </div>
 
-      {/* Profile card centred below the cover */}
+      {/* ── Profile card ───────────────────────────────────────────────────── */}
       <div className="max-w-2xl mx-auto px-4">
-        {/* Avatar — overlaps the cover */}
+        {/* Avatar overlapping the cover */}
         <div className="flex justify-center -mt-16 md:-mt-20 relative z-10">
           <div className="w-28 h-28 md:w-36 md:h-36 rounded-2xl border-4 border-white bg-white shadow-xl overflow-hidden">
             {profile.avatar_url ? (
@@ -72,7 +81,6 @@ export default async function UserPage({
                 className="object-cover w-full h-full"
               />
             ) : (
-              /* Fallback monogram */
               <div className="w-full h-full flex items-center justify-center bg-stone-800">
                 <span className="text-4xl font-bold text-amber-400 uppercase tracking-widest">
                   {profile.username?.charAt(0) ?? "?"}
@@ -114,7 +122,7 @@ export default async function UserPage({
             </p>
           )}
 
-          {/* CTA button */}
+          {/* CTA */}
           <div className="mt-6 mb-10">
             <button className="px-8 py-3 bg-gray-900 hover:bg-gray-700 transition-colors text-white font-semibold rounded-full text-sm md:text-base shadow-md">
               Become a member
