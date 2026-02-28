@@ -10,6 +10,7 @@ export default function Profile() {
 
   const [user, setUser] = useState<any>(null);
   const [username, setUsername] = useState("");
+  const [fullName, setFullName] = useState("");
   const [bio, setBio] = useState("");
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
@@ -44,6 +45,7 @@ export default function Profile() {
         });
       } else {
         setUsername(profile.username || "");
+        setFullName(profile.full_name || "");
         setBio(profile.bio || "");
         setAvatarUrl(profile.avatar_url || null);
       }
@@ -123,6 +125,7 @@ export default function Profile() {
         .from("profiles")
         .update({
           username: username.trim().toLowerCase(),
+          full_name: fullName.trim(),
           bio,
           avatar_url: finalAvatarUrl,
           updated_at: new Date().toISOString(),
@@ -130,7 +133,6 @@ export default function Profile() {
         .eq("id", user.id);
 
       if (error) {
-        // Handle duplicate username (race condition between live check and save)
         if (error.code === "23505" || error.message.includes("profiles_username_key")) {
           setUsernameError("the username is taken");
           setSaving(false);
@@ -155,11 +157,28 @@ export default function Profile() {
       <h1 className="text-3xl font-bold mb-8">Profile</h1>
 
       <div className="bg-white border border-gray-200 rounded-2xl p-8 max-w-3xl">
+
+        {/* Full Name */}
+        <div className="mb-6">
+          <label className="block text-sm font-semibold mb-2">
+            Full Name
+          </label>
+          <input
+            value={fullName}
+            onChange={(e) => setFullName(e.target.value)}
+            className="w-full border rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-gray-200"
+            placeholder="Basil Biju"
+          />
+          <p className="text-gray-400 text-xs mt-1">
+            This is the name shown on your public profile page.
+          </p>
+        </div>
+
+        {/* Username */}
         <div className="mb-6">
           <label className="block text-sm font-semibold mb-2">
             Username
           </label>
-
           <input
             value={username}
             onChange={(e) => setUsername(e.target.value)}
@@ -170,14 +189,15 @@ export default function Profile() {
             }`}
             placeholder="your-username"
           />
-
           {usernameError && (
-            <p className="text-red-500 text-sm mt-2">
-              {usernameError}
-            </p>
+            <p className="text-red-500 text-sm mt-2">{usernameError}</p>
           )}
+          <p className="text-gray-400 text-xs mt-1">
+            Your public URL: yoursite.com/{username || "username"}
+          </p>
         </div>
 
+        {/* Bio */}
         <div className="mb-6">
           <label className="block text-sm font-semibold mb-2">Bio</label>
           <textarea
@@ -187,7 +207,6 @@ export default function Profile() {
           />
         </div>
 
-        {/* Avatar upload (hidden input, trigger via button if needed) */}
         <input
           ref={fileInputRef}
           type="file"
