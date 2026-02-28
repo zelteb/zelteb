@@ -1,4 +1,4 @@
-import { supabase } from "@/lib/supabase";
+import { createClient } from "@/lib/server";
 import Image from "next/image";
 
 export default async function UserPage({
@@ -6,7 +6,8 @@ export default async function UserPage({
 }: {
   params: { username: string };
 }) {
-  // ── Debug: log what username is being looked up ──────────────────────────
+  const supabase = await createClient(); // ✅ SSR client
+
   console.log("[UserPage] Looking up username:", params.username);
 
   const { data: profile, error } = await supabase
@@ -15,7 +16,6 @@ export default async function UserPage({
     .ilike("username", params.username)
     .single();
 
-  // ── Debug: log the result ─────────────────────────────────────────────────
   console.log("[UserPage] profile:", profile);
   console.log("[UserPage] error:", error);
 
@@ -23,7 +23,6 @@ export default async function UserPage({
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50 gap-3">
         <p className="text-gray-500 text-lg">User not found</p>
-        {/* Shows error details in dev mode — remove once fixed */}
         {process.env.NODE_ENV === "development" && (
           <pre className="text-xs text-red-400 bg-red-50 p-4 rounded max-w-lg w-full overflow-auto">
             {JSON.stringify({ lookedUp: params.username, error }, null, 2)}
@@ -35,7 +34,8 @@ export default async function UserPage({
 
   return (
     <div className="min-h-screen bg-[#f4f4f0] font-serif">
-      {/* ── Cover / Banner ─────────────────────────────────────────────────── */}
+      
+      {/* Cover */}
       <div className="relative w-full h-56 md:h-72 bg-stone-300 overflow-hidden">
         {profile.cover_url ? (
           <Image
@@ -52,24 +52,14 @@ export default async function UserPage({
               background:
                 "linear-gradient(135deg, #1a1a2e 0%, #2d2d44 40%, #4a3728 70%, #2c1810 100%)",
             }}
-          >
-            <svg
-              className="absolute inset-0 w-full h-full opacity-10"
-              viewBox="0 0 1440 288"
-              preserveAspectRatio="xMidYMid slice"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <ellipse cx="720" cy="300" rx="600" ry="280" fill="none" stroke="#d4af37" strokeWidth="1.5" />
-              <ellipse cx="720" cy="300" rx="500" ry="230" fill="none" stroke="#d4af37" strokeWidth="1" />
-              <ellipse cx="720" cy="300" rx="400" ry="180" fill="none" stroke="#d4af37" strokeWidth="0.75" />
-            </svg>
-          </div>
+          />
         )}
       </div>
 
-      {/* ── Profile card ───────────────────────────────────────────────────── */}
+      {/* Profile Section */}
       <div className="max-w-2xl mx-auto px-4">
-        {/* Avatar overlapping the cover */}
+        
+        {/* Avatar */}
         <div className="flex justify-center -mt-16 md:-mt-20 relative z-10">
           <div className="w-28 h-28 md:w-36 md:h-36 rounded-2xl border-4 border-white bg-white shadow-xl overflow-hidden">
             {profile.avatar_url ? (
@@ -90,7 +80,7 @@ export default async function UserPage({
           </div>
         </div>
 
-        {/* Name & tagline */}
+        {/* Name + Info */}
         <div className="mt-4 text-center">
           <h1 className="text-2xl md:text-3xl font-bold text-gray-900 tracking-tight">
             {profile.full_name ?? profile.username}
@@ -102,7 +92,6 @@ export default async function UserPage({
             </p>
           )}
 
-          {/* Stats row */}
           <div className="mt-3 flex items-center justify-center gap-2 text-sm text-gray-500">
             {profile.member_count != null && (
               <>
@@ -115,14 +104,12 @@ export default async function UserPage({
             )}
           </div>
 
-          {/* Bio */}
           {profile.bio && (
             <p className="mt-4 text-gray-700 leading-relaxed text-sm md:text-base max-w-lg mx-auto">
               {profile.bio}
             </p>
           )}
 
-          {/* CTA */}
           <div className="mt-6 mb-10">
             <button className="px-8 py-3 bg-gray-900 hover:bg-gray-700 transition-colors text-white font-semibold rounded-full text-sm md:text-base shadow-md">
               Become a member
@@ -130,7 +117,7 @@ export default async function UserPage({
           </div>
         </div>
 
-        {/* Tab bar */}
+        {/* Tabs */}
         <div className="border-t border-gray-200 flex gap-8 justify-center text-sm font-medium text-gray-500">
           <button className="py-3 border-b-2 border-gray-900 text-gray-900">
             Home
