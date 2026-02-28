@@ -40,7 +40,7 @@ export default function Sidebar() {
     <aside className="w-64 bg-black text-white flex flex-col fixed top-0 left-0 h-screen z-50">
       <div className="p-6">
         <Link href="/" className="text-2xl font-black tracking-tighter">
-          Zelteb
+          Zeltebb
         </Link>
       </div>
 
