@@ -4,23 +4,18 @@ import Image from "next/image";
 export default async function UserPage({
   params,
 }: {
-  params: { username: string };
+  params: Promise<{ username: string }>;
 }) {
-  console.log("URL USERNAME:", params.username);
+  // ✅ unwrap params (Next.js 16 requirement)
+  const { username } = await params;
 
-  // 🔥 DEBUG: check if we are connected to correct DB
-  const { data: allProfiles, error: allError } = await supabase
-    .from("profiles")
-    .select("*");
-
-  console.log("ALL PROFILES:", allProfiles);
-  console.log("ALL ERROR:", allError);
+  console.log("URL USERNAME:", username);
 
   // 🔥 Normal query
   const { data: profile, error } = await supabase
     .from("profiles")
     .select("*")
-    .ilike("username", params.username)
+    .ilike("username", username)
     .maybeSingle();
 
   console.log("MATCHED PROFILE:", profile);
