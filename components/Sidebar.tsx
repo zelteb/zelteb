@@ -9,6 +9,7 @@ export default function Sidebar() {
   const router = useRouter();
   const pathname = usePathname();
   const [user, setUser] = useState<any>(null);
+  const [username, setUsername] = useState<string | null>(null);
 
   useEffect(() => {
     const load = async () => {
@@ -17,8 +18,21 @@ export default function Sidebar() {
         router.push("/");
         return;
       }
+
       setUser(data.user);
+
+      // 🔥 Fetch username from profiles table
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("username")
+        .eq("id", data.user.id)
+        .single();
+
+      if (profile?.username) {
+        setUsername(profile.username);
+      }
     };
+
     load();
   }, [router]);
 
@@ -34,6 +48,11 @@ export default function Sidebar() {
     { name: "Analytics", icon: "📊", link: "/dashboard/analytics" },
     { name: "Payouts", icon: "🏦", link: "/dashboard/payouts" },
     { name: "Profile", icon: "✉️", link: "/dashboard/profile" },
+
+    // 🔥 NEW — View My Page
+    ...(username
+      ? [{ name: "View My Page", icon: "🌐", link: `/${username}` }]
+      : []),
   ];
 
   return (
