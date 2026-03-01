@@ -3,6 +3,8 @@
 import { useEffect, useState, useRef } from "react";
 import { supabase } from "@/lib/supabase";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
+import { Camera, Loader2 } from "lucide-react";
 
 export default function Profile() {
   const router = useRouter();
@@ -15,6 +17,7 @@ export default function Profile() {
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  const [avatarUploading, setAvatarUploading] = useState(false);
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -40,9 +43,7 @@ export default function Profile() {
         .single();
 
       if (!profile) {
-        await supabase.from("profiles").insert({
-          id: auth.user.id,
-        });
+        await supabase.from("profiles").insert({ id: auth.user.id });
       } else {
         setUsername(profile.username || "");
         setFullName(profile.full_name || "");
@@ -65,7 +66,6 @@ export default function Profile() {
       }
 
       const clean = username.trim().toLowerCase();
-
       const { data } = await supabase
         .from("profiles")
         .select("id")
@@ -73,61 +73,75 @@ export default function Profile() {
         .neq("id", user?.id)
         .maybeSingle();
 
-      if (data) {
-        setUsernameError("the username is taken");
-      } else {
-        setUsernameError("");
-      }
+      setUsernameError(data ? "the username is taken" : "");
     };
 
     const timeout = setTimeout(checkUsername, 500);
     return () => clearTimeout(timeout);
   }, [username, user]);
 
-  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // ── Avatar: pick file → instant preview, then upload immediately ──────────
+
+  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    e.target.value = ""; // reset so same file can be re-picked
 
+    // Show local preview instantly
+    const preview = URL.createObjectURL(file);
+    setAvatarPreview(preview);
     setAvatarFile(file);
-    setAvatarPreview(URL.createObjectURL(file));
+
+    // Upload right away
+    setAvatarUploading(true);
+    try {
+      const ext = file.name.split(".").pop();
+      const path = `${user.id}/avatar.${ext}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from("avatars")
+        .upload(path, file, { upsert: true, contentType: file.type });
+
+      if (uploadError) throw uploadError;
+
+      const { data } = supabase.storage.from("avatars").getPublicUrl(path);
+      const url = `${data.publicUrl}?t=${Date.now()}`;
+
+      // Save to DB immediately so UserProfileClient reflects the change
+      await supabase
+        .from("profiles")
+        .update({ avatar_url: url })
+        .eq("id", user.id);
+
+      setAvatarUrl(url);
+      setAvatarPreview(null); // use the real URL now
+    } catch (err: any) {
+      alert("Avatar upload failed: " + err.message);
+      setAvatarPreview(null);
+    } finally {
+      setAvatarUploading(false);
+    }
   };
+
+  // ── Save the rest of the form ─────────────────────────────────────────────
 
   const save = async () => {
     if (!username.trim()) {
       setUsernameError("username is required");
       return;
     }
-
     if (usernameError) return;
 
     setSaving(true);
     setSaved(false);
 
     try {
-      let finalAvatarUrl = avatarUrl;
-
-      if (avatarFile) {
-        const ext = avatarFile.name.split(".").pop();
-        const path = `avatars/${user.id}.${ext}`;
-
-        await supabase.storage
-          .from("avatars")
-          .upload(path, avatarFile, { upsert: true });
-
-        const { data } = supabase.storage
-          .from("avatars")
-          .getPublicUrl(path);
-
-        finalAvatarUrl = data.publicUrl + `?t=${Date.now()}`;
-      }
-
       const { error } = await supabase
         .from("profiles")
         .update({
           username: username.trim().toLowerCase(),
           full_name: fullName.trim(),
           bio,
-          avatar_url: finalAvatarUrl,
           updated_at: new Date().toISOString(),
         })
         .eq("id", user.id);
@@ -152,17 +166,81 @@ export default function Profile() {
 
   if (loading) return <div className="p-10">Loading...</div>;
 
+  const displayAvatar = avatarPreview || avatarUrl;
+
   return (
     <div className="min-h-screen bg-[#f9f9f8] p-10">
       <h1 className="text-3xl font-bold mb-8">Profile</h1>
 
       <div className="bg-white border border-gray-200 rounded-2xl p-8 max-w-3xl">
 
+        {/* ── Avatar upload ──────────────────────────────────────────────── */}
+        <div className="mb-8 flex items-center gap-5">
+          <div className="relative group shrink-0">
+            {/* Avatar preview */}
+            <div className="w-20 h-20 rounded-2xl bg-stone-800 overflow-hidden border border-gray-200 shadow-sm">
+              {displayAvatar ? (
+                <Image
+                  src={displayAvatar}
+                  alt="Profile photo"
+                  width={80}
+                  height={80}
+                  className="object-cover w-full h-full"
+                  unoptimized
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center">
+                  <span className="text-2xl font-bold text-amber-400 uppercase">
+                    {username?.charAt(0) || fullName?.charAt(0) || "?"}
+                  </span>
+                </div>
+              )}
+            </div>
+
+            {/* Camera overlay */}
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              disabled={avatarUploading}
+              className="absolute inset-0 rounded-2xl bg-black/0 hover:bg-black/40 transition-colors flex items-center justify-center group cursor-pointer disabled:cursor-not-allowed"
+              title="Change profile photo"
+            >
+              {avatarUploading ? (
+                <Loader2 size={20} className="text-white animate-spin" />
+              ) : (
+                <Camera size={20} className="text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+              )}
+            </button>
+          </div>
+
+          {/* Text + hint */}
+          <div>
+            <p className="font-semibold text-sm text-gray-800">Profile photo</p>
+            <p className="text-gray-400 text-xs mt-0.5">
+              Recommended: square image, at least 400 × 400 px
+            </p>
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              disabled={avatarUploading}
+              className="mt-2 text-xs font-medium text-gray-600 hover:text-black underline underline-offset-2 transition-colors disabled:opacity-50"
+            >
+              {avatarUploading ? "Uploading…" : "Change photo"}
+            </button>
+          </div>
+
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={handleAvatarChange}
+          />
+        </div>
+
+        <hr className="border-gray-100 mb-8" />
+
         {/* Full Name */}
         <div className="mb-6">
-          <label className="block text-sm font-semibold mb-2">
-            Full Name
-          </label>
+          <label className="block text-sm font-semibold mb-2">Full Name</label>
           <input
             value={fullName}
             onChange={(e) => setFullName(e.target.value)}
@@ -176,9 +254,7 @@ export default function Profile() {
 
         {/* Username */}
         <div className="mb-6">
-          <label className="block text-sm font-semibold mb-2">
-            Username
-          </label>
+          <label className="block text-sm font-semibold mb-2">Username</label>
           <input
             value={username}
             onChange={(e) => setUsername(e.target.value)}
@@ -206,14 +282,6 @@ export default function Profile() {
             className="w-full border rounded-xl px-4 py-3 h-32 resize-none"
           />
         </div>
-
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept="image/*"
-          className="hidden"
-          onChange={handleAvatarChange}
-        />
 
         <button
           onClick={save}
