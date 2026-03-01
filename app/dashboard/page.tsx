@@ -157,7 +157,6 @@ export default function Dashboard() {
 
         <div className="flex gap-6 text-sm text-gray-600">
           <div>₹0 Products</div>
-          <div>₹0 Merch</div>
         </div>
       </div>
 
