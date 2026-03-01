@@ -2,7 +2,7 @@
 
 import { supabase } from "@/lib/supabase";
 import Image from "next/image";
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import { Camera, ImagePlus, Loader2 } from "lucide-react";
 
 interface Profile {
@@ -40,6 +40,35 @@ export default function UserProfileClient({ profile: initialProfile }: { profile
 
   const coverInputRef = useRef<HTMLInputElement>(null);
   const avatarInputRef = useRef<HTMLInputElement>(null);
+
+  // ── Real-time sync: reflects changes made in profile settings page ─────────
+  useEffect(() => {
+    const channel = supabase
+      .channel(`profile:${profile.username}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "profiles",
+          filter: `username=eq.${profile.username}`,
+        },
+        (payload) => {
+          const updated = payload.new as Profile;
+          setProfile((p) => ({
+            ...p,
+            avatar_url: updated.avatar_url ?? p.avatar_url,
+            cover_url: updated.cover_url ?? p.cover_url,
+            full_name: updated.full_name ?? p.full_name,
+          }));
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [profile.username]);
 
   // ── Cover ──────────────────────────────────────────────────────────────────
 
