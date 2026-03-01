@@ -5,13 +5,8 @@ import Image from "next/image";
 import { useRef, useState, useEffect } from "react";
 import {
   Camera, ImagePlus, Loader2, Share2, X, Link as LinkIcon,
-  Twitter, Facebook, Mail, Check, Pencil, Plus, Trash2, ExternalLink,
+  Twitter, Facebook, Mail, Check, Pencil,
 } from "lucide-react";
-
-interface ProfileLink {
-  label: string;
-  url: string;
-}
 
 interface Profile {
   username: string;
@@ -19,7 +14,6 @@ interface Profile {
   cover_url?: string | null;
   avatar_url?: string | null;
   bio?: string | null;
-  about_links?: ProfileLink[] | null;
   post_count?: number | null;
 }
 
@@ -31,11 +25,6 @@ async function uploadImage(file: File, bucket: string, path: string): Promise<st
   if (error) throw error;
   const { data } = supabase.storage.from(bucket).getPublicUrl(path);
   return `${data.publicUrl}?t=${Date.now()}`;
-}
-
-function ensureHttp(url: string): string {
-  if (!url) return url;
-  return /^https?:\/\//i.test(url) ? url : `https://${url}`;
 }
 
 function UploadHint({ label }: { label: string }) {
@@ -185,39 +174,25 @@ function HomeTab({ profile }: { profile: Profile }) {
 // ── About Tab ─────────────────────────────────────────────────────────────────
 function AboutTab({
   profile,
+  isOwner,
   onSave,
 }: {
   profile: Profile;
-  onSave: (bio: string, links: ProfileLink[]) => Promise<void>;
+  isOwner: boolean;
+  onSave: (bio: string) => Promise<void>;
 }) {
   const [editing, setEditing] = useState(false);
   const [bio, setBio] = useState(profile.bio ?? "");
-  const [links, setLinks] = useState<ProfileLink[]>(profile.about_links ?? []);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    if (!editing) {
-      setBio(profile.bio ?? "");
-      setLinks(profile.about_links ?? []);
-    }
-  }, [profile.bio, profile.about_links, editing]);
-
-  function addLink() {
-    setLinks((l) => [...l, { label: "", url: "" }]);
-  }
-
-  function removeLink(i: number) {
-    setLinks((l) => l.filter((_, idx) => idx !== i));
-  }
-
-  function updateLink(i: number, field: "label" | "url", value: string) {
-    setLinks((l) => l.map((lnk, idx) => (idx === i ? { ...lnk, [field]: value } : lnk)));
-  }
+    if (!editing) setBio(profile.bio ?? "");
+  }, [profile.bio, editing]);
 
   async function handleSave() {
     setSaving(true);
     try {
-      await onSave(bio, links.filter((l) => l.url.trim()));
+      await onSave(bio);
       setEditing(false);
     } finally {
       setSaving(false);
@@ -226,7 +201,6 @@ function AboutTab({
 
   function handleCancel() {
     setBio(profile.bio ?? "");
-    setLinks(profile.about_links ?? []);
     setEditing(false);
   }
 
@@ -234,10 +208,10 @@ function AboutTab({
     <div className="max-w-2xl mx-auto px-4 py-8">
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
 
-        {/* Card header */}
+        {/* Card header — pencil only visible to owner */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
           <h3 className="text-sm font-semibold text-gray-700">About</h3>
-          {!editing ? (
+          {isOwner && !editing && (
             <button
               onClick={() => setEditing(true)}
               className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-900 hover:bg-gray-100 px-2.5 py-1.5 rounded-lg transition-colors"
@@ -245,7 +219,8 @@ function AboutTab({
               <Pencil size={13} />
               Edit
             </button>
-          ) : (
+          )}
+          {isOwner && editing && (
             <div className="flex items-center gap-2">
               <button
                 onClick={handleCancel}
@@ -265,90 +240,39 @@ function AboutTab({
           )}
         </div>
 
-        <div className="px-6 py-5 space-y-6">
-
-          {/* Bio */}
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-widest text-gray-400 mb-2">Bio</p>
-            {editing ? (
-              <textarea
-                value={bio}
-                onChange={(e) => setBio(e.target.value)}
-                rows={4}
-                placeholder="Write something about yourself…"
-                className="w-full text-sm text-gray-800 border border-gray-200 rounded-xl px-3 py-2.5 resize-none focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent placeholder:text-gray-300"
-              />
-            ) : bio ? (
-              <p className="text-sm text-gray-800 leading-relaxed whitespace-pre-wrap">{bio}</p>
-            ) : (
-              <p className="text-sm text-gray-400 italic">No bio yet. Click Edit to add one.</p>
-            )}
-          </div>
-
-          {/* Links */}
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-widest text-gray-400 mb-3">Links</p>
-
-            {editing ? (
-              <div className="space-y-2">
-                {links.map((lnk, i) => (
-                  <div key={i} className="flex gap-2 items-center">
-                    <input
-                      value={lnk.label}
-                      onChange={(e) => updateLink(i, "label", e.target.value)}
-                      placeholder="Label  e.g. Instagram"
-                      className="w-1/3 text-xs border border-gray-200 rounded-lg px-2.5 py-2 focus:outline-none focus:ring-2 focus:ring-amber-400 placeholder:text-gray-300"
-                    />
-                    <input
-                      value={lnk.url}
-                      onChange={(e) => updateLink(i, "url", e.target.value)}
-                      placeholder="instagram.com/username"
-                      className="flex-1 text-xs border border-gray-200 rounded-lg px-2.5 py-2 focus:outline-none focus:ring-2 focus:ring-amber-400 placeholder:text-gray-300"
-                    />
-                    <button
-                      onClick={() => removeLink(i)}
-                      className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors flex-shrink-0"
-                    >
-                      <Trash2 size={13} />
-                    </button>
-                  </div>
-                ))}
-                <button
-                  onClick={addLink}
-                  className="flex items-center gap-1.5 text-xs text-amber-600 hover:text-amber-700 mt-1 font-medium"
-                >
-                  <Plus size={13} />
-                  Add link
-                </button>
-              </div>
-            ) : links.length > 0 ? (
-              <div className="flex flex-col gap-2">
-                {links.map((lnk, i) => (
-                  <a
-                    key={i}
-                    href={ensureHttp(lnk.url)}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-2 text-sm text-amber-600 hover:text-amber-800 hover:underline w-fit"
-                  >
-                    <ExternalLink size={13} />
-                    {lnk.label || lnk.url}
-                  </a>
-                ))}
-              </div>
-            ) : (
-              <p className="text-sm text-gray-400 italic">No links yet. Click Edit to add some.</p>
-            )}
-          </div>
-
+        {/* Bio body */}
+        <div className="px-6 py-5">
+          <p className="text-xs font-semibold uppercase tracking-widest text-gray-400 mb-2">Bio</p>
+          {editing ? (
+            <textarea
+              value={bio}
+              onChange={(e) => setBio(e.target.value)}
+              rows={5}
+              placeholder="Write something about yourself…"
+              className="w-full text-sm text-gray-800 border border-gray-200 rounded-xl px-3 py-2.5 resize-none focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent placeholder:text-gray-300"
+            />
+          ) : bio ? (
+            <p className="text-sm text-gray-800 leading-relaxed whitespace-pre-wrap">{bio}</p>
+          ) : (
+            <p className="text-sm text-gray-400 italic">
+              {isOwner ? "No bio yet. Click Edit to add one." : "No bio added yet."}
+            </p>
+          )}
         </div>
+
       </div>
     </div>
   );
 }
 
 // ── Main Component ───────────────────────────────────────────────────────────
-export default function UserProfileClient({ profile: initialProfile }: { profile: Profile }) {
+export default function UserProfileClient({
+  profile: initialProfile,
+  isOwner,
+}: {
+  profile: Profile;
+  isOwner: boolean; // pass true when the logged-in user owns this profile
+}) {
   const [profile, setProfile] = useState<Profile>(initialProfile);
   const [coverPending, setCoverPending] = useState(false);
   const [avatarPending, setAvatarPending] = useState(false);
@@ -374,15 +298,15 @@ export default function UserProfileClient({ profile: initialProfile }: { profile
           cover_url: updated.cover_url ?? p.cover_url,
           full_name: updated.full_name ?? p.full_name,
           bio: updated.bio ?? p.bio,
-          about_links: updated.about_links ?? p.about_links,
         }));
       })
       .subscribe();
     return () => { supabase.removeChannel(channel); };
   }, [profile.username]);
 
-  // ── Cover upload ───────────────────────────────────────────────────────────
+  // ── Cover upload (owner only) ──────────────────────────────────────────────
   async function handleCoverChange(e: React.ChangeEvent<HTMLInputElement>) {
+    if (!isOwner) return;
     const file = e.target.files?.[0];
     if (!file) return;
     e.target.value = "";
@@ -400,8 +324,9 @@ export default function UserProfileClient({ profile: initialProfile }: { profile
     }
   }
 
-  // ── Avatar upload ──────────────────────────────────────────────────────────
+  // ── Avatar upload (owner only) ─────────────────────────────────────────────
   async function handleAvatarChange(e: React.ChangeEvent<HTMLInputElement>) {
+    if (!isOwner) return;
     const file = e.target.files?.[0];
     if (!file) return;
     e.target.value = "";
@@ -419,13 +344,13 @@ export default function UserProfileClient({ profile: initialProfile }: { profile
     }
   }
 
-  // ── About save ────────────────────────────────────────────────────────────
-  async function handleAboutSave(bio: string, links: ProfileLink[]) {
+  // ── About save (owner only) ───────────────────────────────────────────────
+  async function handleAboutSave(bio: string) {
     await supabase
       .from("profiles")
-      .update({ bio, about_links: links })
+      .update({ bio })
       .eq("username", profile.username);
-    setProfile((p) => ({ ...p, bio, about_links: links }));
+    setProfile((p) => ({ ...p, bio }));
   }
 
   return (
@@ -434,7 +359,7 @@ export default function UserProfileClient({ profile: initialProfile }: { profile
       {showShare && <ShareModal profile={profile} onClose={() => setShowShare(false)} />}
 
       {/* ── Cover photo ───────────────────────────────────────────────────── */}
-      <div className="relative w-full h-56 md:h-72 bg-stone-300 group">
+      <div className={`relative w-full h-56 md:h-72 bg-stone-300 ${isOwner ? "group" : ""}`}>
         <div className="absolute inset-0 overflow-hidden">
           {profile.cover_url ? (
             <Image src={profile.cover_url} alt="Cover photo" fill className="object-cover" priority unoptimized />
@@ -442,19 +367,25 @@ export default function UserProfileClient({ profile: initialProfile }: { profile
             <div className="absolute inset-0 bg-gray-800" />
           )}
         </div>
-        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors duration-200 pointer-events-none" />
-        <div className="absolute bottom-3 right-3 z-10 flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-          <UploadHint label="16 : 5  ·  1600 × 500 px" />
-          <button
-            onClick={() => coverInputRef.current?.click()}
-            disabled={coverPending}
-            className="flex items-center gap-1.5 bg-white/90 hover:bg-white text-gray-800 text-xs font-medium px-3 py-1.5 rounded-full shadow-md transition-colors disabled:opacity-60 cursor-pointer"
-          >
-            {coverPending ? <Loader2 size={14} className="animate-spin" /> : <ImagePlus size={14} />}
-            {coverPending ? "Uploading…" : "Change cover"}
-          </button>
-        </div>
-        <input ref={coverInputRef} type="file" accept="image/*" className="hidden" onChange={handleCoverChange} />
+
+        {/* Hover overlay + upload — owner only */}
+        {isOwner && (
+          <>
+            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors duration-200 pointer-events-none" />
+            <div className="absolute bottom-3 right-3 z-10 flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+              <UploadHint label="16 : 5  ·  1600 × 500 px" />
+              <button
+                onClick={() => coverInputRef.current?.click()}
+                disabled={coverPending}
+                className="flex items-center gap-1.5 bg-white/90 hover:bg-white text-gray-800 text-xs font-medium px-3 py-1.5 rounded-full shadow-md transition-colors disabled:opacity-60 cursor-pointer"
+              >
+                {coverPending ? <Loader2 size={14} className="animate-spin" /> : <ImagePlus size={14} />}
+                {coverPending ? "Uploading…" : "Change cover"}
+              </button>
+            </div>
+            <input ref={coverInputRef} type="file" accept="image/*" className="hidden" onChange={handleCoverChange} />
+          </>
+        )}
       </div>
 
       {/* ── Profile section ───────────────────────────────────────────────── */}
@@ -463,7 +394,7 @@ export default function UserProfileClient({ profile: initialProfile }: { profile
           <div className="w-10" />
 
           {/* Avatar */}
-          <div className="relative group">
+          <div className={`relative ${isOwner ? "group" : ""}`}>
             <div className="w-28 h-28 md:w-36 md:h-36 rounded-2xl border-4 border-white bg-white shadow-xl overflow-hidden">
               {profile.avatar_url ? (
                 <Image src={profile.avatar_url} alt={profile.username} width={144} height={144} className="object-cover w-full h-full" unoptimized />
@@ -475,20 +406,26 @@ export default function UserProfileClient({ profile: initialProfile }: { profile
                 </div>
               )}
             </div>
-            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors duration-200 rounded-2xl flex items-center justify-center">
-              <button
-                onClick={() => avatarInputRef.current?.click()}
-                disabled={avatarPending}
-                className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-white/90 hover:bg-white text-gray-800 p-2 rounded-full shadow-md disabled:opacity-60 cursor-pointer"
-                title="Upload profile photo"
-              >
-                {avatarPending ? <Loader2 size={18} className="animate-spin" /> : <Camera size={18} />}
-              </button>
-            </div>
-            <div className="absolute -bottom-7 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none">
-              <UploadHint label="1 : 1  ·  400 × 400 px" />
-            </div>
-            <input ref={avatarInputRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarChange} />
+
+            {/* Camera overlay — owner only */}
+            {isOwner && (
+              <>
+                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors duration-200 rounded-2xl flex items-center justify-center">
+                  <button
+                    onClick={() => avatarInputRef.current?.click()}
+                    disabled={avatarPending}
+                    className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-white/90 hover:bg-white text-gray-800 p-2 rounded-full shadow-md disabled:opacity-60 cursor-pointer"
+                    title="Upload profile photo"
+                  >
+                    {avatarPending ? <Loader2 size={18} className="animate-spin" /> : <Camera size={18} />}
+                  </button>
+                </div>
+                <div className="absolute -bottom-7 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none">
+                  <UploadHint label="1 : 1  ·  400 × 400 px" />
+                </div>
+                <input ref={avatarInputRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarChange} />
+              </>
+            )}
           </div>
 
           {/* Share button */}
@@ -546,7 +483,7 @@ export default function UserProfileClient({ profile: initialProfile }: { profile
       {activeTab === "home" ? (
         <HomeTab profile={profile} />
       ) : (
-        <AboutTab profile={profile} onSave={handleAboutSave} />
+        <AboutTab profile={profile} isOwner={isOwner} onSave={handleAboutSave} />
       )}
     </div>
   );

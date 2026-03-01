@@ -8,11 +8,10 @@ export default async function UserPage({
 }) {
   const { username } = await params;
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("*")
-    .ilike("username", username)
-    .maybeSingle();
+  const [{ data: profile }, { data: { user } }] = await Promise.all([
+    supabase.from("profiles").select("*").ilike("username", username).maybeSingle(),
+    supabase.auth.getUser(),
+  ]);
 
   if (!profile) {
     return (
@@ -22,5 +21,8 @@ export default async function UserPage({
     );
   }
 
-  return <UserProfileClient profile={profile} />;
+  const isOwner =
+    !!user && user.user_metadata?.username?.toLowerCase() === username.toLowerCase();
+
+  return <UserProfileClient profile={profile} isOwner={isOwner} />;
 }
