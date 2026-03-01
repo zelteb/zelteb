@@ -296,7 +296,7 @@ export default function UserProfileClient({ profile: initialProfile }: { profile
   }
 
   return (
-    <div className="min-h-screen bg-[#f4f4f0] font-serif">
+    <div className="min-h-screen bg-[#f4f4f0]">
 
       {/* Share Modal */}
       {showShare && <ShareModal profile={profile} onClose={() => setShowShare(false)} />}
