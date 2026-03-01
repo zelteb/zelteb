@@ -1,13 +1,12 @@
 import { createClient } from "@supabase/supabase-js";
 import UserProfileClient from "./UserProfileClient";
 
-// Fresh client per-request (no cache) so new columns are always returned
 const supabaseServer = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 );
 
-export const revalidate = 0; // Never cache this page
+export const revalidate = 0;
 
 export default async function UserPage({
   params,
@@ -16,7 +15,7 @@ export default async function UserPage({
 }) {
   const { username } = await params;
 
-  const [{ data: profile }, { data: { user } }] = await Promise.all([
+  const [{ data: profile, error }, { data: { user } }] = await Promise.all([
     supabaseServer
       .from("profiles")
       .select("username, full_name, avatar_url, cover_url, bio, post_count, youtube_url, instagram_url, x_url")
@@ -24,6 +23,10 @@ export default async function UserPage({
       .maybeSingle(),
     supabaseServer.auth.getUser(),
   ]);
+
+  // Prints in your Next.js terminal
+  console.log("=== PROFILE DATA ===", JSON.stringify(profile, null, 2));
+  console.log("=== DB ERROR ===", error);
 
   if (!profile) {
     return (
@@ -36,5 +39,14 @@ export default async function UserPage({
   const isOwner =
     !!user && user.user_metadata?.username?.toLowerCase() === username.toLowerCase();
 
-  return <UserProfileClient profile={profile} isOwner={isOwner} />;
+  // Also pass raw profile as a debug div so we can see it in browser
+  return (
+    <>
+      <details className="fixed bottom-4 left-4 z-[9999] bg-black text-green-400 text-xs p-3 rounded-xl max-w-sm max-h-64 overflow-auto font-mono shadow-2xl">
+        <summary className="cursor-pointer font-bold mb-1">🐛 Profile Debug</summary>
+        <pre>{JSON.stringify(profile, null, 2)}</pre>
+      </details>
+      <UserProfileClient profile={profile} isOwner={isOwner} />
+    </>
+  );
 }
