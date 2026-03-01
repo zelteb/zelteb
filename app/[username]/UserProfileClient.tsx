@@ -15,6 +15,9 @@ interface Profile {
   avatar_url?: string | null;
   bio?: string | null;
   post_count?: number | null;
+  youtube_url?: string | null;
+  instagram_url?: string | null;
+  x_url?: string | null;
 }
 
 async function uploadImage(file: File, bucket: string, path: string): Promise<string> {
@@ -32,6 +35,229 @@ function UploadHint({ label }: { label: string }) {
     <span className="text-[11px] font-mono tracking-wide text-white/90 bg-black/40 backdrop-blur-sm px-2 py-0.5 rounded-full whitespace-nowrap select-none">
       {label}
     </span>
+  );
+}
+
+// ── SVG Icons ────────────────────────────────────────────────────────────────
+function YoutubeIcon({ size = 18 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor">
+      <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+    </svg>
+  );
+}
+
+function InstagramIcon({ size = 18 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor">
+      <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 1 0 0 12.324 6.162 6.162 0 0 0 0-12.324zM12 16a4 4 0 1 1 0-8 4 4 0 0 1 0 8zm6.406-11.845a1.44 1.44 0 1 0 0 2.881 1.44 1.44 0 0 0 0-2.881z"/>
+    </svg>
+  );
+}
+
+function XIcon({ size = 18 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor">
+      <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.746l7.73-8.835L1.254 2.25H8.08l4.253 5.622zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+    </svg>
+  );
+}
+
+// ── Social Links Modal (owner edit) ─────────────────────────────────────────
+function SocialLinksModal({
+  profile,
+  onClose,
+  onSave,
+}: {
+  profile: Profile;
+  onClose: () => void;
+  onSave: (links: { youtube_url: string; instagram_url: string; x_url: string }) => Promise<void>;
+}) {
+  const [youtube, setYoutube] = useState(profile.youtube_url ?? "");
+  const [instagram, setInstagram] = useState(profile.instagram_url ?? "");
+  const [x, setX] = useState(profile.x_url ?? "");
+  const [saving, setSaving] = useState(false);
+
+  async function handleSave() {
+    setSaving(true);
+    try {
+      await onSave({ youtube_url: youtube, instagram_url: instagram, x_url: x });
+      onClose();
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  const fields = [
+    {
+      label: "YouTube",
+      icon: <YoutubeIcon size={16} />,
+      color: "text-red-500",
+      value: youtube,
+      setValue: setYoutube,
+      placeholder: "https://youtube.com/@yourchannel",
+    },
+    {
+      label: "Instagram",
+      icon: <InstagramIcon size={16} />,
+      color: "text-pink-500",
+      value: instagram,
+      setValue: setInstagram,
+      placeholder: "https://instagram.com/yourusername",
+    },
+    {
+      label: "X / Twitter",
+      icon: <XIcon size={16} />,
+      color: "text-gray-800",
+      value: x,
+      setValue: setX,
+      placeholder: "https://x.com/yourusername",
+    },
+  ];
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4"
+      onClick={(e) => e.target === e.currentTarget && onClose()}
+    >
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+          <h2 className="text-base font-semibold text-gray-900">Social Links</h2>
+          <button onClick={onClose} className="p-1.5 rounded-full hover:bg-gray-100 text-gray-500 transition-colors">
+            <X size={16} />
+          </button>
+        </div>
+        <div className="px-5 py-5 flex flex-col gap-4">
+          {fields.map(({ label, icon, color, value, setValue, placeholder }) => (
+            <div key={label}>
+              <label className="flex items-center gap-2 text-xs font-semibold text-gray-500 uppercase tracking-widest mb-1.5">
+                <span className={color}>{icon}</span>
+                {label}
+              </label>
+              <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 focus-within:ring-2 focus-within:ring-amber-400 focus-within:border-transparent transition-all">
+                <LinkIcon size={12} className="text-gray-400 flex-shrink-0" />
+                <input
+                  type="url"
+                  value={value}
+                  onChange={(e) => setValue(e.target.value)}
+                  placeholder={placeholder}
+                  className="flex-1 text-sm text-gray-800 bg-transparent outline-none placeholder:text-gray-300"
+                />
+                {value && (
+                  <button onClick={() => setValue("")} className="text-gray-400 hover:text-gray-600">
+                    <X size={12} />
+                  </button>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+        <div className="px-5 pb-5 flex justify-end gap-2">
+          <button
+            onClick={onClose}
+            className="text-sm text-gray-500 hover:text-gray-800 px-4 py-2 rounded-xl hover:bg-gray-100 transition-colors"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleSave}
+            disabled={saving}
+            className="flex items-center gap-2 text-sm bg-gray-900 text-white px-5 py-2 rounded-xl hover:bg-gray-700 transition-colors disabled:opacity-60"
+          >
+            {saving && <Loader2 size={13} className="animate-spin" />}
+            {saving ? "Saving…" : "Save links"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Social Icons Row ─────────────────────────────────────────────────────────
+function SocialIconsRow({
+  profile,
+  isOwner,
+  onEditClick,
+}: {
+  profile: Profile;
+  isOwner: boolean;
+  onEditClick: () => void;
+}) {
+  const icons = [
+    {
+      key: "youtube",
+      url: profile.youtube_url,
+      icon: <YoutubeIcon size={19} />,
+      label: "YouTube",
+      hoverClass: "hover:text-red-500 hover:bg-red-50 hover:border-red-100",
+      emptyClass: "text-gray-300",
+    },
+    {
+      key: "instagram",
+      url: profile.instagram_url,
+      icon: <InstagramIcon size={19} />,
+      label: "Instagram",
+      hoverClass: "hover:text-pink-500 hover:bg-pink-50 hover:border-pink-100",
+      emptyClass: "text-gray-300",
+    },
+    {
+      key: "x",
+      url: profile.x_url,
+      icon: <XIcon size={19} />,
+      label: "X",
+      hoverClass: "hover:text-gray-900 hover:bg-gray-100 hover:border-gray-200",
+      emptyClass: "text-gray-300",
+    },
+  ];
+
+  // If owner and no social links exist at all, show a subtle "add links" prompt
+  const hasAnyLink = profile.youtube_url || profile.instagram_url || profile.x_url;
+
+  return (
+    <div className="flex items-center justify-center gap-2 mt-2">
+      {icons.map(({ key, url, icon, label, hoverClass, emptyClass }) => {
+        // Visitor sees nothing for empty links
+        if (!url && !isOwner) return null;
+
+        if (url) {
+          return (
+            <a
+              key={key}
+              href={url}
+              target="_blank"
+              rel="noopener noreferrer"
+              title={label}
+              className={`flex items-center justify-center w-9 h-9 rounded-xl border border-gray-100 bg-white text-gray-500 shadow-sm transition-all duration-150 ${hoverClass}`}
+            >
+              {icon}
+            </a>
+          );
+        }
+
+        // Owner only: grayed-out placeholder that opens editor on click
+        return (
+          <button
+            key={key}
+            onClick={onEditClick}
+            title={`Add ${label} link`}
+            className={`flex items-center justify-center w-9 h-9 rounded-xl border border-dashed border-gray-200 bg-white ${emptyClass} transition-all duration-150 hover:border-amber-400 hover:text-amber-400`}
+          >
+            {icon}
+          </button>
+        );
+      })}
+
+      {/* Edit pencil — only shown to owner when at least one link exists */}
+      {isOwner && hasAnyLink && (
+        <button
+          onClick={onEditClick}
+          title="Edit social links"
+          className="flex items-center justify-center w-9 h-9 rounded-xl border border-gray-100 bg-white text-gray-400 shadow-sm hover:text-gray-700 hover:bg-gray-50 transition-all duration-150"
+        >
+          <Pencil size={14} />
+        </button>
+      )}
+    </div>
   );
 }
 
@@ -207,8 +433,6 @@ function AboutTab({
   return (
     <div className="max-w-2xl mx-auto px-4 py-8">
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-
-        {/* Card header — pencil only visible to owner */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
           <h3 className="text-sm font-semibold text-gray-700">About</h3>
           {isOwner && !editing && (
@@ -239,8 +463,6 @@ function AboutTab({
             </div>
           )}
         </div>
-
-        {/* Bio body */}
         <div className="px-6 py-5">
           <p className="text-xs font-semibold uppercase tracking-widest text-gray-400 mb-2">Bio</p>
           {editing ? (
@@ -259,7 +481,6 @@ function AboutTab({
             </p>
           )}
         </div>
-
       </div>
     </div>
   );
@@ -271,7 +492,7 @@ export default function UserProfileClient({
   isOwner,
 }: {
   profile: Profile;
-  isOwner: boolean; // pass true when the logged-in user owns this profile
+  isOwner: boolean;
 }) {
   const [profile, setProfile] = useState<Profile>(initialProfile);
   const [coverPending, setCoverPending] = useState(false);
@@ -279,6 +500,7 @@ export default function UserProfileClient({
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<"home" | "about">("home");
   const [showShare, setShowShare] = useState(false);
+  const [showSocialEdit, setShowSocialEdit] = useState(false);
 
   const coverInputRef = useRef<HTMLInputElement>(null);
   const avatarInputRef = useRef<HTMLInputElement>(null);
@@ -298,13 +520,16 @@ export default function UserProfileClient({
           cover_url: updated.cover_url ?? p.cover_url,
           full_name: updated.full_name ?? p.full_name,
           bio: updated.bio ?? p.bio,
+          youtube_url: updated.youtube_url ?? p.youtube_url,
+          instagram_url: updated.instagram_url ?? p.instagram_url,
+          x_url: updated.x_url ?? p.x_url,
         }));
       })
       .subscribe();
     return () => { supabase.removeChannel(channel); };
   }, [profile.username]);
 
-  // ── Cover upload (owner only) ──────────────────────────────────────────────
+  // ── Cover upload ───────────────────────────────────────────────────────────
   async function handleCoverChange(e: React.ChangeEvent<HTMLInputElement>) {
     if (!isOwner) return;
     const file = e.target.files?.[0];
@@ -324,7 +549,7 @@ export default function UserProfileClient({
     }
   }
 
-  // ── Avatar upload (owner only) ─────────────────────────────────────────────
+  // ── Avatar upload ──────────────────────────────────────────────────────────
   async function handleAvatarChange(e: React.ChangeEvent<HTMLInputElement>) {
     if (!isOwner) return;
     const file = e.target.files?.[0];
@@ -344,19 +569,34 @@ export default function UserProfileClient({
     }
   }
 
-  // ── About save (owner only) ───────────────────────────────────────────────
+  // ── About save ────────────────────────────────────────────────────────────
   async function handleAboutSave(bio: string) {
-    await supabase
-      .from("profiles")
-      .update({ bio })
-      .eq("username", profile.username);
+    await supabase.from("profiles").update({ bio }).eq("username", profile.username);
     setProfile((p) => ({ ...p, bio }));
+  }
+
+  // ── Social links save ─────────────────────────────────────────────────────
+  async function handleSocialSave(links: { youtube_url: string; instagram_url: string; x_url: string }) {
+    const payload = {
+      youtube_url: links.youtube_url || null,
+      instagram_url: links.instagram_url || null,
+      x_url: links.x_url || null,
+    };
+    await supabase.from("profiles").update(payload).eq("username", profile.username);
+    setProfile((p) => ({ ...p, ...payload }));
   }
 
   return (
     <div className="min-h-screen bg-[#f4f4f0]">
 
       {showShare && <ShareModal profile={profile} onClose={() => setShowShare(false)} />}
+      {showSocialEdit && isOwner && (
+        <SocialLinksModal
+          profile={profile}
+          onClose={() => setShowSocialEdit(false)}
+          onSave={handleSocialSave}
+        />
+      )}
 
       {/* ── Cover photo ───────────────────────────────────────────────────── */}
       <div className={`relative w-full h-56 md:h-72 bg-stone-300 ${isOwner ? "group" : ""}`}>
@@ -367,8 +607,6 @@ export default function UserProfileClient({
             <div className="absolute inset-0 bg-gray-800" />
           )}
         </div>
-
-        {/* Hover overlay + upload — owner only */}
         {isOwner && (
           <>
             <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors duration-200 pointer-events-none" />
@@ -406,8 +644,6 @@ export default function UserProfileClient({
                 </div>
               )}
             </div>
-
-            {/* Camera overlay — owner only */}
             {isOwner && (
               <>
                 <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors duration-200 rounded-2xl flex items-center justify-center">
@@ -446,6 +682,7 @@ export default function UserProfileClient({
           </p>
         )}
 
+        {/* Name, post count, social icons */}
         <div className="mt-10 text-center">
           <h1 className="text-2xl md:text-3xl font-bold text-gray-900 tracking-tight">
             {profile.full_name ?? profile.username}
@@ -453,6 +690,13 @@ export default function UserProfileClient({
           {profile.post_count != null && (
             <p className="text-sm text-gray-500 mt-1">{profile.post_count} Posts</p>
           )}
+
+          {/* Social icons — directly below name */}
+          <SocialIconsRow
+            profile={profile}
+            isOwner={isOwner}
+            onEditClick={() => setShowSocialEdit(true)}
+          />
         </div>
       </div>
 
