@@ -63,8 +63,7 @@ function XIcon({ size = 18 }: { size?: number }) {
   );
 }
 
-// ── Cover Photo ──────────────────────────────────────────────────────────────
-// Uses React state for hover instead of Tailwind `group` to avoid nesting conflicts
+// ── Cover Photo ───────────────────────────────────────────────────────────────
 function CoverPhoto({
   profile, isOwner, pending, inputRef, onChange,
 }: {
@@ -82,7 +81,6 @@ function CoverPhoto({
       onMouseEnter={() => isOwner && setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >
-      {/* Image */}
       <div className="absolute inset-0 overflow-hidden">
         {profile.cover_url ? (
           <Image src={profile.cover_url} alt="Cover photo" fill className="object-cover" priority unoptimized />
@@ -93,12 +91,10 @@ function CoverPhoto({
 
       {isOwner && (
         <>
-          {/* Dim overlay — pointer-events:none so it doesn't block clicks */}
           <div
             className="absolute inset-0 transition-colors duration-200 pointer-events-none"
             style={{ backgroundColor: hovered ? "rgba(0,0,0,0.3)" : "transparent" }}
           />
-          {/* Upload button */}
           <div
             className="absolute bottom-3 right-3 z-10 flex items-center gap-2 transition-opacity duration-200"
             style={{ opacity: hovered ? 1 : 0 }}
@@ -120,8 +116,7 @@ function CoverPhoto({
   );
 }
 
-// ── Avatar Photo ─────────────────────────────────────────────────────────────
-// Uses React state for hover — avoids CSS group conflicts when nested inside cover
+// ── Avatar Photo ──────────────────────────────────────────────────────────────
 function AvatarPhoto({
   profile, isOwner, pending, inputRef, onChange,
 }: {
@@ -139,17 +134,9 @@ function AvatarPhoto({
       onMouseEnter={() => isOwner && setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >
-      {/* Avatar */}
       <div className="w-28 h-28 md:w-36 md:h-36 rounded-2xl border-4 border-white bg-white shadow-xl overflow-hidden">
         {profile.avatar_url ? (
-          <Image
-            src={profile.avatar_url}
-            alt={profile.username}
-            width={144}
-            height={144}
-            className="object-cover w-full h-full"
-            unoptimized
-          />
+          <Image src={profile.avatar_url} alt={profile.username} width={144} height={144} className="object-cover w-full h-full" unoptimized />
         ) : (
           <div className="w-full h-full flex items-center justify-center bg-stone-800">
             <span className="text-4xl font-bold text-amber-400 uppercase tracking-widest">
@@ -161,7 +148,6 @@ function AvatarPhoto({
 
       {isOwner && (
         <>
-          {/* Overlay with camera button */}
           <div
             className="absolute inset-0 rounded-2xl flex items-center justify-center transition-colors duration-200"
             style={{ backgroundColor: hovered ? "rgba(0,0,0,0.42)" : "transparent" }}
@@ -176,15 +162,12 @@ function AvatarPhoto({
               {pending ? <Loader2 size={18} className="animate-spin" /> : <Camera size={18} />}
             </button>
           </div>
-
-          {/* Size hint */}
           <div
             className="absolute -bottom-7 left-1/2 -translate-x-1/2 pointer-events-none transition-opacity duration-200 whitespace-nowrap"
             style={{ opacity: hovered ? 1 : 0 }}
           >
             <UploadHint label="1 : 1  ·  400 × 400 px" />
           </div>
-
           <input ref={inputRef} type="file" accept="image/*" className="hidden" onChange={onChange} />
         </>
       )}
@@ -216,9 +199,9 @@ function SocialLinksModal({
   }
 
   const fields = [
-    { label: "YouTube",    icon: <YoutubeIcon size={16} />,   color: "text-red-500",  value: youtube,   setValue: setYoutube,   placeholder: "https://youtube.com/@yourchannel" },
-    { label: "Instagram",  icon: <InstagramIcon size={16} />, color: "text-pink-500", value: instagram, setValue: setInstagram, placeholder: "https://instagram.com/yourusername" },
-    { label: "X / Twitter",icon: <XIcon size={16} />,        color: "text-gray-800", value: x,         setValue: setX,        placeholder: "https://x.com/yourusername" },
+    { label: "YouTube",     icon: <YoutubeIcon size={16} />,   color: "text-red-500",  value: youtube,   setValue: setYoutube,   placeholder: "https://youtube.com/@yourchannel" },
+    { label: "Instagram",   icon: <InstagramIcon size={16} />, color: "text-pink-500", value: instagram, setValue: setInstagram, placeholder: "https://instagram.com/yourusername" },
+    { label: "X / Twitter", icon: <XIcon size={16} />,         color: "text-gray-800", value: x,         setValue: setX,         placeholder: "https://x.com/yourusername" },
   ];
 
   return (
@@ -233,7 +216,6 @@ function SocialLinksModal({
             <X size={16} />
           </button>
         </div>
-
         <div className="px-5 py-5 flex flex-col gap-4">
           {fields.map(({ label, icon, color, value, setValue, placeholder }) => (
             <div key={label}>
@@ -259,7 +241,6 @@ function SocialLinksModal({
             </div>
           ))}
         </div>
-
         <div className="px-5 pb-5 flex justify-end gap-2">
           <button onClick={onClose} className="text-sm text-gray-500 hover:text-gray-800 px-4 py-2 rounded-xl hover:bg-gray-100 transition-colors">
             Cancel
@@ -278,7 +259,7 @@ function SocialLinksModal({
   );
 }
 
-// ── Social Icons Row ─────────────────────────────────────────────────────────
+// ── Social Icons Row ──────────────────────────────────────────────────────────
 function SocialIconsRow({
   profile, isOwner, onEditClick,
 }: {
@@ -286,9 +267,8 @@ function SocialIconsRow({
   isOwner: boolean;
   onEditClick: () => void;
 }) {
-  const hasAnyLink = profile.youtube_url || profile.instagram_url || profile.x_url;
+  const hasAnyLink = !!(profile.youtube_url || profile.instagram_url || profile.x_url);
 
-  // Visitors: nothing to show if no links set
   if (!isOwner && !hasAnyLink) return null;
 
   const icons = [
@@ -302,41 +282,25 @@ function SocialIconsRow({
       {icons.map(({ key, url, icon, label, activeClass }) => {
         if (url) {
           return (
-            <a
-              key={key}
-              href={url}
-              target="_blank"
-              rel="noopener noreferrer"
-              title={`Visit ${label}`}
-              className={`flex items-center justify-center w-9 h-9 rounded-xl border border-gray-100 bg-white shadow-sm transition-all duration-150 ${activeClass}`}
-            >
+            <a key={key} href={url} target="_blank" rel="noopener noreferrer" title={`Visit ${label}`}
+              className={`flex items-center justify-center w-9 h-9 rounded-xl border border-gray-100 bg-white shadow-sm transition-all duration-150 ${activeClass}`}>
               {icon}
             </a>
           );
         }
-        // Owner only — dashed placeholder to add link
         if (isOwner) {
           return (
-            <button
-              key={key}
-              onClick={onEditClick}
-              title={`Add ${label} link`}
-              className="flex items-center justify-center w-9 h-9 rounded-xl border border-dashed border-gray-200 bg-white text-gray-300 hover:border-amber-400 hover:text-amber-400 transition-all duration-150"
-            >
+            <button key={key} onClick={onEditClick} title={`Add ${label} link`}
+              className="flex items-center justify-center w-9 h-9 rounded-xl border border-dashed border-gray-200 bg-white text-gray-300 hover:border-amber-400 hover:text-amber-400 transition-all duration-150">
               {icon}
             </button>
           );
         }
         return null;
       })}
-
-      {/* Edit pencil when at least one link exists */}
       {isOwner && hasAnyLink && (
-        <button
-          onClick={onEditClick}
-          title="Edit social links"
-          className="flex items-center justify-center w-9 h-9 rounded-xl border border-gray-100 bg-white text-gray-400 shadow-sm hover:text-gray-700 hover:bg-gray-50 transition-all duration-150"
-        >
+        <button onClick={onEditClick} title="Edit social links"
+          className="flex items-center justify-center w-9 h-9 rounded-xl border border-gray-100 bg-white text-gray-400 shadow-sm hover:text-gray-700 hover:bg-gray-50 transition-all duration-150">
           <Pencil size={14} />
         </button>
       )}
@@ -344,7 +308,7 @@ function SocialIconsRow({
   );
 }
 
-// ── Share Modal ──────────────────────────────────────────────────────────────
+// ── Share Modal ───────────────────────────────────────────────────────────────
 function ShareModal({ profile, onClose }: { profile: Profile; onClose: () => void }) {
   const [copied, setCopied] = useState(false);
   const profileUrl = typeof window !== "undefined" ? window.location.href : "";
@@ -433,45 +397,15 @@ function ShareModal({ profile, onClose }: { profile: Profile; onClose: () => voi
   );
 }
 
-// ── Become a Member Banner ───────────────────────────────────────────────────
-function BecomeMemberSection({ profile }: { profile: Profile }) {
-  return (
-    <div className="max-w-2xl mx-auto px-4 mt-6">
-      <div className="bg-gradient-to-br from-stone-800 to-stone-900 rounded-2xl overflow-hidden shadow-lg">
-        <div className="px-6 py-5 flex flex-col sm:flex-row items-center gap-4 justify-between">
-          <div className="text-center sm:text-left">
-            <h3 className="text-white font-bold text-base">Support {profile.full_name ?? profile.username}</h3>
-            <p className="text-stone-400 text-sm mt-0.5">Become a member to get exclusive access and support their work.</p>
-          </div>
-          <button className="flex-shrink-0 bg-amber-500 hover:bg-amber-400 text-stone-900 font-semibold text-sm px-6 py-2.5 rounded-xl transition-colors shadow-md">
-            Become a member
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ── Home Tab ─────────────────────────────────────────────────────────────────
-function HomeTab({ profile }: { profile: Profile }) {
+// ── Products Tab ──────────────────────────────────────────────────────────────
+function ProductsTab({ profile }: { profile: Profile }) {
   return (
     <div className="max-w-2xl mx-auto px-4 py-8">
       {profile.bio && (
         <p className="text-gray-600 text-center text-sm leading-relaxed mb-6">{profile.bio}</p>
       )}
-      <div className="grid gap-4">
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm px-6 py-5 flex items-center gap-4">
-          <div className="w-10 h-10 rounded-xl bg-amber-50 flex items-center justify-center flex-shrink-0">
-            <span className="text-amber-600 font-bold text-sm">{profile.post_count ?? 0}</span>
-          </div>
-          <div>
-            <p className="text-sm font-semibold text-gray-900">Posts</p>
-            <p className="text-xs text-gray-500">Total posts published</p>
-          </div>
-        </div>
-        <div className="bg-white rounded-2xl border border-dashed border-gray-200 px-6 py-10 text-center">
-          <p className="text-gray-400 text-sm">Posts will appear here.</p>
-        </div>
+      <div className="bg-white rounded-2xl border border-dashed border-gray-200 px-6 py-16 text-center">
+        <p className="text-gray-400 text-sm">No products yet.</p>
       </div>
     </div>
   );
@@ -509,10 +443,8 @@ function AboutTab({
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
           <h3 className="text-sm font-semibold text-gray-700">About</h3>
           {isOwner && !editing && (
-            <button
-              onClick={() => setEditing(true)}
-              className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-900 hover:bg-gray-100 px-2.5 py-1.5 rounded-lg transition-colors"
-            >
+            <button onClick={() => setEditing(true)}
+              className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-900 hover:bg-gray-100 px-2.5 py-1.5 rounded-lg transition-colors">
               <Pencil size={13} /> Edit
             </button>
           )}
@@ -524,11 +456,8 @@ function AboutTab({
               >
                 Cancel
               </button>
-              <button
-                onClick={handleSave}
-                disabled={saving}
-                className="flex items-center gap-1.5 text-xs bg-gray-900 text-white px-3 py-1.5 rounded-lg hover:bg-gray-700 transition-colors disabled:opacity-60"
-              >
+              <button onClick={handleSave} disabled={saving}
+                className="flex items-center gap-1.5 text-xs bg-gray-900 text-white px-3 py-1.5 rounded-lg hover:bg-gray-700 transition-colors disabled:opacity-60">
                 {saving && <Loader2 size={12} className="animate-spin" />}
                 {saving ? "Saving…" : "Save"}
               </button>
@@ -558,7 +487,7 @@ function AboutTab({
   );
 }
 
-// ── Main Component ───────────────────────────────────────────────────────────
+// ── Main Component ────────────────────────────────────────────────────────────
 export default function UserProfileClient({
   profile: initialProfile,
   isOwner,
@@ -570,7 +499,7 @@ export default function UserProfileClient({
   const [coverPending, setCoverPending] = useState(false);
   const [avatarPending, setAvatarPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<"home" | "about">("home");
+  const [activeTab, setActiveTab] = useState<"products" | "about">("products");
   const [showShare, setShowShare] = useState(false);
   const [showSocialEdit, setShowSocialEdit] = useState(false);
 
@@ -641,13 +570,13 @@ export default function UserProfileClient({
     }
   }
 
-  // ── About save ────────────────────────────────────────────────────────────
+  // ── About save ─────────────────────────────────────────────────────────────
   async function handleAboutSave(bio: string) {
     await supabase.from("profiles").update({ bio }).eq("username", profile.username);
     setProfile((p) => ({ ...p, bio }));
   }
 
-  // ── Social links save ─────────────────────────────────────────────────────
+  // ── Social links save ──────────────────────────────────────────────────────
   async function handleSocialSave(links: { youtube_url: string; instagram_url: string; x_url: string }) {
     const payload = {
       youtube_url:   links.youtube_url   || null,
@@ -670,7 +599,7 @@ export default function UserProfileClient({
         />
       )}
 
-      {/* ── Cover ─────────────────────────────────────────────────────────── */}
+      {/* Cover */}
       <CoverPhoto
         profile={profile}
         isOwner={isOwner}
@@ -679,7 +608,7 @@ export default function UserProfileClient({
         onChange={handleCoverChange}
       />
 
-      {/* ── Profile header ────────────────────────────────────────────────── */}
+      {/* Profile header */}
       <div className="max-w-2xl mx-auto px-4">
         <div className="flex items-end justify-between -mt-16 md:-mt-20 relative z-10">
           <div className="w-10" />
@@ -708,14 +637,11 @@ export default function UserProfileClient({
           </p>
         )}
 
-        {/* Name + post count + social icons */}
+        {/* Name + social icons */}
         <div className="mt-10 text-center">
           <h1 className="text-2xl md:text-3xl font-bold text-gray-900 tracking-tight">
             {profile.full_name ?? profile.username}
           </h1>
-          {profile.post_count != null && (
-            <p className="text-sm text-gray-500 mt-1">{profile.post_count} Posts</p>
-          )}
           <SocialIconsRow
             profile={profile}
             isOwner={isOwner}
@@ -724,12 +650,10 @@ export default function UserProfileClient({
         </div>
       </div>
 
-      <BecomeMemberSection profile={profile} />
-
-      {/* ── Tabs ──────────────────────────────────────────────────────────── */}
+      {/* Tabs */}
       <div className="max-w-2xl mx-auto px-4 mt-8">
         <div className="flex border-b border-gray-200">
-          {(["home", "about"] as const).map((tab) => (
+          {(["products", "about"] as const).map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
@@ -746,8 +670,9 @@ export default function UserProfileClient({
         </div>
       </div>
 
-      {activeTab === "home" ? (
-        <HomeTab profile={profile} />
+      {/* Tab content */}
+      {activeTab === "products" ? (
+        <ProductsTab profile={profile} />
       ) : (
         <AboutTab profile={profile} isOwner={isOwner} onSave={handleAboutSave} />
       )}
