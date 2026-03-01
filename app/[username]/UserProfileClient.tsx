@@ -2,8 +2,8 @@
 
 import { supabase } from "@/lib/supabase";
 import Image from "next/image";
-import { useRef, useState, useTransition } from "react";
-import { Camera, ImagePlus } from "lucide-react";
+import { useRef, useState } from "react";
+import { Camera, ImagePlus, Loader2 } from "lucide-react";
 
 interface Profile {
   username: string;
@@ -20,7 +20,8 @@ async function uploadImage(file: File, bucket: string, path: string): Promise<st
   if (error) throw error;
 
   const { data } = supabase.storage.from(bucket).getPublicUrl(path);
-  return data.publicUrl;
+  // Bust cache so new image shows immediately
+  return `${data.publicUrl}?t=${Date.now()}`;
 }
 
 function UploadHint({ label }: { label: string }) {
@@ -33,73 +34,91 @@ function UploadHint({ label }: { label: string }) {
 
 export default function UserProfileClient({ profile: initialProfile }: { profile: Profile }) {
   const [profile, setProfile] = useState<Profile>(initialProfile);
-  const [isPending, startTransition] = useTransition();
+  const [coverPending, setCoverPending] = useState(false);
+  const [avatarPending, setAvatarPending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const coverInputRef = useRef<HTMLInputElement>(null);
   const avatarInputRef = useRef<HTMLInputElement>(null);
 
-  function handleCoverChange(e: React.ChangeEvent<HTMLInputElement>) {
+  // ── Cover ──────────────────────────────────────────────────────────────────
+
+  async function handleCoverChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
+    e.target.value = ""; // reset so same file can be re-picked
 
-    startTransition(async () => {
-      try {
-        const ext = file.name.split(".").pop();
-        const url = await uploadImage(file, "covers", `${profile.username}/cover.${ext}`);
-        await supabase.from("profiles").update({ cover_url: url }).eq("username", profile.username);
-        setProfile((p) => ({ ...p, cover_url: url }));
-      } catch (err) {
-        console.error("Cover upload failed:", err);
-      }
-    });
+    setError(null);
+    setCoverPending(true);
+    try {
+      const ext = file.name.split(".").pop();
+      const url = await uploadImage(file, "covers", `${profile.username}/cover.${ext}`);
+      await supabase.from("profiles").update({ cover_url: url }).eq("username", profile.username);
+      setProfile((p) => ({ ...p, cover_url: url }));
+    } catch (err: any) {
+      setError(err?.message ?? "Cover upload failed");
+    } finally {
+      setCoverPending(false);
+    }
   }
 
-  function handleAvatarChange(e: React.ChangeEvent<HTMLInputElement>) {
+  // ── Avatar ─────────────────────────────────────────────────────────────────
+
+  async function handleAvatarChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
+    e.target.value = ""; // reset so same file can be re-picked
 
-    startTransition(async () => {
-      try {
-        const ext = file.name.split(".").pop();
-        const url = await uploadImage(file, "avatars", `${profile.username}/avatar.${ext}`);
-        await supabase.from("profiles").update({ avatar_url: url }).eq("username", profile.username);
-        setProfile((p) => ({ ...p, avatar_url: url }));
-      } catch (err) {
-        console.error("Avatar upload failed:", err);
-      }
-    });
+    setError(null);
+    setAvatarPending(true);
+    try {
+      const ext = file.name.split(".").pop();
+      const url = await uploadImage(file, "avatars", `${profile.username}/avatar.${ext}`);
+      await supabase.from("profiles").update({ avatar_url: url }).eq("username", profile.username);
+      setProfile((p) => ({ ...p, avatar_url: url }));
+    } catch (err: any) {
+      setError(err?.message ?? "Avatar upload failed");
+    } finally {
+      setAvatarPending(false);
+    }
   }
 
   return (
     <div className="min-h-screen bg-[#f4f4f0] font-serif">
 
       {/* ── Cover photo ─────────────────────────────────────────────────── */}
-      <div className="relative w-full h-56 md:h-72 bg-stone-300 overflow-hidden group">
-        {profile.cover_url ? (
-          <Image
-            src={profile.cover_url}
-            alt="Cover photo"
-            fill
-            className="object-cover"
-            priority
-          />
-        ) : (
-          <div className="absolute inset-0 bg-gray-800" />
-        )}
+      {/* NOTE: NO overflow-hidden here — moved it to inner div so button clicks aren't clipped */}
+      <div className="relative w-full h-56 md:h-72 bg-stone-300 group">
 
-        {/* Hover overlay */}
-        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors duration-200" />
+        {/* Image layer (overflow-hidden only on this inner div) */}
+        <div className="absolute inset-0 overflow-hidden">
+          {profile.cover_url ? (
+            <Image
+              src={profile.cover_url}
+              alt="Cover photo"
+              fill
+              className="object-cover"
+              priority
+              unoptimized
+            />
+          ) : (
+            <div className="absolute inset-0 bg-gray-800" />
+          )}
+        </div>
 
-        {/* Upload button + ratio hint */}
-        <div className="absolute bottom-3 right-3 flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+        {/* Dark overlay on hover */}
+        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors duration-200 pointer-events-none" />
+
+        {/* Upload button + ratio hint — z-10 ensures it's above everything */}
+        <div className="absolute bottom-3 right-3 z-10 flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
           <UploadHint label="16 : 5  ·  1600 × 500 px" />
           <button
             onClick={() => coverInputRef.current?.click()}
-            disabled={isPending}
-            className="flex items-center gap-1.5 bg-white/90 hover:bg-white text-gray-800 text-xs font-medium px-3 py-1.5 rounded-full shadow-md transition-colors disabled:opacity-50 cursor-pointer"
+            disabled={coverPending}
+            className="flex items-center gap-1.5 bg-white/90 hover:bg-white text-gray-800 text-xs font-medium px-3 py-1.5 rounded-full shadow-md transition-colors disabled:opacity-60 cursor-pointer"
           >
-            <ImagePlus size={14} />
-            {isPending ? "Uploading…" : "Change cover"}
+            {coverPending ? <Loader2 size={14} className="animate-spin" /> : <ImagePlus size={14} />}
+            {coverPending ? "Uploading…" : "Change cover"}
           </button>
         </div>
 
@@ -126,6 +145,7 @@ export default function UserProfileClient({ profile: initialProfile }: { profile
                   width={144}
                   height={144}
                   className="object-cover w-full h-full"
+                  unoptimized
                 />
               ) : (
                 <div className="w-full h-full flex items-center justify-center bg-stone-800">
@@ -136,19 +156,22 @@ export default function UserProfileClient({ profile: initialProfile }: { profile
               )}
             </div>
 
-            {/* Camera button overlay */}
+            {/* Camera overlay */}
             <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors duration-200 rounded-2xl flex items-center justify-center">
               <button
                 onClick={() => avatarInputRef.current?.click()}
-                disabled={isPending}
-                className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-white/90 hover:bg-white text-gray-800 p-2 rounded-full shadow-md disabled:opacity-50 cursor-pointer"
+                disabled={avatarPending}
+                className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-white/90 hover:bg-white text-gray-800 p-2 rounded-full shadow-md disabled:opacity-60 cursor-pointer"
                 title="Upload profile photo"
               >
-                <Camera size={18} />
+                {avatarPending
+                  ? <Loader2 size={18} className="animate-spin" />
+                  : <Camera size={18} />
+                }
               </button>
             </div>
 
-            {/* Ratio hint below avatar */}
+            {/* Ratio hint */}
             <div className="absolute -bottom-7 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none">
               <UploadHint label="1 : 1  ·  400 × 400 px" />
             </div>
@@ -162,6 +185,13 @@ export default function UserProfileClient({ profile: initialProfile }: { profile
             />
           </div>
         </div>
+
+        {/* Error banner */}
+        {error && (
+          <p className="text-red-500 text-sm text-center mt-4 bg-red-50 border border-red-200 rounded-lg py-2 px-4">
+            ⚠️ {error}
+          </p>
+        )}
 
         <div className="mt-10 text-center">
           <h1 className="text-2xl md:text-3xl font-bold text-gray-900 tracking-tight">
