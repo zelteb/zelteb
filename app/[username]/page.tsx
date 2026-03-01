@@ -1,5 +1,13 @@
-import { supabase } from "@/lib/supabase";
+import { createClient } from "@supabase/supabase-js";
 import UserProfileClient from "./UserProfileClient";
+
+// Fresh client per-request (no cache) so new columns are always returned
+const supabaseServer = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+);
+
+export const revalidate = 0; // Never cache this page
 
 export default async function UserPage({
   params,
@@ -9,8 +17,12 @@ export default async function UserPage({
   const { username } = await params;
 
   const [{ data: profile }, { data: { user } }] = await Promise.all([
-    supabase.from("profiles").select("*").ilike("username", username).maybeSingle(),
-    supabase.auth.getUser(),
+    supabaseServer
+      .from("profiles")
+      .select("username, full_name, avatar_url, cover_url, bio, post_count, youtube_url, instagram_url, x_url")
+      .ilike("username", username)
+      .maybeSingle(),
+    supabaseServer.auth.getUser(),
   ]);
 
   if (!profile) {
