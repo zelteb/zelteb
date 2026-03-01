@@ -63,11 +63,138 @@ function XIcon({ size = 18 }: { size?: number }) {
   );
 }
 
-// ── Social Links Modal (owner edit) ─────────────────────────────────────────
+// ── Cover Photo ──────────────────────────────────────────────────────────────
+// Uses React state for hover instead of Tailwind `group` to avoid nesting conflicts
+function CoverPhoto({
+  profile, isOwner, pending, inputRef, onChange,
+}: {
+  profile: Profile;
+  isOwner: boolean;
+  pending: boolean;
+  inputRef: React.RefObject<HTMLInputElement | null>;
+  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+}) {
+  const [hovered, setHovered] = useState(false);
+
+  return (
+    <div
+      className="relative w-full h-56 md:h-72 bg-stone-300"
+      onMouseEnter={() => isOwner && setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+    >
+      {/* Image */}
+      <div className="absolute inset-0 overflow-hidden">
+        {profile.cover_url ? (
+          <Image src={profile.cover_url} alt="Cover photo" fill className="object-cover" priority unoptimized />
+        ) : (
+          <div className="absolute inset-0 bg-gray-800" />
+        )}
+      </div>
+
+      {isOwner && (
+        <>
+          {/* Dim overlay — pointer-events:none so it doesn't block clicks */}
+          <div
+            className="absolute inset-0 transition-colors duration-200 pointer-events-none"
+            style={{ backgroundColor: hovered ? "rgba(0,0,0,0.3)" : "transparent" }}
+          />
+          {/* Upload button */}
+          <div
+            className="absolute bottom-3 right-3 z-10 flex items-center gap-2 transition-opacity duration-200"
+            style={{ opacity: hovered ? 1 : 0 }}
+          >
+            <UploadHint label="16 : 5  ·  1600 × 500 px" />
+            <button
+              onClick={() => inputRef.current?.click()}
+              disabled={pending}
+              className="flex items-center gap-1.5 bg-white/90 hover:bg-white text-gray-800 text-xs font-medium px-3 py-1.5 rounded-full shadow-md transition-colors disabled:opacity-60 cursor-pointer"
+            >
+              {pending ? <Loader2 size={14} className="animate-spin" /> : <ImagePlus size={14} />}
+              {pending ? "Uploading…" : "Change cover"}
+            </button>
+          </div>
+          <input ref={inputRef} type="file" accept="image/*" className="hidden" onChange={onChange} />
+        </>
+      )}
+    </div>
+  );
+}
+
+// ── Avatar Photo ─────────────────────────────────────────────────────────────
+// Uses React state for hover — avoids CSS group conflicts when nested inside cover
+function AvatarPhoto({
+  profile, isOwner, pending, inputRef, onChange,
+}: {
+  profile: Profile;
+  isOwner: boolean;
+  pending: boolean;
+  inputRef: React.RefObject<HTMLInputElement | null>;
+  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+}) {
+  const [hovered, setHovered] = useState(false);
+
+  return (
+    <div
+      className="relative"
+      onMouseEnter={() => isOwner && setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+    >
+      {/* Avatar */}
+      <div className="w-28 h-28 md:w-36 md:h-36 rounded-2xl border-4 border-white bg-white shadow-xl overflow-hidden">
+        {profile.avatar_url ? (
+          <Image
+            src={profile.avatar_url}
+            alt={profile.username}
+            width={144}
+            height={144}
+            className="object-cover w-full h-full"
+            unoptimized
+          />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center bg-stone-800">
+            <span className="text-4xl font-bold text-amber-400 uppercase tracking-widest">
+              {profile.username?.charAt(0) ?? "?"}
+            </span>
+          </div>
+        )}
+      </div>
+
+      {isOwner && (
+        <>
+          {/* Overlay with camera button */}
+          <div
+            className="absolute inset-0 rounded-2xl flex items-center justify-center transition-colors duration-200"
+            style={{ backgroundColor: hovered ? "rgba(0,0,0,0.42)" : "transparent" }}
+          >
+            <button
+              onClick={() => inputRef.current?.click()}
+              disabled={pending}
+              title="Upload profile photo"
+              className="bg-white/90 hover:bg-white text-gray-800 p-2 rounded-full shadow-md disabled:opacity-60 cursor-pointer transition-opacity duration-200"
+              style={{ opacity: hovered ? 1 : 0 }}
+            >
+              {pending ? <Loader2 size={18} className="animate-spin" /> : <Camera size={18} />}
+            </button>
+          </div>
+
+          {/* Size hint */}
+          <div
+            className="absolute -bottom-7 left-1/2 -translate-x-1/2 pointer-events-none transition-opacity duration-200 whitespace-nowrap"
+            style={{ opacity: hovered ? 1 : 0 }}
+          >
+            <UploadHint label="1 : 1  ·  400 × 400 px" />
+          </div>
+
+          <input ref={inputRef} type="file" accept="image/*" className="hidden" onChange={onChange} />
+        </>
+      )}
+    </div>
+  );
+}
+
+// ── Social Links Modal ────────────────────────────────────────────────────────
 function SocialLinksModal({
-  profile,
-  onClose,
-  onSave,
+  profile, onClose, onSave,
 }: {
   profile: Profile;
   onClose: () => void;
@@ -89,30 +216,9 @@ function SocialLinksModal({
   }
 
   const fields = [
-    {
-      label: "YouTube",
-      icon: <YoutubeIcon size={16} />,
-      color: "text-red-500",
-      value: youtube,
-      setValue: setYoutube,
-      placeholder: "https://youtube.com/@yourchannel",
-    },
-    {
-      label: "Instagram",
-      icon: <InstagramIcon size={16} />,
-      color: "text-pink-500",
-      value: instagram,
-      setValue: setInstagram,
-      placeholder: "https://instagram.com/yourusername",
-    },
-    {
-      label: "X / Twitter",
-      icon: <XIcon size={16} />,
-      color: "text-gray-800",
-      value: x,
-      setValue: setX,
-      placeholder: "https://x.com/yourusername",
-    },
+    { label: "YouTube",    icon: <YoutubeIcon size={16} />,   color: "text-red-500",  value: youtube,   setValue: setYoutube,   placeholder: "https://youtube.com/@yourchannel" },
+    { label: "Instagram",  icon: <InstagramIcon size={16} />, color: "text-pink-500", value: instagram, setValue: setInstagram, placeholder: "https://instagram.com/yourusername" },
+    { label: "X / Twitter",icon: <XIcon size={16} />,        color: "text-gray-800", value: x,         setValue: setX,        placeholder: "https://x.com/yourusername" },
   ];
 
   return (
@@ -127,6 +233,7 @@ function SocialLinksModal({
             <X size={16} />
           </button>
         </div>
+
         <div className="px-5 py-5 flex flex-col gap-4">
           {fields.map(({ label, icon, color, value, setValue, placeholder }) => (
             <div key={label}>
@@ -144,7 +251,7 @@ function SocialLinksModal({
                   className="flex-1 text-sm text-gray-800 bg-transparent outline-none placeholder:text-gray-300"
                 />
                 {value && (
-                  <button onClick={() => setValue("")} className="text-gray-400 hover:text-gray-600">
+                  <button onClick={() => setValue("")} className="text-gray-400 hover:text-gray-600 flex-shrink-0">
                     <X size={12} />
                   </button>
                 )}
@@ -152,11 +259,9 @@ function SocialLinksModal({
             </div>
           ))}
         </div>
+
         <div className="px-5 pb-5 flex justify-end gap-2">
-          <button
-            onClick={onClose}
-            className="text-sm text-gray-500 hover:text-gray-800 px-4 py-2 rounded-xl hover:bg-gray-100 transition-colors"
-          >
+          <button onClick={onClose} className="text-sm text-gray-500 hover:text-gray-800 px-4 py-2 rounded-xl hover:bg-gray-100 transition-colors">
             Cancel
           </button>
           <button
@@ -175,50 +280,26 @@ function SocialLinksModal({
 
 // ── Social Icons Row ─────────────────────────────────────────────────────────
 function SocialIconsRow({
-  profile,
-  isOwner,
-  onEditClick,
+  profile, isOwner, onEditClick,
 }: {
   profile: Profile;
   isOwner: boolean;
   onEditClick: () => void;
 }) {
-  const icons = [
-    {
-      key: "youtube",
-      url: profile.youtube_url,
-      icon: <YoutubeIcon size={19} />,
-      label: "YouTube",
-      hoverClass: "hover:text-red-500 hover:bg-red-50 hover:border-red-100",
-      emptyClass: "text-gray-300",
-    },
-    {
-      key: "instagram",
-      url: profile.instagram_url,
-      icon: <InstagramIcon size={19} />,
-      label: "Instagram",
-      hoverClass: "hover:text-pink-500 hover:bg-pink-50 hover:border-pink-100",
-      emptyClass: "text-gray-300",
-    },
-    {
-      key: "x",
-      url: profile.x_url,
-      icon: <XIcon size={19} />,
-      label: "X",
-      hoverClass: "hover:text-gray-900 hover:bg-gray-100 hover:border-gray-200",
-      emptyClass: "text-gray-300",
-    },
-  ];
-
-  // If owner and no social links exist at all, show a subtle "add links" prompt
   const hasAnyLink = profile.youtube_url || profile.instagram_url || profile.x_url;
 
-  return (
-    <div className="flex items-center justify-center gap-2 mt-2">
-      {icons.map(({ key, url, icon, label, hoverClass, emptyClass }) => {
-        // Visitor sees nothing for empty links
-        if (!url && !isOwner) return null;
+  // Visitors: nothing to show if no links set
+  if (!isOwner && !hasAnyLink) return null;
 
+  const icons = [
+    { key: "youtube",   url: profile.youtube_url,   icon: <YoutubeIcon size={19} />,   label: "YouTube",   activeClass: "text-red-500  hover:bg-red-50  hover:border-red-100"  },
+    { key: "instagram", url: profile.instagram_url, icon: <InstagramIcon size={19} />, label: "Instagram", activeClass: "text-pink-500 hover:bg-pink-50 hover:border-pink-100" },
+    { key: "x",         url: profile.x_url,         icon: <XIcon size={19} />,         label: "X",         activeClass: "text-gray-800 hover:bg-gray-100 hover:border-gray-200" },
+  ];
+
+  return (
+    <div className="flex items-center justify-center gap-2 mt-3">
+      {icons.map(({ key, url, icon, label, activeClass }) => {
         if (url) {
           return (
             <a
@@ -226,28 +307,30 @@ function SocialIconsRow({
               href={url}
               target="_blank"
               rel="noopener noreferrer"
-              title={label}
-              className={`flex items-center justify-center w-9 h-9 rounded-xl border border-gray-100 bg-white text-gray-500 shadow-sm transition-all duration-150 ${hoverClass}`}
+              title={`Visit ${label}`}
+              className={`flex items-center justify-center w-9 h-9 rounded-xl border border-gray-100 bg-white shadow-sm transition-all duration-150 ${activeClass}`}
             >
               {icon}
             </a>
           );
         }
-
-        // Owner only: grayed-out placeholder that opens editor on click
-        return (
-          <button
-            key={key}
-            onClick={onEditClick}
-            title={`Add ${label} link`}
-            className={`flex items-center justify-center w-9 h-9 rounded-xl border border-dashed border-gray-200 bg-white ${emptyClass} transition-all duration-150 hover:border-amber-400 hover:text-amber-400`}
-          >
-            {icon}
-          </button>
-        );
+        // Owner only — dashed placeholder to add link
+        if (isOwner) {
+          return (
+            <button
+              key={key}
+              onClick={onEditClick}
+              title={`Add ${label} link`}
+              className="flex items-center justify-center w-9 h-9 rounded-xl border border-dashed border-gray-200 bg-white text-gray-300 hover:border-amber-400 hover:text-amber-400 transition-all duration-150"
+            >
+              {icon}
+            </button>
+          );
+        }
+        return null;
       })}
 
-      {/* Edit pencil — only shown to owner when at least one link exists */}
+      {/* Edit pencil when at least one link exists */}
       {isOwner && hasAnyLink && (
         <button
           onClick={onEditClick}
@@ -274,20 +357,17 @@ function ShareModal({ profile, onClose }: { profile: Profile; onClose: () => voi
 
   const shareLinks = [
     {
-      label: "Twitter / X",
-      icon: Twitter,
+      label: "Twitter / X", icon: Twitter,
       href: `https://twitter.com/intent/tweet?url=${encodeURIComponent(profileUrl)}&text=Check out ${profile.full_name ?? profile.username}!`,
       color: "hover:bg-sky-50 hover:text-sky-600 hover:border-sky-200",
     },
     {
-      label: "Facebook",
-      icon: Facebook,
+      label: "Facebook", icon: Facebook,
       href: `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(profileUrl)}`,
       color: "hover:bg-blue-50 hover:text-blue-600 hover:border-blue-200",
     },
     {
-      label: "Email",
-      icon: Mail,
+      label: "Email", icon: Mail,
       href: `mailto:?subject=Check out ${profile.full_name ?? profile.username}&body=${encodeURIComponent(profileUrl)}`,
       color: "hover:bg-amber-50 hover:text-amber-600 hover:border-amber-200",
     },
@@ -399,9 +479,7 @@ function HomeTab({ profile }: { profile: Profile }) {
 
 // ── About Tab ─────────────────────────────────────────────────────────────────
 function AboutTab({
-  profile,
-  isOwner,
-  onSave,
+  profile, isOwner, onSave,
 }: {
   profile: Profile;
   isOwner: boolean;
@@ -425,11 +503,6 @@ function AboutTab({
     }
   }
 
-  function handleCancel() {
-    setBio(profile.bio ?? "");
-    setEditing(false);
-  }
-
   return (
     <div className="max-w-2xl mx-auto px-4 py-8">
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
@@ -440,14 +513,13 @@ function AboutTab({
               onClick={() => setEditing(true)}
               className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-900 hover:bg-gray-100 px-2.5 py-1.5 rounded-lg transition-colors"
             >
-              <Pencil size={13} />
-              Edit
+              <Pencil size={13} /> Edit
             </button>
           )}
           {isOwner && editing && (
             <div className="flex items-center gap-2">
               <button
-                onClick={handleCancel}
+                onClick={() => { setBio(profile.bio ?? ""); setEditing(false); }}
                 className="text-xs text-gray-500 hover:text-gray-800 px-2.5 py-1.5 rounded-lg hover:bg-gray-100 transition-colors"
               >
                 Cancel
@@ -516,13 +588,13 @@ export default function UserProfileClient({
         const updated = payload.new as Profile;
         setProfile((p) => ({
           ...p,
-          avatar_url: updated.avatar_url ?? p.avatar_url,
-          cover_url: updated.cover_url ?? p.cover_url,
-          full_name: updated.full_name ?? p.full_name,
-          bio: updated.bio ?? p.bio,
-          youtube_url: updated.youtube_url ?? p.youtube_url,
-          instagram_url: updated.instagram_url ?? p.instagram_url,
-          x_url: updated.x_url ?? p.x_url,
+          avatar_url:    updated.avatar_url    ?? p.avatar_url,
+          cover_url:     updated.cover_url     ?? p.cover_url,
+          full_name:     updated.full_name     ?? p.full_name,
+          bio:           updated.bio           ?? p.bio,
+          youtube_url:   updated.youtube_url   !== undefined ? updated.youtube_url   : p.youtube_url,
+          instagram_url: updated.instagram_url !== undefined ? updated.instagram_url : p.instagram_url,
+          x_url:         updated.x_url         !== undefined ? updated.x_url         : p.x_url,
         }));
       })
       .subscribe();
@@ -578,9 +650,9 @@ export default function UserProfileClient({
   // ── Social links save ─────────────────────────────────────────────────────
   async function handleSocialSave(links: { youtube_url: string; instagram_url: string; x_url: string }) {
     const payload = {
-      youtube_url: links.youtube_url || null,
+      youtube_url:   links.youtube_url   || null,
       instagram_url: links.instagram_url || null,
-      x_url: links.x_url || null,
+      x_url:         links.x_url         || null,
     };
     await supabase.from("profiles").update(payload).eq("username", profile.username);
     setProfile((p) => ({ ...p, ...payload }));
@@ -598,80 +670,34 @@ export default function UserProfileClient({
         />
       )}
 
-      {/* ── Cover photo ───────────────────────────────────────────────────── */}
-      <div className={`relative w-full h-56 md:h-72 bg-stone-300 ${isOwner ? "group" : ""}`}>
-        <div className="absolute inset-0 overflow-hidden">
-          {profile.cover_url ? (
-            <Image src={profile.cover_url} alt="Cover photo" fill className="object-cover" priority unoptimized />
-          ) : (
-            <div className="absolute inset-0 bg-gray-800" />
-          )}
-        </div>
-        {isOwner && (
-          <>
-            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors duration-200 pointer-events-none" />
-            <div className="absolute bottom-3 right-3 z-10 flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-              <UploadHint label="16 : 5  ·  1600 × 500 px" />
-              <button
-                onClick={() => coverInputRef.current?.click()}
-                disabled={coverPending}
-                className="flex items-center gap-1.5 bg-white/90 hover:bg-white text-gray-800 text-xs font-medium px-3 py-1.5 rounded-full shadow-md transition-colors disabled:opacity-60 cursor-pointer"
-              >
-                {coverPending ? <Loader2 size={14} className="animate-spin" /> : <ImagePlus size={14} />}
-                {coverPending ? "Uploading…" : "Change cover"}
-              </button>
-            </div>
-            <input ref={coverInputRef} type="file" accept="image/*" className="hidden" onChange={handleCoverChange} />
-          </>
-        )}
-      </div>
+      {/* ── Cover ─────────────────────────────────────────────────────────── */}
+      <CoverPhoto
+        profile={profile}
+        isOwner={isOwner}
+        pending={coverPending}
+        inputRef={coverInputRef}
+        onChange={handleCoverChange}
+      />
 
-      {/* ── Profile section ───────────────────────────────────────────────── */}
+      {/* ── Profile header ────────────────────────────────────────────────── */}
       <div className="max-w-2xl mx-auto px-4">
         <div className="flex items-end justify-between -mt-16 md:-mt-20 relative z-10">
           <div className="w-10" />
 
-          {/* Avatar */}
-          <div className={`relative ${isOwner ? "group" : ""}`}>
-            <div className="w-28 h-28 md:w-36 md:h-36 rounded-2xl border-4 border-white bg-white shadow-xl overflow-hidden">
-              {profile.avatar_url ? (
-                <Image src={profile.avatar_url} alt={profile.username} width={144} height={144} className="object-cover w-full h-full" unoptimized />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center bg-stone-800">
-                  <span className="text-4xl font-bold text-amber-400 uppercase tracking-widest">
-                    {profile.username?.charAt(0) ?? "?"}
-                  </span>
-                </div>
-              )}
-            </div>
-            {isOwner && (
-              <>
-                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors duration-200 rounded-2xl flex items-center justify-center">
-                  <button
-                    onClick={() => avatarInputRef.current?.click()}
-                    disabled={avatarPending}
-                    className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-white/90 hover:bg-white text-gray-800 p-2 rounded-full shadow-md disabled:opacity-60 cursor-pointer"
-                    title="Upload profile photo"
-                  >
-                    {avatarPending ? <Loader2 size={18} className="animate-spin" /> : <Camera size={18} />}
-                  </button>
-                </div>
-                <div className="absolute -bottom-7 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none">
-                  <UploadHint label="1 : 1  ·  400 × 400 px" />
-                </div>
-                <input ref={avatarInputRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarChange} />
-              </>
-            )}
-          </div>
+          <AvatarPhoto
+            profile={profile}
+            isOwner={isOwner}
+            pending={avatarPending}
+            inputRef={avatarInputRef}
+            onChange={handleAvatarChange}
+          />
 
-          {/* Share button */}
           <div className="mb-1">
             <button
               onClick={() => setShowShare(true)}
               className="flex items-center gap-1.5 bg-white hover:bg-gray-50 text-gray-700 text-xs font-medium px-3 py-2 rounded-full shadow-md border border-gray-200 transition-colors"
             >
-              <Share2 size={13} />
-              Share
+              <Share2 size={13} /> Share
             </button>
           </div>
         </div>
@@ -682,7 +708,7 @@ export default function UserProfileClient({
           </p>
         )}
 
-        {/* Name, post count, social icons */}
+        {/* Name + post count + social icons */}
         <div className="mt-10 text-center">
           <h1 className="text-2xl md:text-3xl font-bold text-gray-900 tracking-tight">
             {profile.full_name ?? profile.username}
@@ -690,8 +716,6 @@ export default function UserProfileClient({
           {profile.post_count != null && (
             <p className="text-sm text-gray-500 mt-1">{profile.post_count} Posts</p>
           )}
-
-          {/* Social icons — directly below name */}
           <SocialIconsRow
             profile={profile}
             isOwner={isOwner}
@@ -700,7 +724,6 @@ export default function UserProfileClient({
         </div>
       </div>
 
-      {/* ── Become a member ───────────────────────────────────────────────── */}
       <BecomeMemberSection profile={profile} />
 
       {/* ── Tabs ──────────────────────────────────────────────────────────── */}
@@ -723,7 +746,6 @@ export default function UserProfileClient({
         </div>
       </div>
 
-      {/* ── Tab content ───────────────────────────────────────────────────── */}
       {activeTab === "home" ? (
         <HomeTab profile={profile} />
       ) : (
