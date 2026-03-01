@@ -55,18 +55,30 @@ export default function Dashboard() {
         setAvatarUrl(profile.avatar_url || null);
       }
 
-      // Load purchases where the video belongs to this creator
-      const { data: purchaseData } = await supabase
-        .from("purchases")
-        .select(`
-          id,
-          amount,
-          created_at,
-          videos!inner ( title, creator_id ),
-          buyer:profiles!purchases_buyer_id_fkey ( username, full_name, avatar_url )
-        `)
-        .eq("videos.creator_id", uid)
-        .order("created_at", { ascending: false });
+      // Step 1: get all video IDs that belong to this creator
+      const { data: myVideos } = await supabase
+        .from("videos")
+        .select("id")
+        .eq("creator_id", uid);
+
+      const videoIds = (myVideos || []).map((v: any) => v.id);
+
+      let purchaseData: any[] = [];
+      if (videoIds.length > 0) {
+        // Step 2: get purchases for those video IDs
+        const { data } = await supabase
+          .from("purchases")
+          .select(`
+            id,
+            amount,
+            created_at,
+            videos ( title, creator_id ),
+            buyer:profiles!buyer_id ( username, full_name, avatar_url )
+          `)
+          .in("video_id", videoIds)
+          .order("created_at", { ascending: false });
+        purchaseData = data || [];
+      }
 
       const rows = (purchaseData || []) as Purchase[];
       setPurchases(rows);

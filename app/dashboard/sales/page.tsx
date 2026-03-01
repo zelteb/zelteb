@@ -29,21 +29,31 @@ export default function Sales() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { setLoading(false); return; }
 
-      const { data, error } = await supabase
-        .from("purchases")
-        .select(`
-          id,
-          amount,
-          created_at,
-          videos!inner ( title, creator_id ),
-          buyer:profiles!purchases_buyer_id_fkey ( username, full_name, avatar_url )
-        `)
-        .eq("videos.creator_id", user.id)
-        .order("created_at", { ascending: false });
+      // Step 1: get all video IDs that belong to this creator
+      const { data: myVideos } = await supabase
+        .from("videos")
+        .select("id")
+        .eq("creator_id", user.id);
 
-      if (error) { console.error(error); setLoading(false); return; }
+      const videoIds = (myVideos || []).map((v: any) => v.id);
 
-      const rows = (data || []) as Purchase[];
+      let rows: Purchase[] = [];
+      if (videoIds.length > 0) {
+        const { data, error } = await supabase
+          .from("purchases")
+          .select(`
+            id,
+            amount,
+            created_at,
+            videos ( title, creator_id ),
+            buyer:profiles!buyer_id ( username, full_name, avatar_url )
+          `)
+          .in("video_id", videoIds)
+          .order("created_at", { ascending: false });
+
+        if (error) { console.error(error); setLoading(false); return; }
+        rows = (data || []) as Purchase[];
+      }
       setSales(rows);
 
       const revenue = rows.reduce((sum, s) => sum + s.amount, 0);
