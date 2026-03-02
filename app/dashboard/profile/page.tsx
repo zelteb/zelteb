@@ -245,7 +245,7 @@ export default function Profile() {
             value={fullName}
             onChange={(e) => setFullName(e.target.value)}
             className="w-full border rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-gray-200"
-            placeholder="Basil Biju"
+            placeholder="Eg: Basil Biju"
           />
           <p className="text-gray-400 text-xs mt-1">
             This is the name shown on your public profile page.
