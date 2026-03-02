@@ -171,6 +171,9 @@ export default function Dashboard() {
           </div>
         </div>
 
+        <p className="text-5xl font-black mb-2">₹{filteredTotal.toFixed(2)}</p>
+        <p className="text-sm text-gray-400 mb-6">You keep ₹{creatorTotal.toFixed(2)} after 7% platform fee</p>
+
         <div className="flex gap-6 text-sm text-gray-600">
           <div>₹{filteredTotal.toFixed(2)} Products</div>
         </div>
