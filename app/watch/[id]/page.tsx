@@ -77,23 +77,14 @@ export default function Watch({ params }: { params: Promise<{ id: string }> }) {
     if (!user) { alert("Please login"); setLoading(false); return; }
     if (owned) { setLoading(false); return; }
 
-    if (video.is_free) {
-      const { error } = await supabase
-        .from("purchases")
-        .insert({ buyer_id: user.id, video_id: video.id, amount: 0 });
-      if (error) { alert("Error: " + error.message); setLoading(false); return; }
-    } else {
-      const res = await fetch("/api/buy-video", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ video, buyer_id: user.id }),
-      });
-      if (!res.ok) {
-        const text = await res.text();
-        alert("Purchase failed: " + text);
-        setLoading(false);
-        return;
-      }
+    const { error } = await supabase
+      .from("purchases")
+      .insert({ buyer_id: user.id, video_id: video.id, amount: video.is_free ? 0 : video.price });
+
+    if (error) {
+      alert("Error: " + error.message);
+      setLoading(false);
+      return;
     }
 
     setOwned(true);
