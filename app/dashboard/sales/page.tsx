@@ -19,59 +19,66 @@ export default function Sales() {
   const [sales, setSales] = useState<Purchase[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const load = async () => {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user) {
-      setLoading(false);
-      return;
-    }
-
-    const { data: myVideos } = await supabase
-      .from("videos")
-      .select("id")
-      .eq("creator_id", user.id);
-
-    const videoIds = (myVideos || []).map((v: any) => v.id);
-
-    if (!videoIds.length) {
-      setSales([]);
-      setLoading(false);
-      return;
-    }
-
-    const { data } = await supabase
+  const loadSales = async (uid: string) => {
+    const { data, error } = await supabase
       .from("purchases")
       .select(`
         id,
         amount,
         created_at,
         videos ( title ),
-        buyer:profiles!buyer_id ( username, full_name, avatar_url )
+        buyer:profiles!buyer_id (
+          username,
+          full_name,
+          avatar_url
+        )
       `)
-      .in("video_id", videoIds)
+      .eq("creator_id", uid)
       .order("created_at", { ascending: false });
 
-    setSales((data || []) as Purchase[]);
+    if (!error) {
+      setSales((data as Purchase[]) || []);
+    }
+
     setLoading(false);
   };
 
   useEffect(() => {
-    load();
+    let channel: any;
 
-    const channel = supabase
-      .channel("sales-realtime")
-      .on(
-        "postgres_changes",
-        { event: "INSERT", schema: "public", table: "purchases" },
-        () => load()
-      )
-      .subscribe();
+    const init = async () => {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      if (!user) {
+        setLoading(false);
+        return;
+      }
+
+      await loadSales(user.id);
+
+      channel = supabase
+        .channel("creator-sales")
+        .on(
+          "postgres_changes",
+          {
+            event: "INSERT",
+            schema: "public",
+            table: "purchases",
+            filter: `creator_id=eq.${user.id}`,
+          },
+          () => {
+            loadSales(user.id);
+          }
+        )
+        .subscribe();
+    };
+
+    init();
 
     return () => {
-      supabase.removeChannel(channel);
+      if (channel) supabase.removeChannel(channel);
     };
   }, []);
 
@@ -83,14 +90,15 @@ export default function Sales() {
 
   return (
     <div className="min-h-screen bg-gray-50 text-gray-900 p-8 font-sans">
-      
       <h1 className="text-3xl font-semibold mb-8">Creator Earnings</h1>
 
-      {/* Stats Cards */}
+      {/* Stats */}
       <div className="grid md:grid-cols-3 gap-6 mb-10">
         <div className="bg-white p-6 rounded-2xl shadow-sm border">
           <p className="text-sm text-gray-500 mb-2">Total Revenue</p>
-          <p className="text-2xl font-semibold">₹{totalRevenue.toFixed(2)}</p>
+          <p className="text-2xl font-semibold">
+            ₹{totalRevenue.toFixed(2)}
+          </p>
         </div>
 
         <div className="bg-white p-6 rounded-2xl shadow-sm border">
@@ -116,6 +124,7 @@ export default function Sales() {
 
         {sales.map((s) => {
           const videoTitle = s.videos?.[0]?.title || "Untitled";
+
           const buyerName =
             s.buyer?.[0]?.full_name ||
             s.buyer?.[0]?.username ||
