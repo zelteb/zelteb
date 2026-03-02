@@ -7,6 +7,23 @@ import StarterKit from "@tiptap/starter-kit";
 import Underline from "@tiptap/extension-underline";
 import Link from "@tiptap/extension-link";
 import Image from "@tiptap/extension-image";
+import { 
+  Type, 
+  FileVideo, 
+  FileText, 
+  Upload as UploadIcon, 
+  Link as LinkIcon, 
+  Image as ImageIcon, 
+  RotateCcw, 
+  RotateCw, 
+  Bold, 
+  Italic, 
+  Underline as UnderlineIcon, 
+  Quote, 
+  CheckCircle2, 
+  X,
+  IndianRupee
+} from "lucide-react";
 
 export default function Upload() {
   const [title, setTitle] = useState("");
@@ -31,7 +48,11 @@ export default function Upload() {
       Image,
     ],
     content: "",
-    editorProps: { attributes: { class: "tiptap-editor" } },
+    editorProps: { 
+      attributes: { 
+        class: "prose prose-sm focus:outline-none min-h-[150px] p-4 font-sans leading-relaxed" 
+      } 
+    },
     onUpdate: ({ editor }) => {
       setDescriptionHtml(editor.getHTML());
     },
@@ -41,18 +62,6 @@ export default function Upload() {
     const f = e.target.files?.[0] || null;
     setThumb(f);
     if (f) setThumbPreview(URL.createObjectURL(f));
-  };
-
-  const addLink = () => {
-    const url = prompt("Enter URL:");
-    if (!url) return;
-    editor?.chain().focus().setLink({ href: url }).run();
-  };
-
-  const addImage = () => {
-    const url = prompt("Enter image URL:");
-    if (!url) return;
-    editor?.chain().focus().setImage({ src: url }).run();
   };
 
   const upload = async () => {
@@ -76,12 +85,10 @@ export default function Upload() {
       if (!tError && tData) thumbnailPath = tData.path;
     }
 
-    const description = editor?.getHTML() || "";
-
     const { error: dbError } = await supabase.from("videos").insert({
       creator_id: user.id,
       title,
-      description,
+      description: editor?.getHTML() || "",
       price: isFree ? 0 : Number(price),
       video_path: data.path,
       product_type: type,
@@ -99,328 +106,205 @@ export default function Upload() {
   };
 
   return (
-    <>
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
-        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    <div className="flex min-h-screen bg-slate-50 font-sans text-slate-900">
+      
+      {/* FORM AREA */}
+      <main className="flex-1 p-8 lg:p-12 overflow-y-auto">
+        <div className="max-w-2xl mx-auto space-y-10">
+          
+          <header>
+            <h1 className="text-3xl font-bold tracking-tight text-slate-900">Create Product</h1>
+            <p className="text-slate-500 mt-2">Fill in the details below to list your new digital asset.</p>
+          </header>
 
-        .page-layout { display: flex; min-height: 100vh; background: #f4f4f6; font-family: 'Inter', system-ui, sans-serif; color: #18181b; }
-
-        .up-wrap { flex: 1; padding: 48px 32px 48px 48px; overflow-y: auto; max-width: 700px; }
-        .up-inner { display: flex; flex-direction: column; gap: 12px; }
-        .up-header { margin-bottom: 8px; }
-        .up-header h1 { font-family: 'Inter', system-ui, sans-serif; font-size: 1.75rem; font-weight: 800; color: #18181b; letter-spacing: -0.03em; line-height: 1.2; }
-        .up-header p { font-size: 0.875rem; color: #71717a; margin-top: 4px; font-weight: 400; }
-        .up-card { background: #fff; border: 1px solid #e4e4e7; border-radius: 14px; overflow: hidden; }
-        .up-card-header { display: flex; align-items: center; gap: 10px; padding: 18px 24px; border-bottom: 1px solid #f0f0f2; user-select: none; }
-        .up-card-header svg { color: #a1a1aa; }
-        .up-card-header h2 { font-size: 0.9375rem; font-weight: 600; color: #18181b; flex: 1; font-family: 'Inter', system-ui, sans-serif; }
-        .up-card-header .required { color: #7c3aed; margin-left: 2px; }
-        .up-card-body { padding: 20px 24px; }
-        .up-label { display: block; font-size: 0.8125rem; font-weight: 500; color: #3f3f46; margin-bottom: 6px; font-family: 'Inter', system-ui, sans-serif; }
-        .up-label .req { color: #7c3aed; }
-        .up-input { width: 100%; background: #fafafa; border: 1px solid #e4e4e7; border-radius: 8px; padding: 10px 14px; font-size: 0.9rem; font-family: 'Inter', system-ui, sans-serif; color: #18181b; outline: none; transition: border-color 0.15s, box-shadow 0.15s; resize: vertical; }
-        .up-input::placeholder { color: #a1a1aa; }
-        .up-input:focus { border-color: #7c3aed; box-shadow: 0 0 0 3px rgba(124,58,237,0.08); }
-        .up-hint { font-size: 0.78rem; color: #a1a1aa; margin-top: 6px; font-weight: 400; font-family: 'Inter', system-ui, sans-serif; }
-        .up-editor-wrap { border: 1px solid #e4e4e7; border-radius: 8px; overflow: hidden; background: #fafafa; transition: border-color 0.15s, box-shadow 0.15s; }
-        .up-editor-wrap:focus-within { border-color: #7c3aed; box-shadow: 0 0 0 3px rgba(124,58,237,0.08); }
-        .up-toolbar { display: flex; align-items: center; gap: 2px; padding: 8px 10px; background: #18181b; flex-wrap: wrap; }
-        .up-toolbar-btn { background: none; border: none; color: #d4d4d8; cursor: pointer; width: 30px; height: 30px; border-radius: 5px; display: flex; align-items: center; justify-content: center; font-size: 0.85rem; font-weight: 600; transition: background 0.12s, color 0.12s; font-family: 'Inter', system-ui, sans-serif; }
-        .up-toolbar-btn:hover { background: #3f3f46; color: white; }
-        .up-toolbar-btn.active { background: #7c3aed; color: white; }
-        .up-toolbar-divider { width: 1px; height: 18px; background: #3f3f46; margin: 0 4px; flex-shrink: 0; }
-        .tiptap-editor { min-height: 140px; padding: 12px 14px; font-size: 0.9rem; font-family: 'DM Sans', sans-serif; color: #18181b; outline: none; line-height: 1.6; }
-        .tiptap-editor p { margin-bottom: 6px; }
-        .tiptap-editor strong { font-weight: 700; }
-        .tiptap-editor em { font-style: italic; }
-        .tiptap-editor u { text-decoration: underline; }
-        .tiptap-editor s { text-decoration: line-through; }
-        .tiptap-editor blockquote { border-left: 3px solid #7c3aed; padding-left: 12px; color: #71717a; margin: 8px 0; font-style: italic; }
-        .tiptap-editor a { color: #7c3aed; text-decoration: underline; }
-        .tiptap-editor img { max-width: 100%; border-radius: 6px; margin: 6px 0; }
-        .tiptap-editor ul { padding-left: 20px; margin: 6px 0; }
-        .tiptap-editor ol { padding-left: 20px; margin: 6px 0; }
-        .up-select-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        .up-select-card { border: 1.5px solid #e4e4e7; border-radius: 10px; padding: 14px 16px; cursor: pointer; transition: border-color 0.15s, background 0.15s; position: relative; background: #fafafa; }
-        .up-select-card.active { border-color: #7c3aed; background: #faf5ff; }
-        .up-select-card-title { font-size: 0.9rem; font-weight: 600; color: #18181b; margin-bottom: 3px; font-family: 'Inter', system-ui, sans-serif; }
-        .up-select-card-desc { font-size: 0.78rem; color: #71717a; font-weight: 400; line-height: 1.4; font-family: 'Inter', system-ui, sans-serif; }
-        .up-check-icon { position: absolute; top: 12px; right: 12px; width: 20px; height: 20px; border-radius: 50%; background: #7c3aed; display: flex; align-items: center; justify-content: center; }
-        .up-check-icon svg { width: 11px; height: 11px; stroke: white; stroke-width: 2.5; fill: none; }
-        .up-dropzone { border: 1.5px dashed #d4d4d8; border-radius: 10px; padding: 28px 20px; text-align: center; cursor: pointer; transition: border-color 0.15s, background 0.15s; background: #fafafa; }
-        .up-dropzone:hover { border-color: #7c3aed; background: #faf5ff; }
-        .up-dropzone-icon { width: 40px; height: 40px; border-radius: 50%; background: #f0f0f2; display: flex; align-items: center; justify-content: center; margin: 0 auto 10px; }
-        .up-dropzone p { font-size: 0.85rem; color: #71717a; font-weight: 400; font-family: 'Inter', system-ui, sans-serif; }
-        .up-dropzone a { color: #7c3aed; font-weight: 500; text-decoration: none; }
-        .up-dropzone-sub { font-size: 0.75rem; color: #a1a1aa; margin-top: 4px; font-family: 'Inter', system-ui, sans-serif; }
-        .up-file-chosen { display: flex; align-items: center; gap: 10px; background: #f4f4f6; border-radius: 8px; padding: 10px 14px; margin-top: 10px; font-size: 0.83rem; color: #3f3f46; font-family: 'Inter', system-ui, sans-serif; }
-        .up-file-chosen svg { color: #7c3aed; flex-shrink: 0; }
-        .up-price-input-wrap { margin-top: 14px; }
-        .up-price-symbol { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); font-size: 0.9rem; color: #71717a; pointer-events: none; font-family: 'Inter', system-ui, sans-serif; }
-        .up-price-input { padding-left: 24px; }
-        .up-thumb-preview { width: 100%; max-height: 200px; object-fit: cover; border-radius: 8px; margin-top: 12px; border: 1px solid #e4e4e7; }
-        .up-submit-row { display: flex; justify-content: flex-end; padding-top: 4px; }
-        .up-btn { background: #7c3aed; color: white; border: none; border-radius: 9px; padding: 11px 28px; font-size: 0.9rem; font-weight: 600; font-family: 'Inter', system-ui, sans-serif; cursor: pointer; transition: background 0.15s, transform 0.1s, box-shadow 0.15s; box-shadow: 0 2px 8px rgba(124,58,237,0.25); letter-spacing: 0.01em; }
-        .up-btn:hover:not(:disabled) { background: #6d28d9; box-shadow: 0 4px 16px rgba(124,58,237,0.35); transform: translateY(-1px); }
-        .up-btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
-        .up-spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid rgba(255,255,255,0.4); border-top-color: white; border-radius: 50%; animation: spin 0.7s linear infinite; margin-right: 8px; vertical-align: middle; }
-        @keyframes spin { to { transform: rotate(360deg); } }
-
-        /* PREVIEW PANEL */
-        .preview-panel { width: 360px; flex-shrink: 0; background: #fff; border-left: 1px solid #e4e4e7; position: sticky; top: 0; height: 100vh; overflow-y: auto; display: flex; flex-direction: column; }
-        .preview-header { padding: 16px 20px; border-bottom: 1px solid #f0f0f2; display: flex; align-items: center; justify-content: space-between; background: #fafafa; flex-shrink: 0; }
-        .preview-header h3 { font-size: 0.8125rem; font-weight: 600; color: #71717a; text-transform: uppercase; letter-spacing: 0.06em; font-family: 'Inter', system-ui, sans-serif; }
-        .preview-live-dot { display: flex; align-items: center; gap: 5px; font-size: 0.75rem; color: #22c55e; font-weight: 500; font-family: 'Inter', system-ui, sans-serif; }
-        .preview-live-dot::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: #22c55e; animation: pulse 1.5s ease-in-out infinite; }
-        @keyframes pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.5; transform: scale(0.8); } }
-        .preview-body { flex: 1; padding: 24px 20px; }
-        .pv-card { border: 1px solid #e4e4e7; border-radius: 16px; overflow: hidden; background: white; box-shadow: 0 4px 24px rgba(0,0,0,0.06); }
-        .pv-thumb { width: 100%; height: 180px; background: linear-gradient(135deg, #f4f4f6 0%, #e4e4e7 100%); display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden; }
-        .pv-thumb img { width: 100%; height: 100%; object-fit: cover; }
-        .pv-thumb-placeholder { display: flex; flex-direction: column; align-items: center; gap: 8px; color: #a1a1aa; }
-        .pv-thumb-placeholder span { font-size: 0.75rem; font-weight: 400; font-family: 'Inter', system-ui, sans-serif; }
-        .pv-type-badge { position: absolute; top: 10px; left: 10px; background: rgba(0,0,0,0.6); color: white; font-size: 0.7rem; font-weight: 600; padding: 3px 8px; border-radius: 20px; text-transform: uppercase; letter-spacing: 0.05em; backdrop-filter: blur(4px); font-family: 'Inter', system-ui, sans-serif; }
-        .pv-content { padding: 18px; }
-        .pv-title { font-family: 'Inter', system-ui, sans-serif; font-size: 1.1rem; font-weight: 700; color: #18181b; line-height: 1.3; margin-bottom: 8px; min-height: 1.5em; letter-spacing: -0.02em; }
-        .pv-title-placeholder { color: #d4d4d8; font-style: italic; font-weight: 400; }
-        .pv-description { font-size: 0.82rem; color: #71717a; line-height: 1.6; margin-bottom: 16px; font-weight: 400; font-family: 'Inter', system-ui, sans-serif; }
-        .pv-description p { margin-bottom: 4px; }
-        .pv-description strong { font-weight: 600; color: #3f3f46; }
-        .pv-description blockquote { border-left: 2px solid #7c3aed; padding-left: 8px; color: #a1a1aa; font-style: italic; margin: 4px 0; }
-        .pv-description a { color: #7c3aed; }
-        .pv-desc-placeholder { font-style: italic; color: #d4d4d8; }
-        .pv-divider { height: 1px; background: #f0f0f2; margin: 14px 0; }
-        .pv-price-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
-        .pv-price { font-size: 1.4rem; font-weight: 700; color: #18181b; font-family: 'Inter', system-ui, sans-serif; }
-        .pv-price.free { color: #16a34a; font-size: 1rem; font-weight: 600; background: #f0fdf4; padding: 4px 10px; border-radius: 20px; }
-        .pv-price-placeholder { color: #d4d4d8; font-size: 1rem; font-style: italic; font-family: 'Inter', system-ui, sans-serif; }
-        .pv-file-info { display: flex; align-items: center; gap: 6px; font-size: 0.75rem; color: #a1a1aa; margin-bottom: 14px; font-family: 'Inter', system-ui, sans-serif; }
-        .pv-buy-btn { width: 100%; padding: 12px; background: #18181b; color: white; border: none; border-radius: 10px; font-size: 0.9rem; font-weight: 600; font-family: 'Inter', system-ui, sans-serif; cursor: default; text-align: center; }
-        .pv-buy-btn.free-btn { background: #16a34a; }
-      `}</style>
-
-      <div className="page-layout">
-
-        {/* FORM */}
-        <div className="up-wrap">
-          <div className="up-inner">
-
-            <div className="up-header">
-              <h1>Define your product</h1>
-              <p>Add product info, pricing structure, thumbnail and images.</p>
-            </div>
-
-            {/* Details */}
-            <div className="up-card">
-              <div className="up-card-header">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-                <h2>Details</h2>
+          <section className="space-y-8">
+            
+            {/* General Info */}
+            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-6">
+              <div className="flex items-center gap-2 pb-4 border-b border-slate-100">
+                <Type size={20} className="text-indigo-600" />
+                <h2 className="font-semibold text-lg">Basic Information</h2>
               </div>
-              <div className="up-card-body">
-                <label className="up-label">Title <span className="req">*</span></label>
-                <input className="up-input" placeholder="Enter product title" value={title} onChange={(e) => setTitle(e.target.value)} />
-                <div style={{ height: 14 }} />
-                <label className="up-label">Description</label>
-                <div className="up-editor-wrap">
-                  <div className="up-toolbar">
-                    <button className={`up-toolbar-btn ${editor?.isActive("bold") ? "active" : ""}`} onMouseDown={(e) => { e.preventDefault(); editor?.chain().focus().toggleBold().run(); }} title="Bold"><strong>B</strong></button>
-                    <button className={`up-toolbar-btn ${editor?.isActive("italic") ? "active" : ""}`} onMouseDown={(e) => { e.preventDefault(); editor?.chain().focus().toggleItalic().run(); }} title="Italic"><em>I</em></button>
-                    <button className={`up-toolbar-btn ${editor?.isActive("underline") ? "active" : ""}`} onMouseDown={(e) => { e.preventDefault(); editor?.chain().focus().toggleUnderline().run(); }} title="Underline" style={{ textDecoration: "underline" }}>U</button>
-                    <button className={`up-toolbar-btn ${editor?.isActive("strike") ? "active" : ""}`} onMouseDown={(e) => { e.preventDefault(); editor?.chain().focus().toggleStrike().run(); }} title="Strikethrough" style={{ textDecoration: "line-through" }}>S</button>
-                    <div className="up-toolbar-divider" />
-                    <button className={`up-toolbar-btn ${editor?.isActive("blockquote") ? "active" : ""}`} onMouseDown={(e) => { e.preventDefault(); editor?.chain().focus().toggleBlockquote().run(); }} title="Quote">
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M3 21c3 0 7-1 7-8V5c0-1.25-.756-2.017-2-2H4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2 1 0 1 0 1 1v1c0 1-1 2-2 2s-1 .008-1 1.031V20c0 1 0 1 1 1z"/><path d="M15 21c3 0 7-1 7-8V5c0-1.25-.757-2.017-2-2h-4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2h.75c0 2.25.25 4-2.75 4v3c0 1 0 1 1 1z"/></svg>
-                    </button>
-                    <div className="up-toolbar-divider" />
-                    <button className={`up-toolbar-btn ${editor?.isActive("link") ? "active" : ""}`} onMouseDown={(e) => { e.preventDefault(); addLink(); }} title="Insert Link">
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
-                    </button>
-                    <button className="up-toolbar-btn" onMouseDown={(e) => { e.preventDefault(); addImage(); }} title="Insert Image">
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-                    </button>
-                    <div className="up-toolbar-divider" />
-                    <button className="up-toolbar-btn" onMouseDown={(e) => { e.preventDefault(); editor?.chain().focus().undo().run(); }} title="Undo">
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/></svg>
-                    </button>
-                    <button className="up-toolbar-btn" onMouseDown={(e) => { e.preventDefault(); editor?.chain().focus().redo().run(); }} title="Redo">
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 7v6h-6"/><path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3L21 13"/></svg>
-                    </button>
+              
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-slate-700">Product Title <span className="text-indigo-600">*</span></label>
+                <input 
+                  className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all outline-none" 
+                  placeholder="e.g. Cinematic Masterclass"
+                  value={title} 
+                  onChange={(e) => setTitle(e.target.value)} 
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-slate-700">Description</label>
+                <div className="border border-slate-200 rounded-lg overflow-hidden bg-white shadow-inner">
+                  <div className="bg-slate-900 flex items-center gap-1 p-1.5 flex-wrap">
+                    <ToolbarBtn active={editor?.isActive("bold")} onClick={() => editor?.chain().focus().toggleBold().run()} icon={<Bold size={16} />} />
+                    <ToolbarBtn active={editor?.isActive("italic")} onClick={() => editor?.chain().focus().toggleItalic().run()} icon={<Italic size={16} />} />
+                    <ToolbarBtn active={editor?.isActive("underline")} onClick={() => editor?.chain().focus().toggleUnderline().run()} icon={<UnderlineIcon size={16} />} />
+                    <div className="w-px h-4 bg-slate-700 mx-1" />
+                    <ToolbarBtn onClick={() => {
+                      const url = prompt("URL:");
+                      if (url) editor?.chain().focus().setLink({ href: url }).run();
+                    }} icon={<LinkIcon size={16} />} />
+                    <ToolbarBtn onClick={() => editor?.chain().focus().toggleBlockquote().run()} icon={<Quote size={16} />} />
+                    <div className="w-px h-4 bg-slate-700 mx-1" />
+                    <ToolbarBtn onClick={() => editor?.chain().focus().undo().run()} icon={<RotateCcw size={16} />} />
+                    <ToolbarBtn onClick={() => editor?.chain().focus().redo().run()} icon={<RotateCw size={16} />} />
                   </div>
                   <EditorContent editor={editor} />
                 </div>
-                <p className="up-hint">A clear description helps customers understand your product.</p>
               </div>
             </div>
 
-            {/* Product File */}
-            <div className="up-card">
-              <div className="up-card-header">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
-                <h2>Product file <span className="required">*</span></h2>
+            {/* File Upload */}
+            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-6">
+              <div className="flex items-center gap-2 pb-4 border-b border-slate-100">
+                <UploadIcon size={20} className="text-indigo-600" />
+                <h2 className="font-semibold text-lg">Product File</h2>
               </div>
-              <div className="up-card-body">
-                <div className="up-select-grid" style={{ marginBottom: 16 }}>
-                  <div className={`up-select-card ${type === "video" ? "active" : ""}`} onClick={() => { setType("video"); setFile(null); }}>
-                    {type === "video" && <span className="up-check-icon"><svg viewBox="0 0 12 12"><polyline points="2 6 5 9 10 3"/></svg></span>}
-                    <div className="up-select-card-title">Video</div>
-                    <div className="up-select-card-desc">Upload a video file for buyers</div>
-                  </div>
-                  <div className={`up-select-card ${type === "digital" ? "active" : ""}`} onClick={() => { setType("digital"); setFile(null); }}>
-                    {type === "digital" && <span className="up-check-icon"><svg viewBox="0 0 12 12"><polyline points="2 6 5 9 10 3"/></svg></span>}
-                    <div className="up-select-card-title">Digital Product</div>
-                    <div className="up-select-card-desc">PDF, ZIP, or any digital file</div>
-                  </div>
-                </div>
-                <div className="up-dropzone" onClick={() => fileInputRef.current?.click()}>
-                  <div className="up-dropzone-icon">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/></svg>
-                  </div>
-                  <p>Drag it here, or <a onClick={(e) => e.stopPropagation()}>click to browse</a></p>
-                  <p className="up-dropzone-sub">{type === "video" ? "MP4, MOV, AVI supported" : "PDF, ZIP, any file accepted"}</p>
-                  <input ref={fileInputRef} type="file" accept={type === "video" ? "video/*" : "*"} style={{ display: "none" }} onChange={(e) => setFile(e.target.files?.[0] || null)} />
-                </div>
-                {file && (
-                  <div className="up-file-chosen">
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-                    <span style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{file.name}</span>
-                    <button onClick={() => { setFile(null); if (fileInputRef.current) fileInputRef.current.value = ""; }} style={{ background: "none", border: "none", cursor: "pointer", padding: "2px", display: "flex", alignItems: "center", color: "#a1a1aa", flexShrink: 0, borderRadius: "4px" }} onMouseEnter={e => (e.currentTarget.style.color = "#ef4444")} onMouseLeave={e => (e.currentTarget.style.color = "#a1a1aa")} title="Remove file">
-                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-                    </button>
-                  </div>
-                )}
+
+              <div className="grid grid-cols-2 gap-4">
+                <SelectCard active={type === "video"} onClick={() => setType("video")} title="Video Content" desc="MP4, MOV files" icon={<FileVideo size={18}/>} />
+                <SelectCard active={type === "digital"} onClick={() => setType("digital")} title="Digital File" desc="PDF, ZIP, Ebooks" icon={<FileText size={18}/>} />
               </div>
+
+              <div 
+                onClick={() => fileInputRef.current?.click()}
+                className="group border-2 border-dashed border-slate-200 rounded-xl p-10 text-center cursor-pointer hover:border-indigo-400 hover:bg-indigo-50/30 transition-all"
+              >
+                <UploadIcon className="mx-auto mb-4 text-slate-400 group-hover:text-indigo-500 transition-colors" />
+                <p className="text-sm font-medium text-slate-600">Click to upload or drag and drop</p>
+                <p className="text-xs text-slate-400 mt-1">{type === "video" ? "MP4, MOV up to 500MB" : "Any digital file up to 100MB"}</p>
+                <input ref={fileInputRef} type="file" className="hidden" onChange={(e) => setFile(e.target.files?.[0] || null)} />
+              </div>
+
+              {file && (
+                <div className="flex items-center justify-between p-3 bg-indigo-50 rounded-lg border border-indigo-100">
+                  <div className="flex items-center gap-3 overflow-hidden">
+                    <CheckCircle2 size={18} className="text-indigo-600" />
+                    <span className="text-sm font-medium truncate text-indigo-900">{file.name}</span>
+                  </div>
+                  <button onClick={() => setFile(null)} className="text-indigo-400 hover:text-red-500"><X size={18}/></button>
+                </div>
+              )}
             </div>
 
             {/* Pricing */}
-            <div className="up-card">
-              <div className="up-card-header">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
-                <h2>Pricing</h2>
+            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-6">
+              <div className="flex items-center gap-2 pb-4 border-b border-slate-100">
+                <IndianRupee size={20} className="text-indigo-600" />
+                <h2 className="font-semibold text-lg">Pricing</h2>
               </div>
-              <div className="up-card-body">
-                <p className="up-hint" style={{ marginBottom: 14 }}>Choose a pricing structure that's suitable for you.</p>
-                <div className="up-select-grid">
-                  <div className={`up-select-card ${!isFree ? "active" : ""}`} onClick={() => setIsFree(false)}>
-                    {!isFree && <span className="up-check-icon"><svg viewBox="0 0 12 12"><polyline points="2 6 5 9 10 3"/></svg></span>}
-                    <div className="up-select-card-title">Regular price</div>
-                    <div className="up-select-card-desc">Charge a regular fee</div>
-                  </div>
-                  <div className={`up-select-card ${isFree ? "active" : ""}`} onClick={() => setIsFree(true)}>
-                    {isFree && <span className="up-check-icon"><svg viewBox="0 0 12 12"><polyline points="2 6 5 9 10 3"/></svg></span>}
-                    <div className="up-select-card-title">Lead magnet</div>
-                    <div className="up-select-card-desc">Give it away for free</div>
-                  </div>
+              
+              <div className="flex p-1 bg-slate-100 rounded-xl w-fit">
+                <button onClick={() => setIsFree(false)} className={`px-6 py-2 rounded-lg text-sm font-medium transition-all ${!isFree ? 'bg-white shadow-sm text-indigo-600' : 'text-slate-500'}`}>Paid</button>
+                <button onClick={() => setIsFree(true)} className={`px-6 py-2 rounded-lg text-sm font-medium transition-all ${isFree ? 'bg-white shadow-sm text-indigo-600' : 'text-slate-500'}`}>Free</button>
+              </div>
+
+              {!isFree && (
+                <div className="relative max-w-[200px]">
+                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">₹</span>
+                  <input 
+                    type="number" 
+                    className="w-full pl-8 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none" 
+                    placeholder="0.00"
+                    value={price}
+                    onChange={(e) => setPrice(e.target.value)}
+                  />
                 </div>
-                {!isFree && (
-                  <div className="up-price-input-wrap">
-                    <label className="up-label" style={{ marginBottom: 8 }}>Price <span className="req">*</span></label>
-                    <div style={{ position: "relative" }}>
-                      <span className="up-price-symbol">₹</span>
-                      <input className="up-input up-price-input" type="number" placeholder="0" value={price} onChange={(e) => setPrice(e.target.value)} min="0" step="0.01" />
-                    </div>
-                  </div>
-                )}
-              </div>
+              )}
             </div>
 
-            {/* Thumbnail */}
-            <div className="up-card">
-              <div className="up-card-header">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-                <h2>Thumbnail</h2>
-              </div>
-              <div className="up-card-body">
-                <p className="up-hint" style={{ marginBottom: 14 }}>Upload a thumbnail of your product.</p>
-                <div className="up-dropzone" onClick={() => thumbInputRef.current?.click()}>
-                  <div className="up-dropzone-icon">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/></svg>
-                  </div>
-                  <p>Drag it here, or <a onClick={(e) => e.stopPropagation()}>click to browse</a></p>
-                  <p className="up-dropzone-sub">Supports JPEG, PNG, GIF, WEBP</p>
-                  <input ref={thumbInputRef} type="file" accept="image/*" style={{ display: "none" }} onChange={handleThumbChange} />
-                </div>
-                {thumbPreview && (
-                  <div style={{ position: "relative", marginTop: 12 }}>
-                    <img src={thumbPreview} alt="Thumbnail preview" className="up-thumb-preview" style={{ marginTop: 0 }} />
-                    <button
-                      onClick={() => { setThumb(null); setThumbPreview(null); if (thumbInputRef.current) thumbInputRef.current.value = ""; }}
-                      style={{ position: "absolute", top: 8, right: 8, background: "rgba(0,0,0,0.6)", border: "none", borderRadius: "50%", width: 28, height: 28, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: "white", backdropFilter: "blur(4px)" }}
-                      title="Remove thumbnail"
-                    >
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-                    </button>
-                  </div>
-                )}
-              </div>
-            </div>
+            <button 
+              onClick={upload}
+              disabled={loading}
+              className="w-full py-4 bg-indigo-600 text-white rounded-xl font-semibold shadow-lg shadow-indigo-200 hover:bg-indigo-700 disabled:opacity-70 transition-all flex items-center justify-center gap-2"
+            >
+              {loading ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : "Publish Product"}
+            </button>
+          </section>
+        </div>
+      </main>
 
-            {/* Submit */}
-            <div className="up-submit-row">
-              <button className="up-btn" onClick={upload} disabled={loading}>
-                {loading && <span className="up-spinner" />}
-                {loading ? "Uploading..." : "Create product"}
-              </button>
-            </div>
-
+      {/* PREVIEW SIDEBAR */}
+      <aside className="hidden xl:flex w-[400px] border-l border-slate-200 bg-white/50 backdrop-blur-sm sticky top-0 h-screen p-8 flex-col">
+        <div className="flex items-center justify-between mb-8">
+          <h3 className="text-xs font-bold uppercase tracking-widest text-slate-400">Live Preview</h3>
+          <div className="flex items-center gap-1.5 text-emerald-500 text-xs font-bold">
+            <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" /> PREVIEW
           </div>
         </div>
 
-        {/* LIVE PREVIEW */}
-        <div className="preview-panel">
-          <div className="preview-header">
-            <h3>Preview</h3>
-            <span className="preview-live-dot">Live</span>
+        <div className="bg-white rounded-3xl border border-slate-200 shadow-2xl overflow-hidden flex flex-col">
+          <div className="aspect-video bg-slate-100 relative group overflow-hidden">
+            {thumbPreview ? (
+              <img src={thumbPreview} className="w-full h-full object-cover" alt="Preview" />
+            ) : (
+              <div className="w-full h-full flex flex-col items-center justify-center text-slate-300">
+                <ImageIcon size={48} strokeWidth={1} />
+                <span className="text-xs mt-2">No Thumbnail</span>
+              </div>
+            )}
+            <div className="absolute top-4 left-4 px-3 py-1 bg-black/60 backdrop-blur-md rounded-full text-[10px] font-bold text-white uppercase tracking-wider">
+              {type}
+            </div>
           </div>
-          <div className="preview-body">
-            <div className="pv-card">
-              <div className="pv-thumb">
-                {thumbPreview ? (
-                  <img src={thumbPreview} alt="thumbnail" />
-                ) : (
-                  <div className="pv-thumb-placeholder">
-                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#d4d4d8" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-                    <span>No thumbnail yet</span>
-                  </div>
-                )}
-                <span className="pv-type-badge">{type === "video" ? "🎬 Video" : "📁 Digital"}</span>
-              </div>
-              <div className="pv-content">
-                <div className="pv-title">
-                  {title ? title : <span className="pv-title-placeholder">Your product title...</span>}
-                </div>
-                <div className="pv-description">
-                  {descriptionHtml && descriptionHtml !== "<p></p>" ? (
-                    <div dangerouslySetInnerHTML={{ __html: descriptionHtml }} />
-                  ) : (
-                    <span className="pv-desc-placeholder">Your description will appear here...</span>
-                  )}
-                </div>
-                <div className="pv-divider" />
-                {file && (
-                  <div className="pv-file-info">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-                    {file.name}
-                  </div>
-                )}
-                <div className="pv-price-row">
-                  {isFree ? (
-                    <span className="pv-price free">Free</span>
-                  ) : price ? (
-                    <span className="pv-price">₹{price}</span>
-                  ) : (
-                    <span className="pv-price-placeholder">Set a price...</span>
-                  )}
-                </div>
-                <div className={`pv-buy-btn ${isFree ? "free-btn" : ""}`}>
-                  {isFree ? "Get for Free" : price ? `Buy for ₹${price}` : "Buy Now"}
-                </div>
-              </div>
+
+          <div className="p-6 space-y-4">
+            <h4 className="text-xl font-bold leading-tight min-h-[1.4em]">
+              {title || <span className="text-slate-200 italic font-normal">Product Title</span>}
+            </h4>
+            
+            <div className="text-slate-500 text-sm line-clamp-3 overflow-hidden min-h-[3em]">
+              {descriptionHtml && descriptionHtml !== "<p></p>" ? (
+                <div dangerouslySetInnerHTML={{ __html: descriptionHtml }} />
+              ) : "Describe what makes your product special..."}
+            </div>
+
+            <div className="pt-4 border-t border-slate-100 flex items-center justify-between">
+              <span className={`text-2xl font-black ${isFree ? 'text-emerald-500' : 'text-slate-900'}`}>
+                {isFree ? "FREE" : price ? `₹${price}` : "₹0"}
+              </span>
+              <button className="px-6 py-2.5 bg-slate-900 text-white text-sm font-bold rounded-lg">Buy Now</button>
             </div>
           </div>
         </div>
 
-      </div>
-    </>
+        <div className="mt-auto p-4 bg-indigo-50 rounded-2xl border border-indigo-100">
+          <p className="text-xs text-indigo-700 leading-relaxed italic">
+            "Thumbnails with high contrast and clear text typically perform 40% better."
+          </p>
+        </div>
+      </aside>
+
+    </div>
+  );
+}
+
+/* Sub-components for cleaner code */
+
+function ToolbarBtn({ active, onClick, icon }: { active?: boolean, onClick: () => void, icon: React.ReactNode }) {
+  return (
+    <button 
+      onMouseDown={(e) => { e.preventDefault(); onClick(); }}
+      className={`p-2 rounded hover:bg-slate-700 transition-colors ${active ? 'bg-indigo-600 text-white' : 'text-slate-400'}`}
+    >
+      {icon}
+    </button>
+  );
+}
+
+function SelectCard({ active, onClick, title, desc, icon }: { active: boolean, onClick: () => void, title: string, desc: string, icon: React.ReactNode }) {
+  return (
+    <div 
+      onClick={onClick}
+      className={`p-4 rounded-xl border-2 cursor-pointer transition-all ${active ? 'border-indigo-500 bg-indigo-50' : 'border-slate-100 bg-slate-50 hover:border-slate-200'}`}
+    >
+      <div className={`mb-3 ${active ? 'text-indigo-600' : 'text-slate-400'}`}>{icon}</div>
+      <div className={`text-sm font-bold ${active ? 'text-indigo-900' : 'text-slate-700'}`}>{title}</div>
+      <div className="text-[11px] text-slate-400 uppercase tracking-wider mt-0.5">{desc}</div>
+    </div>
   );
 }
