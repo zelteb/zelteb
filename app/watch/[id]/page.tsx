@@ -35,7 +35,6 @@ export default function Watch({ params }: { params: Promise<{ id: string }> }) {
       if (v.thumbnail_url) setThumbnailUrl(v.thumbnail_url);
       await loadRatings();
 
-      // Fetch creator profile using creator_id → links to their /{username} page
       if (v.creator_id) {
         const { data: creatorProfile } = await supabase
           .from("profiles")
@@ -79,18 +78,28 @@ export default function Watch({ params }: { params: Promise<{ id: string }> }) {
     if (owned) { setLoading(false); return; }
 
     if (video.is_free) {
-      const { error } = await supabase.from("purchases").insert({ buyer_id: user.id, video_id: video.id, amount: 0 });
-      if (error) { alert(error.message); setLoading(false); return; }
+      const { error } = await supabase
+        .from("purchases")
+        .insert({ buyer_id: user.id, video_id: video.id, amount: 0 });
+      if (error) { alert("Error: " + error.message); setLoading(false); return; }
     } else {
-      await fetch("/api/buy-video", {
+      const res = await fetch("/api/buy-video", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ video, buyer_id: user.id }),
       });
+      if (!res.ok) {
+        const text = await res.text();
+        alert("Purchase failed: " + text);
+        setLoading(false);
+        return;
+      }
     }
 
     setOwned(true);
-    const { data: signed } = await supabase.storage.from("videos").createSignedUrl(video.video_path, 60 * 60);
+    const { data: signed } = await supabase.storage
+      .from("videos")
+      .createSignedUrl(video.video_path, 60 * 60);
     setDownloadUrl(signed?.signedUrl || null);
     setLoading(false);
   };
@@ -149,7 +158,6 @@ export default function Watch({ params }: { params: Promise<{ id: string }> }) {
         .watch-price-tag { display: inline-flex; align-items: center; background: #e91e8c; color: white; font-weight: 700; font-size: 14px; padding: 5px 16px 5px 12px; clip-path: polygon(0 0, 88% 0, 100% 50%, 88% 100%, 0 100%); flex-shrink: 0; }
         .watch-price-tag.free-tag { background: #16a34a; }
 
-        /* Creator pill — clickable link to profile */
         .watch-creator-pill { display: flex; align-items: center; gap: 7px; background: #f4f4f6; border-radius: 999px; padding: 5px 12px 5px 5px; text-decoration: none; transition: background 0.15s; }
         .watch-creator-pill:hover { background: #e8e8e8; }
         .watch-creator-avatar { width: 24px; height: 24px; border-radius: 50%; background: linear-gradient(135deg, #7c3aed, #e879f9); display: flex; align-items: center; justify-content: center; font-size: 11px; color: white; font-weight: 700; flex-shrink: 0; overflow: hidden; }
@@ -205,7 +213,6 @@ export default function Watch({ params }: { params: Promise<{ id: string }> }) {
         .watch-card-title { font-size: 1rem; font-weight: 700; color: #18181b; line-height: 1.3; margin-bottom: 4px; }
         .watch-card-type { font-size: 0.72rem; color: #a1a1aa; font-weight: 400; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.06em; }
 
-        /* Creator row inside the buy card */
         .watch-card-creator { display: flex; align-items: center; gap: 9px; padding: 10px 11px; background: #f7f7f7; border-radius: 10px; margin-bottom: 14px; text-decoration: none; transition: background 0.15s; }
         .watch-card-creator:hover { background: #efefef; }
         .watch-card-creator-avatar { width: 32px; height: 32px; border-radius: 50%; background: linear-gradient(135deg, #7c3aed, #e879f9); display: flex; align-items: center; justify-content: center; font-size: 13px; color: white; font-weight: 700; flex-shrink: 0; overflow: hidden; }
@@ -239,7 +246,6 @@ export default function Watch({ params }: { params: Promise<{ id: string }> }) {
           </a>
         </nav>
 
-        {/* HERO */}
         <div className="watch-hero">
           {thumbnailUrl
             ? <img src={thumbnailUrl} alt={video.title} />
@@ -248,15 +254,12 @@ export default function Watch({ params }: { params: Promise<{ id: string }> }) {
         </div>
 
         <div className="watch-main">
-          {/* LEFT */}
           <div className="watch-left">
             <div className="watch-meta-row">
-              {/* Price tag */}
               <span className={`watch-price-tag ${video.is_free ? "free-tag" : ""}`}>
                 {video.is_free ? "Free" : `₹${video.price}`}
               </span>
 
-              {/* Creator pill → clicks through to /{username} */}
               {creator && (
                 <a href={`/${creator.username}`} className="watch-creator-pill">
                   <span className="watch-creator-avatar">
@@ -269,7 +272,6 @@ export default function Watch({ params }: { params: Promise<{ id: string }> }) {
                 </a>
               )}
 
-              {/* Avg rating */}
               {avgRating && (
                 <span className="watch-inline-stars">
                   <span className="stars">
@@ -293,7 +295,6 @@ export default function Watch({ params }: { params: Promise<{ id: string }> }) {
               </>
             )}
 
-            {/* RATINGS BREAKDOWN */}
             <div className="ratings-box">
               <div className="ratings-box-header">
                 <span className="ratings-box-title">Ratings</span>
@@ -322,7 +323,6 @@ export default function Watch({ params }: { params: Promise<{ id: string }> }) {
               )}
             </div>
 
-            {/* RATE THIS PRODUCT — owners only */}
             {owned && (
               <div className="rating-section">
                 <h3>Rate this product</h3>
@@ -358,13 +358,11 @@ export default function Watch({ params }: { params: Promise<{ id: string }> }) {
             )}
           </div>
 
-          {/* RIGHT: BUY CARD */}
           <div className="watch-card">
             <div className="watch-card-body">
               <div className="watch-card-title">{video.title}</div>
               <div className="watch-card-type">{video.product_type === "video" ? "Video" : "Digital Product"}</div>
 
-              {/* Creator link inside buy card */}
               {creator && (
                 <a href={`/${creator.username}`} className="watch-card-creator">
                   <div className="watch-card-creator-avatar">
