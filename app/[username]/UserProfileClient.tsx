@@ -348,15 +348,19 @@ function ProductCard({ product }: { product: Product }) {
 }
 
 // ── Products Section ──────────────────────────────────────────────────────────
-function ProductsSection({ profile, products, isOwner }: {
-  profile: Profile; products: Product[]; isOwner: boolean;
+function ProductsSection({ profile, products, isOwner, loading }: {
+  profile: Profile; products: Product[]; isOwner: boolean; loading?: boolean;
 }) {
   return (
     <div className="max-w-2xl mx-auto px-4 py-8">
       {profile.bio && (
         <p className="text-gray-600 text-center text-sm leading-relaxed mb-8">{profile.bio}</p>
       )}
-      {products.length === 0 ? (
+      {loading ? (
+        <div className="flex justify-center py-16">
+          <div className="w-8 h-8 border-2 border-gray-200 border-t-amber-500 rounded-full animate-spin" />
+        </div>
+      ) : products.length === 0 ? (
         <div className="bg-white rounded-2xl border border-dashed border-gray-200 px-6 py-16 text-center">
           <p className="text-gray-400 text-sm">
             {isOwner ? "You haven't created any products yet." : "No products yet."}
@@ -385,10 +389,11 @@ export default function UserProfileClient({
 }: {
   profile: Profile;
   isOwner: boolean;
-  products: Product[];
+  products?: Product[];
 }) {
   const [profile, setProfile] = useState<Profile>(initialProfile);
-  const [products, setProducts] = useState<Product[]>(initialProducts);
+  const [products, setProducts] = useState<Product[]>(initialProducts || []);
+  const [productsLoading, setProductsLoading] = useState(true);
   const [coverPending, setCoverPending] = useState(false);
   const [avatarPending, setAvatarPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -397,6 +402,21 @@ export default function UserProfileClient({
 
   const coverInputRef = useRef<HTMLInputElement>(null);
   const avatarInputRef = useRef<HTMLInputElement>(null);
+
+  // Fetch products client-side
+  useEffect(() => {
+    const fetchProducts = async () => {
+      setProductsLoading(true);
+      const { data, error } = await supabase
+        .from("videos")
+        .select("id, title, price, is_free, thumbnail_url, product_type, created_at")
+        .eq("creator_id", profile.id)
+        .order("created_at", { ascending: false });
+      if (!error && data) setProducts(data);
+      setProductsLoading(false);
+    };
+    fetchProducts();
+  }, [profile.id]);
 
   // Real-time profile sync
   useEffect(() => {
@@ -517,7 +537,7 @@ export default function UserProfileClient({
       </div>
 
       {/* Products — no tabs, shown directly */}
-      <ProductsSection profile={profile} products={products} isOwner={isOwner} />
+      <ProductsSection profile={profile} products={products} isOwner={isOwner} loading={productsLoading} />
     </div>
   );
 }
