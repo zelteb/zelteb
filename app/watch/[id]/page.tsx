@@ -7,6 +7,7 @@ export default function Watch({ params }: { params: Promise<{ id: string }> }) {
   const { id: videoId } = use(params);
 
   const [video, setVideo] = useState<any>(null);
+  const [creator, setCreator] = useState<{ username: string; full_name?: string | null; avatar_url?: string | null } | null>(null);
   const [owned, setOwned] = useState(false);
   const [downloadUrl, setDownloadUrl] = useState<string | null>(null);
   const [thumbnailUrl, setThumbnailUrl] = useState<string | null>(null);
@@ -33,6 +34,16 @@ export default function Watch({ params }: { params: Promise<{ id: string }> }) {
       setVideo(v);
       if (v.thumbnail_url) setThumbnailUrl(v.thumbnail_url);
       await loadRatings();
+
+      // Fetch creator profile using creator_id → links to their /{username} page
+      if (v.creator_id) {
+        const { data: creatorProfile } = await supabase
+          .from("profiles")
+          .select("username, full_name, avatar_url")
+          .eq("id", v.creator_id)
+          .single();
+        if (creatorProfile) setCreator(creatorProfile);
+      }
 
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
@@ -103,7 +114,7 @@ export default function Watch({ params }: { params: Promise<{ id: string }> }) {
   };
 
   if (!video) return (
-    <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "100vh", fontFamily: "DM Sans, sans-serif" }}>
+    <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "100vh" }}>
       <div style={{ textAlign: "center", color: "#a1a1aa" }}>
         <div style={{ width: 40, height: 40, border: "3px solid #e4e4e7", borderTopColor: "#7c3aed", borderRadius: "50%", animation: "spin 0.7s linear infinite", margin: "0 auto 12px" }} />
         <p>Loading...</p>
@@ -112,6 +123,7 @@ export default function Watch({ params }: { params: Promise<{ id: string }> }) {
   );
 
   const displayStar = hoverStar || selectedStar;
+  const creatorDisplayName = creator?.full_name || creator?.username || "Creator";
 
   return (
     <>
@@ -119,42 +131,37 @@ export default function Watch({ params }: { params: Promise<{ id: string }> }) {
         @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap');
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
         body { background: #fff; }
-
         .watch-wrap { font-family: 'DM Sans', sans-serif; background: #fff; min-height: 100vh; color: #18181b; }
 
-        /* NAV */
         .watch-nav { background: white; border-bottom: 1px solid #e4e4e7; padding: 0 40px; height: 54px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 10; }
         .watch-nav-logo { font-size: 1.2rem; color: #18181b; text-decoration: none; font-weight: 800; }
         .watch-nav-back { display: flex; align-items: center; gap: 6px; font-size: 0.85rem; color: #71717a; text-decoration: none; transition: color 0.15s; }
         .watch-nav-back:hover { color: #18181b; }
 
-        /* HERO IMAGE - full width */
-        .watch-hero { width: 100%; max-height: 480px; overflow: hidden; background: #18181b; position: relative; }
+        .watch-hero { width: 100%; max-height: 480px; overflow: hidden; background: #18181b; }
         .watch-hero img { width: 100%; height: 480px; object-fit: cover; display: block; }
         .watch-hero-placeholder { width: 100%; height: 380px; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #18181b, #3f3f46); font-size: 5rem; }
 
-        /* MAIN LAYOUT */
         .watch-main { max-width: 1000px; margin: 0 auto; padding: 0 24px 60px; display: grid; grid-template-columns: 1fr 300px; gap: 40px; align-items: start; }
-
-        /* LEFT */
         .watch-left { padding-top: 28px; }
 
-        /* Inline meta row: price tag + creator + stars */
-        .watch-meta-row { display: flex; align-items: center; gap: 16px; margin-bottom: 16px; flex-wrap: wrap; }
-        .watch-price-tag { display: inline-flex; align-items: center; background: #e91e8c; color: white; font-weight: 700; font-size: 14px; padding: 5px 16px 5px 12px; clip-path: polygon(0 0, 88% 0, 100% 50%, 88% 100%, 0 100%); border-radius: 2px 0 0 2px; }
+        .watch-meta-row { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; }
+        .watch-price-tag { display: inline-flex; align-items: center; background: #e91e8c; color: white; font-weight: 700; font-size: 14px; padding: 5px 16px 5px 12px; clip-path: polygon(0 0, 88% 0, 100% 50%, 88% 100%, 0 100%); flex-shrink: 0; }
         .watch-price-tag.free-tag { background: #16a34a; }
-        .watch-creator-pill { display: flex; align-items: center; gap: 7px; background: #f4f4f6; border-radius: 999px; padding: 5px 12px 5px 6px; cursor: pointer; text-decoration: none; }
-        .watch-creator-avatar { width: 22px; height: 22px; border-radius: 50%; background: linear-gradient(135deg, #7c3aed, #e879f9); display: flex; align-items: center; justify-content: center; font-size: 11px; color: white; font-weight: 700; flex-shrink: 0; overflow: hidden; }
+
+        /* Creator pill — clickable link to profile */
+        .watch-creator-pill { display: flex; align-items: center; gap: 7px; background: #f4f4f6; border-radius: 999px; padding: 5px 12px 5px 5px; text-decoration: none; transition: background 0.15s; }
+        .watch-creator-pill:hover { background: #e8e8e8; }
+        .watch-creator-avatar { width: 24px; height: 24px; border-radius: 50%; background: linear-gradient(135deg, #7c3aed, #e879f9); display: flex; align-items: center; justify-content: center; font-size: 11px; color: white; font-weight: 700; flex-shrink: 0; overflow: hidden; }
         .watch-creator-avatar img { width: 100%; height: 100%; object-fit: cover; }
         .watch-creator-name { font-size: 13px; font-weight: 600; color: #18181b; }
+
         .watch-inline-stars { display: flex; align-items: center; gap: 5px; }
         .watch-inline-stars .stars { display: flex; gap: 2px; }
         .watch-inline-stars .count { font-size: 13px; color: #71717a; }
 
         .watch-title { font-size: 1.75rem; font-weight: 800; color: #18181b; line-height: 1.2; letter-spacing: -0.02em; margin-bottom: 20px; }
-
         .watch-divider-line { height: 1px; background: #f0f0f2; margin: 24px 0; }
-
         .watch-description { font-size: 0.9rem; color: #3f3f46; line-height: 1.8; }
         .watch-description p { margin-bottom: 10px; }
         .watch-description strong { font-weight: 700; color: #18181b; }
@@ -163,7 +170,6 @@ export default function Watch({ params }: { params: Promise<{ id: string }> }) {
         .watch-description ul, .watch-description ol { padding-left: 20px; margin: 8px 0; }
         .watch-description img { max-width: 100%; border-radius: 8px; }
 
-        /* RATINGS BREAKDOWN */
         .ratings-box { margin-top: 36px; border-top: 1px solid #f0f0f2; padding-top: 28px; }
         .ratings-box-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; }
         .ratings-box-title { font-size: 1rem; font-weight: 700; color: #18181b; }
@@ -176,7 +182,6 @@ export default function Watch({ params }: { params: Promise<{ id: string }> }) {
         .ratings-pct { font-size: 0.78rem; color: #71717a; width: 32px; flex-shrink: 0; text-align: right; }
         .ratings-empty { font-size: 0.875rem; color: #a1a1aa; padding: 12px 0; }
 
-        /* RATE THIS PRODUCT */
         .rating-section { margin-top: 32px; background: #fafafa; border: 1px solid #e4e4e7; border-radius: 16px; padding: 24px; }
         .rating-section h3 { font-size: 1rem; font-weight: 700; color: #18181b; margin-bottom: 4px; }
         .rating-section > p { font-size: 0.83rem; color: #71717a; margin-bottom: 18px; }
@@ -195,11 +200,20 @@ export default function Watch({ params }: { params: Promise<{ id: string }> }) {
         .submitted-stars { display: flex; gap: 3px; margin-bottom: 8px; font-size: 1.3rem; }
         .submitted-review { font-size: 0.85rem; color: #52525b; line-height: 1.6; font-style: italic; margin-bottom: 12px; }
 
-        /* RIGHT BUY CARD */
         .watch-card { background: white; border: 1px solid #e4e4e7; border-radius: 16px; overflow: hidden; box-shadow: 0 2px 20px rgba(0,0,0,0.06); position: sticky; top: 74px; margin-top: 28px; }
         .watch-card-body { padding: 20px; }
         .watch-card-title { font-size: 1rem; font-weight: 700; color: #18181b; line-height: 1.3; margin-bottom: 4px; }
-        .watch-card-type { font-size: 0.72rem; color: #a1a1aa; font-weight: 400; margin-bottom: 16px; text-transform: uppercase; letter-spacing: 0.06em; }
+        .watch-card-type { font-size: 0.72rem; color: #a1a1aa; font-weight: 400; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.06em; }
+
+        /* Creator row inside the buy card */
+        .watch-card-creator { display: flex; align-items: center; gap: 9px; padding: 10px 11px; background: #f7f7f7; border-radius: 10px; margin-bottom: 14px; text-decoration: none; transition: background 0.15s; }
+        .watch-card-creator:hover { background: #efefef; }
+        .watch-card-creator-avatar { width: 32px; height: 32px; border-radius: 50%; background: linear-gradient(135deg, #7c3aed, #e879f9); display: flex; align-items: center; justify-content: center; font-size: 13px; color: white; font-weight: 700; flex-shrink: 0; overflow: hidden; }
+        .watch-card-creator-avatar img { width: 100%; height: 100%; object-fit: cover; }
+        .watch-card-creator-info { flex: 1; min-width: 0; }
+        .watch-card-creator-name { font-size: 13px; font-weight: 600; color: #18181b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .watch-card-creator-sub { font-size: 11px; color: #a1a1aa; }
+
         .watch-card-divider { height: 1px; background: #f0f0f2; margin: 14px 0; }
         .watch-card-price { font-size: 1.5rem; font-weight: 800; color: #18181b; margin-bottom: 14px; }
         .watch-card-price .free { font-size: 1rem; font-weight: 600; color: #16a34a; background: #f0fdf4; padding: 5px 12px; border-radius: 20px; display: inline-block; }
@@ -217,7 +231,6 @@ export default function Watch({ params }: { params: Promise<{ id: string }> }) {
       `}</style>
 
       <div className="watch-wrap">
-        {/* NAV */}
         <nav className="watch-nav">
           <a href="/" className="watch-nav-logo">Zelteb</a>
           <a href="/discover" className="watch-nav-back">
@@ -226,36 +239,37 @@ export default function Watch({ params }: { params: Promise<{ id: string }> }) {
           </a>
         </nav>
 
-        {/* HERO IMAGE — full width */}
+        {/* HERO */}
         <div className="watch-hero">
-          {thumbnailUrl ? (
-            <img src={thumbnailUrl} alt={video.title} />
-          ) : (
-            <div className="watch-hero-placeholder">
-              {video.product_type === "video" ? "🎬" : "📁"}
-            </div>
-          )}
+          {thumbnailUrl
+            ? <img src={thumbnailUrl} alt={video.title} />
+            : <div className="watch-hero-placeholder">{video.product_type === "video" ? "🎬" : "📁"}</div>
+          }
         </div>
 
-        {/* MAIN CONTENT */}
         <div className="watch-main">
-
           {/* LEFT */}
           <div className="watch-left">
-
-            {/* Inline meta: price tag + creator + stars */}
             <div className="watch-meta-row">
+              {/* Price tag */}
               <span className={`watch-price-tag ${video.is_free ? "free-tag" : ""}`}>
                 {video.is_free ? "Free" : `₹${video.price}`}
               </span>
 
-              <span className="watch-creator-pill">
-                <span className="watch-creator-avatar">
-                  {video.creator_name?.charAt(0)?.toUpperCase() || "C"}
-                </span>
-                <span className="watch-creator-name">{video.creator_name || "Creator"}</span>
-              </span>
+              {/* Creator pill → clicks through to /{username} */}
+              {creator && (
+                <a href={`/${creator.username}`} className="watch-creator-pill">
+                  <span className="watch-creator-avatar">
+                    {creator.avatar_url
+                      ? <img src={creator.avatar_url} alt={creatorDisplayName} />
+                      : creatorDisplayName.charAt(0).toUpperCase()
+                    }
+                  </span>
+                  <span className="watch-creator-name">{creatorDisplayName}</span>
+                </a>
+              )}
 
+              {/* Avg rating */}
               {avgRating && (
                 <span className="watch-inline-stars">
                   <span className="stars">
@@ -293,7 +307,6 @@ export default function Watch({ params }: { params: Promise<{ id: string }> }) {
                   </span>
                 )}
               </div>
-
               {totalRatings === 0 ? (
                 <p className="ratings-empty">No ratings yet. Be the first to rate!</p>
               ) : (
@@ -314,19 +327,15 @@ export default function Watch({ params }: { params: Promise<{ id: string }> }) {
               <div className="rating-section">
                 <h3>Rate this product</h3>
                 <p>Your feedback helps other buyers make better decisions.</p>
-
                 {ratingSubmitted && (
                   <div className="rating-success">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
                     Rating submitted — thank you!
                   </div>
                 )}
-
                 {ratingSubmitted ? (
                   <>
-                    <div className="submitted-stars">
-                      {[1,2,3,4,5].map(s => <span key={s}>{s <= selectedStar ? "⭐" : "☆"}</span>)}
-                    </div>
+                    <div className="submitted-stars">{[1,2,3,4,5].map(s => <span key={s}>{s <= selectedStar ? "⭐" : "☆"}</span>)}</div>
                     {review && <p className="submitted-review">"{review}"</p>}
                     <button className="rating-edit-btn" onClick={() => setRatingSubmitted(false)}>Edit rating</button>
                   </>
@@ -354,6 +363,23 @@ export default function Watch({ params }: { params: Promise<{ id: string }> }) {
             <div className="watch-card-body">
               <div className="watch-card-title">{video.title}</div>
               <div className="watch-card-type">{video.product_type === "video" ? "Video" : "Digital Product"}</div>
+
+              {/* Creator link inside buy card */}
+              {creator && (
+                <a href={`/${creator.username}`} className="watch-card-creator">
+                  <div className="watch-card-creator-avatar">
+                    {creator.avatar_url
+                      ? <img src={creator.avatar_url} alt={creatorDisplayName} />
+                      : creatorDisplayName.charAt(0).toUpperCase()
+                    }
+                  </div>
+                  <div className="watch-card-creator-info">
+                    <div className="watch-card-creator-name">{creatorDisplayName}</div>
+                    <div className="watch-card-creator-sub">View profile →</div>
+                  </div>
+                </a>
+              )}
+
               <div className="watch-card-divider" />
 
               {owned && (
@@ -377,7 +403,7 @@ export default function Watch({ params }: { params: Promise<{ id: string }> }) {
                 )
               ) : (
                 <button className={`watch-buy-btn ${video.is_free ? "free-btn" : ""}`} onClick={buy} disabled={loading}>
-                  {loading ? "Processing..." : video.is_free ? "Get for Free" : `Buy Now`}
+                  {loading ? "Processing..." : video.is_free ? "Get for Free" : "Buy Now"}
                 </button>
               )}
 
@@ -387,7 +413,6 @@ export default function Watch({ params }: { params: Promise<{ id: string }> }) {
               </div>
             </div>
           </div>
-
         </div>
       </div>
     </>
