@@ -1,165 +1,154 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 
 interface Purchase {
   id: string;
   amount: number;
   created_at: string;
-  customer_note?: string;
-  file_url?: string;
   videos: { title: string }[] | null;
-  buyer: { username: string; full_name: string | null }[] | null;
+  buyer: {
+    username: string;
+    full_name: string | null;
+    avatar_url: string | null;
+  }[] | null;
 }
 
-export default function SalesPage() {
+export default function Sales() {
   const [sales, setSales] = useState<Purchase[]>([]);
   const [loading, setLoading] = useState(true);
-  
-  // New States for capturing Buyer Information
-  const [uploading, setUploading] = useState(false);
-  const [file, setFile] = useState<File | null>(null);
-  const [note, setNote] = useState("");
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const loadSales = async (uid: string) => {
     const { data, error } = await supabase
       .from("purchases")
       .select(`
-        id, amount, created_at, customer_note, file_url,
+        id,
+        amount,
+        created_at,
         videos ( title ),
-        buyer:profiles!buyer_id ( username, full_name )
+        buyer:profiles!buyer_id (
+          username,
+          full_name,
+          avatar_url
+        )
       `)
       .eq("creator_id", uid)
       .order("created_at", { ascending: false });
 
-    if (!error) setSales((data as any) || []);
+    if (!error) {
+      setSales((data as Purchase[]) || []);
+    }
+
     setLoading(false);
   };
 
-  // Logic to handle the Buyer's Upload
-  const handleBuyerSubmit = async () => {
-    if (!file) return alert("Please select a file to upload first.");
-    setUploading(true);
-
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return alert("You must be logged in to submit.");
-
-    // 1. Upload file to Storage
-    const fileName = `buyer-uploads/${user.id}-${Date.now()}-${file.name}`;
-    const { data: storageData, error: storageError } = await supabase.storage
-      .from("videos") // Ensure this bucket exists and is public/accessible
-      .upload(fileName, file);
-
-    if (storageError) {
-      alert(storageError.message);
-      setUploading(false);
-      return;
-    }
-
-    // 2. Get Public URL
-    const { data: urlData } = supabase.storage.from("videos").getPublicUrl(fileName);
-
-    // 3. Save to Purchases Table
-    const { error: dbError } = await supabase.from("purchases").insert({
-      buyer_id: user.id,
-      amount: 0, // Set this based on your pricing logic
-      customer_note: note,
-      file_url: urlData.publicUrl,
-      creator_id: "REPLACE_WITH_CREATOR_ID" // This needs to be the ID of the seller
-    });
-
-    if (dbError) alert(dbError.message);
-    else alert("Information submitted successfully!");
-
-    setUploading(false);
-    setFile(null);
-    setNote("");
-    loadSales(user.id);
-  };
-
   useEffect(() => {
+    let channel: any;
+
     const init = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) await loadSales(user.id);
-      setLoading(false);
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      if (!user) {
+        setLoading(false);
+        return;
+      }
+
+      await loadSales(user.id);
+
+      channel = supabase
+        .channel("creator-sales")
+        .on(
+          "postgres_changes",
+          {
+            event: "INSERT",
+            schema: "public",
+            table: "purchases",
+            filter: `creator_id=eq.${user.id}`,
+          },
+          () => {
+            loadSales(user.id);
+          }
+        )
+        .subscribe();
     };
+
     init();
+
+    return () => {
+      if (channel) supabase.removeChannel(channel);
+    };
   }, []);
 
-  if (loading) return <div className="p-10">Loading Sales Dashboard...</div>;
+  const totalRevenue = sales.reduce((sum, s) => sum + s.amount, 0);
+  const platformFee = totalRevenue * 0.06;
+  const creatorEarnings = totalRevenue - platformFee;
+
+  if (loading) return <div className="p-10">Loading...</div>;
 
   return (
-    <div className="min-h-screen bg-gray-50 p-8 font-sans">
-      <div className="max-w-4xl mx-auto">
-        <h1 className="text-3xl font-bold mb-8 text-gray-900">Sales & Submissions</h1>
+    <div className="min-h-screen bg-gray-50 text-gray-900 p-8 font-sans">
+      <h1 className="text-3xl font-semibold mb-8">Creator Earnings</h1>
 
-        {/* SECTION 1: CUSTOMER INPUT FORM (The "Missing" part) */}
-        <div className="bg-white p-6 rounded-2xl shadow-sm border mb-10">
-          <h2 className="text-lg font-semibold mb-4">Submit Information</h2>
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Note to Creator</label>
-              <textarea 
-                className="w-full border rounded-lg p-2 h-24 focus:ring-2 focus:ring-blue-500 outline-none"
-                placeholder="Enter details about your order..."
-                value={note}
-                onChange={(e) => setNote(e.target.value)}
-              />
-            </div>
-
-            <div 
-              onClick={() => fileInputRef.current?.click()}
-              className="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center cursor-pointer hover:bg-gray-50 transition"
-            >
-              <p className="text-gray-500">{file ? `Selected: ${file.name}` : "Click to upload your file"}</p>
-              <input 
-                type="file" 
-                ref={fileInputRef} 
-                className="hidden" 
-                onChange={(e) => setFile(e.target.files?.[0] || null)}
-              />
-            </div>
-
-            <button 
-              onClick={handleBuyerSubmit}
-              disabled={uploading}
-              className="w-full bg-blue-600 text-white font-semibold py-3 rounded-xl hover:bg-blue-700 disabled:opacity-50 transition"
-            >
-              {uploading ? "Uploading..." : "Submit Order Information"}
-            </button>
-          </div>
+      {/* Stats */}
+      <div className="grid md:grid-cols-3 gap-6 mb-10">
+        <div className="bg-white p-6 rounded-2xl shadow-sm border">
+          <p className="text-sm text-gray-500 mb-2">Total Revenue</p>
+          <p className="text-2xl font-semibold">
+            ₹{totalRevenue.toFixed(2)}
+          </p>
         </div>
 
-        {/* SECTION 2: SALES LIST */}
-        <div className="bg-white rounded-2xl shadow-sm border divide-y overflow-hidden">
-          <div className="p-4 bg-gray-50 font-medium text-gray-500 text-sm">Recent Sales</div>
-          {sales.length === 0 ? (
-            <div className="p-10 text-center text-gray-400">No sales data found.</div>
-          ) : (
-            sales.map((s) => (
-              <div key={s.id} className="p-6 flex justify-between items-start hover:bg-gray-50 transition">
-                <div>
-                  <p className="font-bold text-gray-900">{s.buyer?.[0]?.full_name || "Guest Buyer"}</p>
-                  <p className="text-sm text-blue-600">{s.videos?.[0]?.title}</p>
-                  {s.customer_note && (
-                    <p className="text-sm text-gray-600 mt-2 italic">"{s.customer_note}"</p>
-                  )}
-                  {s.file_url && (
-                    <a href={s.file_url} target="_blank" className="text-xs text-blue-500 underline mt-2 block">
-                      View Customer Attachment
-                    </a>
-                  )}
-                </div>
-                <div className="text-right">
-                  <p className="font-bold text-lg">₹{s.amount}</p>
-                  <p className="text-xs text-gray-400">{new Date(s.created_at).toLocaleDateString()}</p>
-                </div>
+        <div className="bg-white p-6 rounded-2xl shadow-sm border">
+          <p className="text-sm text-gray-500 mb-2">Your Earnings</p>
+          <p className="text-2xl font-semibold text-green-600">
+            ₹{creatorEarnings.toFixed(2)}
+          </p>
+        </div>
+
+        <div className="bg-white p-6 rounded-2xl shadow-sm border">
+          <p className="text-sm text-gray-500 mb-2">Platform Fee (6%)</p>
+          <p className="text-2xl font-semibold text-red-500">
+            ₹{platformFee.toFixed(2)}
+          </p>
+        </div>
+      </div>
+
+      {/* Sales List */}
+      <div className="bg-white rounded-2xl shadow-sm border divide-y">
+        {sales.length === 0 && (
+          <div className="p-6 text-gray-500">No sales yet.</div>
+        )}
+
+        {sales.map((s) => {
+          const videoTitle = s.videos?.[0]?.title || "Untitled";
+
+          const buyerName =
+            s.buyer?.[0]?.full_name ||
+            s.buyer?.[0]?.username ||
+            "Someone";
+
+          return (
+            <div
+              key={s.id}
+              className="p-6 flex justify-between items-center hover:bg-gray-50 transition"
+            >
+              <div>
+                <p className="font-medium">{buyerName}</p>
+                <p className="text-sm text-gray-500">{videoTitle}</p>
+                <p className="text-xs text-gray-400 mt-1">
+                  {new Date(s.created_at).toLocaleDateString("en-IN")}
+                </p>
               </div>
-            ))
-          )}
-        </div>
+
+              <div className="text-right">
+                <p className="font-semibold">₹{s.amount}</p>
+              </div>
+            </div>
+          );
+        })}
       </div>
     </div>
   );
