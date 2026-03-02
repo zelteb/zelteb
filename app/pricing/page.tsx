@@ -12,8 +12,6 @@ export default function Pricing() {
           <nav className="hidden md:flex gap-10 text-[15px] font-medium text-gray-600">
             <Link href="/" className="hover:text-black">Home</Link>
             <Link href="#" className="hover:text-black">Discover</Link>
-            <Link href="#" className="hover:text-black">Blog</Link>
-            <Link href="#" className="hover:text-black">Features</Link>
           </nav>
           <Link
             href="/dashboard"
