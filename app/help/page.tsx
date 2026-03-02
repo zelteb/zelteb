@@ -12,7 +12,7 @@ export default function Help() {
 
     const formData = new FormData(e.target);
 
-    const res = await fetch("https://formspree.io/f/mzdajwpl", {
+    const res = await fetch("https://formspree.io/f/mkovadnr", {
       method: "POST",
       body: formData,
       headers: {
