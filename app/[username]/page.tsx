@@ -18,7 +18,7 @@ export default async function UserPage({
   const [{ data: profile }, { data: { user } }] = await Promise.all([
     supabaseServer
       .from("profiles")
-      .select("username, full_name, avatar_url, cover_url, bio, post_count, youtube_url, instagram_url, x_url")
+      .select("id, username, full_name, avatar_url, cover_url, bio, post_count, youtube_url, instagram_url, x_url")
       .ilike("username", username)
       .maybeSingle(),
     supabaseServer.auth.getUser(),
@@ -32,8 +32,21 @@ export default async function UserPage({
     );
   }
 
+  // Fetch this creator's products using their profile id
+  const { data: products } = await supabaseServer
+    .from("videos")
+    .select("id, title, price, is_free, thumbnail_url, product_type, created_at")
+    .eq("creator_id", profile.id)
+    .order("created_at", { ascending: false });
+
   const isOwner =
     !!user && user.user_metadata?.username?.toLowerCase() === username.toLowerCase();
 
-  return <UserProfileClient profile={profile} isOwner={isOwner} />;
+  return (
+    <UserProfileClient
+      profile={profile}
+      isOwner={isOwner}
+      products={products || []}
+    />
+  );
 }

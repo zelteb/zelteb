@@ -2,6 +2,7 @@
 
 import { supabase } from "@/lib/supabase";
 import Image from "next/image";
+import Link from "next/link";
 import { useRef, useState, useEffect } from "react";
 import {
   Camera, ImagePlus, Loader2, Share2, X, Link as LinkIcon,
@@ -9,6 +10,7 @@ import {
 } from "lucide-react";
 
 interface Profile {
+  id: string;
   username: string;
   full_name?: string | null;
   cover_url?: string | null;
@@ -18,6 +20,16 @@ interface Profile {
   youtube_url?: string | null;
   instagram_url?: string | null;
   x_url?: string | null;
+}
+
+interface Product {
+  id: string;
+  title: string;
+  price: number;
+  is_free: boolean;
+  thumbnail_url?: string | null;
+  product_type: "video" | "digital";
+  created_at: string;
 }
 
 async function uploadImage(file: File, bucket: string, path: string): Promise<string> {
@@ -38,7 +50,6 @@ function UploadHint({ label }: { label: string }) {
   );
 }
 
-// ── SVG Icons ────────────────────────────────────────────────────────────────
 function YoutubeIcon({ size = 18 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor">
@@ -64,47 +75,30 @@ function XIcon({ size = 18 }: { size?: number }) {
 }
 
 // ── Cover Photo ───────────────────────────────────────────────────────────────
-function CoverPhoto({
-  profile, isOwner, pending, inputRef, onChange,
-}: {
-  profile: Profile;
-  isOwner: boolean;
-  pending: boolean;
+function CoverPhoto({ profile, isOwner, pending, inputRef, onChange }: {
+  profile: Profile; isOwner: boolean; pending: boolean;
   inputRef: React.RefObject<HTMLInputElement | null>;
   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
 }) {
   const [hovered, setHovered] = useState(false);
-
   return (
-    <div
-      className="relative w-full h-56 md:h-72 bg-stone-300"
+    <div className="relative w-full h-56 md:h-72 bg-stone-300"
       onMouseEnter={() => isOwner && setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-    >
+      onMouseLeave={() => setHovered(false)}>
       <div className="absolute inset-0 overflow-hidden">
-        {profile.cover_url ? (
-          <Image src={profile.cover_url} alt="Cover photo" fill className="object-cover" priority unoptimized />
-        ) : (
-          <div className="absolute inset-0 bg-gray-800" />
-        )}
+        {profile.cover_url
+          ? <Image src={profile.cover_url} alt="Cover photo" fill className="object-cover" priority unoptimized />
+          : <div className="absolute inset-0 bg-gray-800" />}
       </div>
-
       {isOwner && (
         <>
-          <div
-            className="absolute inset-0 transition-colors duration-200 pointer-events-none"
-            style={{ backgroundColor: hovered ? "rgba(0,0,0,0.3)" : "transparent" }}
-          />
-          <div
-            className="absolute bottom-3 right-3 z-10 flex items-center gap-2 transition-opacity duration-200"
-            style={{ opacity: hovered ? 1 : 0 }}
-          >
+          <div className="absolute inset-0 transition-colors duration-200 pointer-events-none"
+            style={{ backgroundColor: hovered ? "rgba(0,0,0,0.3)" : "transparent" }} />
+          <div className="absolute bottom-3 right-3 z-10 flex items-center gap-2 transition-opacity duration-200"
+            style={{ opacity: hovered ? 1 : 0 }}>
             <UploadHint label="16 : 5  ·  1600 × 500 px" />
-            <button
-              onClick={() => inputRef.current?.click()}
-              disabled={pending}
-              className="flex items-center gap-1.5 bg-white/90 hover:bg-white text-gray-800 text-xs font-medium px-3 py-1.5 rounded-full shadow-md transition-colors disabled:opacity-60 cursor-pointer"
-            >
+            <button onClick={() => inputRef.current?.click()} disabled={pending}
+              className="flex items-center gap-1.5 bg-white/90 hover:bg-white text-gray-800 text-xs font-medium px-3 py-1.5 rounded-full shadow-md transition-colors disabled:opacity-60 cursor-pointer">
               {pending ? <Loader2 size={14} className="animate-spin" /> : <ImagePlus size={14} />}
               {pending ? "Uploading…" : "Change cover"}
             </button>
@@ -117,55 +111,38 @@ function CoverPhoto({
 }
 
 // ── Avatar Photo ──────────────────────────────────────────────────────────────
-function AvatarPhoto({
-  profile, isOwner, pending, inputRef, onChange,
-}: {
-  profile: Profile;
-  isOwner: boolean;
-  pending: boolean;
+function AvatarPhoto({ profile, isOwner, pending, inputRef, onChange }: {
+  profile: Profile; isOwner: boolean; pending: boolean;
   inputRef: React.RefObject<HTMLInputElement | null>;
   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
 }) {
   const [hovered, setHovered] = useState(false);
-
   return (
-    <div
-      className="relative"
+    <div className="relative"
       onMouseEnter={() => isOwner && setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-    >
+      onMouseLeave={() => setHovered(false)}>
       <div className="w-28 h-28 md:w-36 md:h-36 rounded-2xl border-4 border-white bg-white shadow-xl overflow-hidden">
-        {profile.avatar_url ? (
-          <Image src={profile.avatar_url} alt={profile.username} width={144} height={144} className="object-cover w-full h-full" unoptimized />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center bg-stone-800">
-            <span className="text-4xl font-bold text-amber-400 uppercase tracking-widest">
-              {profile.username?.charAt(0) ?? "?"}
-            </span>
-          </div>
-        )}
+        {profile.avatar_url
+          ? <Image src={profile.avatar_url} alt={profile.username} width={144} height={144} className="object-cover w-full h-full" unoptimized />
+          : <div className="w-full h-full flex items-center justify-center bg-stone-800">
+              <span className="text-4xl font-bold text-amber-400 uppercase tracking-widest">
+                {profile.username?.charAt(0) ?? "?"}
+              </span>
+            </div>}
       </div>
-
       {isOwner && (
         <>
-          <div
-            className="absolute inset-0 rounded-2xl flex items-center justify-center transition-colors duration-200"
-            style={{ backgroundColor: hovered ? "rgba(0,0,0,0.42)" : "transparent" }}
-          >
-            <button
-              onClick={() => inputRef.current?.click()}
-              disabled={pending}
+          <div className="absolute inset-0 rounded-2xl flex items-center justify-center transition-colors duration-200"
+            style={{ backgroundColor: hovered ? "rgba(0,0,0,0.42)" : "transparent" }}>
+            <button onClick={() => inputRef.current?.click()} disabled={pending}
               title="Upload profile photo"
               className="bg-white/90 hover:bg-white text-gray-800 p-2 rounded-full shadow-md disabled:opacity-60 cursor-pointer transition-opacity duration-200"
-              style={{ opacity: hovered ? 1 : 0 }}
-            >
+              style={{ opacity: hovered ? 1 : 0 }}>
               {pending ? <Loader2 size={18} className="animate-spin" /> : <Camera size={18} />}
             </button>
           </div>
-          <div
-            className="absolute -bottom-7 left-1/2 -translate-x-1/2 pointer-events-none transition-opacity duration-200 whitespace-nowrap"
-            style={{ opacity: hovered ? 1 : 0 }}
-          >
+          <div className="absolute -bottom-7 left-1/2 -translate-x-1/2 pointer-events-none transition-opacity duration-200 whitespace-nowrap"
+            style={{ opacity: hovered ? 1 : 0 }}>
             <UploadHint label="1 : 1  ·  400 × 400 px" />
           </div>
           <input ref={inputRef} type="file" accept="image/*" className="hidden" onChange={onChange} />
@@ -176,11 +153,8 @@ function AvatarPhoto({
 }
 
 // ── Social Links Modal ────────────────────────────────────────────────────────
-function SocialLinksModal({
-  profile, onClose, onSave,
-}: {
-  profile: Profile;
-  onClose: () => void;
+function SocialLinksModal({ profile, onClose, onSave }: {
+  profile: Profile; onClose: () => void;
   onSave: (links: { youtube_url: string; instagram_url: string; x_url: string }) => Promise<void>;
 }) {
   const [youtube, setYoutube] = useState(profile.youtube_url ?? "");
@@ -190,12 +164,8 @@ function SocialLinksModal({
 
   async function handleSave() {
     setSaving(true);
-    try {
-      await onSave({ youtube_url: youtube, instagram_url: instagram, x_url: x });
-      onClose();
-    } finally {
-      setSaving(false);
-    }
+    try { await onSave({ youtube_url: youtube, instagram_url: instagram, x_url: x }); onClose(); }
+    finally { setSaving(false); }
   }
 
   const fields = [
@@ -205,51 +175,32 @@ function SocialLinksModal({
   ];
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4"
-      onClick={(e) => e.target === e.currentTarget && onClose()}
-    >
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4"
+      onClick={(e) => e.target === e.currentTarget && onClose()}>
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden">
         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
           <h2 className="text-base font-semibold text-gray-900">Social Links</h2>
-          <button onClick={onClose} className="p-1.5 rounded-full hover:bg-gray-100 text-gray-500 transition-colors">
-            <X size={16} />
-          </button>
+          <button onClick={onClose} className="p-1.5 rounded-full hover:bg-gray-100 text-gray-500 transition-colors"><X size={16} /></button>
         </div>
         <div className="px-5 py-5 flex flex-col gap-4">
           {fields.map(({ label, icon, color, value, setValue, placeholder }) => (
             <div key={label}>
               <label className="flex items-center gap-2 text-xs font-semibold text-gray-500 uppercase tracking-widest mb-1.5">
-                <span className={color}>{icon}</span>
-                {label}
+                <span className={color}>{icon}</span>{label}
               </label>
               <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 focus-within:ring-2 focus-within:ring-amber-400 focus-within:border-transparent transition-all">
                 <LinkIcon size={12} className="text-gray-400 flex-shrink-0" />
-                <input
-                  type="url"
-                  value={value}
-                  onChange={(e) => setValue(e.target.value)}
-                  placeholder={placeholder}
-                  className="flex-1 text-sm text-gray-800 bg-transparent outline-none placeholder:text-gray-300"
-                />
-                {value && (
-                  <button onClick={() => setValue("")} className="text-gray-400 hover:text-gray-600 flex-shrink-0">
-                    <X size={12} />
-                  </button>
-                )}
+                <input type="url" value={value} onChange={(e) => setValue(e.target.value)} placeholder={placeholder}
+                  className="flex-1 text-sm text-gray-800 bg-transparent outline-none placeholder:text-gray-300" />
+                {value && <button onClick={() => setValue("")} className="text-gray-400 hover:text-gray-600 flex-shrink-0"><X size={12} /></button>}
               </div>
             </div>
           ))}
         </div>
         <div className="px-5 pb-5 flex justify-end gap-2">
-          <button onClick={onClose} className="text-sm text-gray-500 hover:text-gray-800 px-4 py-2 rounded-xl hover:bg-gray-100 transition-colors">
-            Cancel
-          </button>
-          <button
-            onClick={handleSave}
-            disabled={saving}
-            className="flex items-center gap-2 text-sm bg-gray-900 text-white px-5 py-2 rounded-xl hover:bg-gray-700 transition-colors disabled:opacity-60"
-          >
+          <button onClick={onClose} className="text-sm text-gray-500 hover:text-gray-800 px-4 py-2 rounded-xl hover:bg-gray-100 transition-colors">Cancel</button>
+          <button onClick={handleSave} disabled={saving}
+            className="flex items-center gap-2 text-sm bg-gray-900 text-white px-5 py-2 rounded-xl hover:bg-gray-700 transition-colors disabled:opacity-60">
             {saving && <Loader2 size={13} className="animate-spin" />}
             {saving ? "Saving…" : "Save links"}
           </button>
@@ -260,19 +211,14 @@ function SocialLinksModal({
 }
 
 // ── Social Icons Row ──────────────────────────────────────────────────────────
-function SocialIconsRow({
-  profile, isOwner, onEditClick,
-}: {
-  profile: Profile;
-  isOwner: boolean;
-  onEditClick: () => void;
+function SocialIconsRow({ profile, isOwner, onEditClick }: {
+  profile: Profile; isOwner: boolean; onEditClick: () => void;
 }) {
   const hasAnyLink = !!(profile.youtube_url || profile.instagram_url || profile.x_url);
-
   if (!isOwner && !hasAnyLink) return null;
 
   const icons = [
-    { key: "youtube",   url: profile.youtube_url,   icon: <YoutubeIcon size={19} />,   label: "YouTube",   activeClass: "text-red-500  hover:bg-red-50  hover:border-red-100"  },
+    { key: "youtube",   url: profile.youtube_url,   icon: <YoutubeIcon size={19} />,   label: "YouTube",   activeClass: "text-red-500 hover:bg-red-50 hover:border-red-100" },
     { key: "instagram", url: profile.instagram_url, icon: <InstagramIcon size={19} />, label: "Instagram", activeClass: "text-pink-500 hover:bg-pink-50 hover:border-pink-100" },
     { key: "x",         url: profile.x_url,         icon: <XIcon size={19} />,         label: "X",         activeClass: "text-gray-800 hover:bg-gray-100 hover:border-gray-200" },
   ];
@@ -280,22 +226,18 @@ function SocialIconsRow({
   return (
     <div className="flex items-center justify-center gap-2 mt-3">
       {icons.map(({ key, url, icon, label, activeClass }) => {
-        if (url) {
-          return (
-            <a key={key} href={url} target="_blank" rel="noopener noreferrer" title={`Visit ${label}`}
-              className={`flex items-center justify-center w-9 h-9 rounded-xl border border-gray-100 bg-white shadow-sm transition-all duration-150 ${activeClass}`}>
-              {icon}
-            </a>
-          );
-        }
-        if (isOwner) {
-          return (
-            <button key={key} onClick={onEditClick} title={`Add ${label} link`}
-              className="flex items-center justify-center w-9 h-9 rounded-xl border border-dashed border-gray-200 bg-white text-gray-300 hover:border-amber-400 hover:text-amber-400 transition-all duration-150">
-              {icon}
-            </button>
-          );
-        }
+        if (url) return (
+          <a key={key} href={url} target="_blank" rel="noopener noreferrer" title={`Visit ${label}`}
+            className={`flex items-center justify-center w-9 h-9 rounded-xl border border-gray-100 bg-white shadow-sm transition-all duration-150 ${activeClass}`}>
+            {icon}
+          </a>
+        );
+        if (isOwner) return (
+          <button key={key} onClick={onEditClick} title={`Add ${label} link`}
+            className="flex items-center justify-center w-9 h-9 rounded-xl border border-dashed border-gray-200 bg-white text-gray-300 hover:border-amber-400 hover:text-amber-400 transition-all duration-150">
+            {icon}
+          </button>
+        );
         return null;
       })}
       {isOwner && hasAnyLink && (
@@ -320,44 +262,24 @@ function ShareModal({ profile, onClose }: { profile: Profile; onClose: () => voi
   }
 
   const shareLinks = [
-    {
-      label: "Twitter / X", icon: Twitter,
-      href: `https://twitter.com/intent/tweet?url=${encodeURIComponent(profileUrl)}&text=Check out ${profile.full_name ?? profile.username}!`,
-      color: "hover:bg-sky-50 hover:text-sky-600 hover:border-sky-200",
-    },
-    {
-      label: "Facebook", icon: Facebook,
-      href: `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(profileUrl)}`,
-      color: "hover:bg-blue-50 hover:text-blue-600 hover:border-blue-200",
-    },
-    {
-      label: "Email", icon: Mail,
-      href: `mailto:?subject=Check out ${profile.full_name ?? profile.username}&body=${encodeURIComponent(profileUrl)}`,
-      color: "hover:bg-amber-50 hover:text-amber-600 hover:border-amber-200",
-    },
+    { label: "Twitter / X", icon: Twitter, href: `https://twitter.com/intent/tweet?url=${encodeURIComponent(profileUrl)}&text=Check out ${profile.full_name ?? profile.username}!`, color: "hover:bg-sky-50 hover:text-sky-600 hover:border-sky-200" },
+    { label: "Facebook", icon: Facebook, href: `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(profileUrl)}`, color: "hover:bg-blue-50 hover:text-blue-600 hover:border-blue-200" },
+    { label: "Email", icon: Mail, href: `mailto:?subject=Check out ${profile.full_name ?? profile.username}&body=${encodeURIComponent(profileUrl)}`, color: "hover:bg-amber-50 hover:text-amber-600 hover:border-amber-200" },
   ];
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4"
-      onClick={(e) => e.target === e.currentTarget && onClose()}
-    >
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4"
+      onClick={(e) => e.target === e.currentTarget && onClose()}>
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden">
         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
           <h2 className="text-base font-semibold text-gray-900">Share this profile</h2>
-          <button onClick={onClose} className="p-1.5 rounded-full hover:bg-gray-100 text-gray-500 transition-colors">
-            <X size={16} />
-          </button>
+          <button onClick={onClose} className="p-1.5 rounded-full hover:bg-gray-100 text-gray-500 transition-colors"><X size={16} /></button>
         </div>
         <div className="flex items-center gap-3 px-5 py-4 bg-stone-50 border-b border-gray-100">
           <div className="w-10 h-10 rounded-xl overflow-hidden flex-shrink-0 bg-stone-800">
-            {profile.avatar_url ? (
-              <Image src={profile.avatar_url} alt={profile.username} width={40} height={40} className="object-cover w-full h-full" unoptimized />
-            ) : (
-              <div className="w-full h-full flex items-center justify-center">
-                <span className="text-sm font-bold text-amber-400 uppercase">{profile.username?.charAt(0) ?? "?"}</span>
-              </div>
-            )}
+            {profile.avatar_url
+              ? <Image src={profile.avatar_url} alt={profile.username} width={40} height={40} className="object-cover w-full h-full" unoptimized />
+              : <div className="w-full h-full flex items-center justify-center"><span className="text-sm font-bold text-amber-400 uppercase">{profile.username?.charAt(0) ?? "?"}</span></div>}
           </div>
           <div>
             <p className="text-sm font-semibold text-gray-900">{profile.full_name ?? profile.username}</p>
@@ -367,15 +289,9 @@ function ShareModal({ profile, onClose }: { profile: Profile; onClose: () => voi
         <div className="px-5 py-4 border-b border-gray-100">
           <p className="text-xs text-gray-500 font-medium uppercase tracking-wide mb-2">Page link</p>
           <div className="flex gap-2">
-            <div className="flex-1 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-xs text-gray-600 truncate font-mono">
-              {profileUrl}
-            </div>
-            <button
-              onClick={copyLink}
-              className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition-all border ${
-                copied ? "bg-green-50 text-green-600 border-green-200" : "bg-gray-900 text-white border-gray-900 hover:bg-gray-700"
-              }`}
-            >
+            <div className="flex-1 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-xs text-gray-600 truncate font-mono">{profileUrl}</div>
+            <button onClick={copyLink}
+              className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition-all border ${copied ? "bg-green-50 text-green-600 border-green-200" : "bg-gray-900 text-white border-gray-900 hover:bg-gray-700"}`}>
               {copied ? <Check size={13} /> : <LinkIcon size={13} />}
               {copied ? "Copied!" : "Copy"}
             </button>
@@ -397,92 +313,66 @@ function ShareModal({ profile, onClose }: { profile: Profile; onClose: () => voi
   );
 }
 
-// ── Products Tab ──────────────────────────────────────────────────────────────
-function ProductsTab({ profile }: { profile: Profile }) {
+// ── Product Card ──────────────────────────────────────────────────────────────
+function ProductCard({ product }: { product: Product }) {
   return (
-    <div className="max-w-2xl mx-auto px-4 py-8">
-      {profile.bio && (
-        <p className="text-gray-600 text-center text-sm leading-relaxed mb-6">{profile.bio}</p>
-      )}
-      <div className="bg-white rounded-2xl border border-dashed border-gray-200 px-6 py-16 text-center">
-        <p className="text-gray-400 text-sm">No products yet.</p>
+    <Link href={`/watch/${product.id}`}
+      className="group block bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
+      {/* Thumbnail */}
+      <div className="w-full aspect-video bg-gray-900 overflow-hidden relative">
+        {product.thumbnail_url
+          ? <img src={product.thumbnail_url} alt={product.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+          : <div className="w-full h-full flex items-center justify-center text-3xl">
+              {product.product_type === "video" ? "🎬" : "📁"}
+            </div>}
+        <span className="absolute top-2 left-2 text-[10px] font-semibold uppercase tracking-wider bg-black/60 text-white px-2 py-0.5 rounded-full backdrop-blur-sm">
+          {product.product_type === "video" ? "Video" : "Digital"}
+        </span>
       </div>
-    </div>
+      {/* Info */}
+      <div className="p-4">
+        <p className="text-sm font-semibold text-gray-900 leading-snug line-clamp-2 mb-3">{product.title}</p>
+        <span
+          className="inline-flex items-center text-xs font-bold text-white px-3 py-1"
+          style={{
+            background: product.is_free ? "#16a34a" : "#e91e8c",
+            clipPath: "polygon(0 0, 88% 0, 100% 50%, 88% 100%, 0 100%)",
+            paddingRight: "16px",
+          }}
+        >
+          {product.is_free ? "Free" : `₹${product.price}+`}
+        </span>
+      </div>
+    </Link>
   );
 }
 
-// ── About Tab ─────────────────────────────────────────────────────────────────
-function AboutTab({
-  profile, isOwner, onSave,
-}: {
-  profile: Profile;
-  isOwner: boolean;
-  onSave: (bio: string) => Promise<void>;
+// ── Products Section ──────────────────────────────────────────────────────────
+function ProductsSection({ profile, products, isOwner }: {
+  profile: Profile; products: Product[]; isOwner: boolean;
 }) {
-  const [editing, setEditing] = useState(false);
-  const [bio, setBio] = useState(profile.bio ?? "");
-  const [saving, setSaving] = useState(false);
-
-  useEffect(() => {
-    if (!editing) setBio(profile.bio ?? "");
-  }, [profile.bio, editing]);
-
-  async function handleSave() {
-    setSaving(true);
-    try {
-      await onSave(bio);
-      setEditing(false);
-    } finally {
-      setSaving(false);
-    }
-  }
-
   return (
     <div className="max-w-2xl mx-auto px-4 py-8">
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
-          <h3 className="text-sm font-semibold text-gray-700">About</h3>
-          {isOwner && !editing && (
-            <button onClick={() => setEditing(true)}
-              className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-900 hover:bg-gray-100 px-2.5 py-1.5 rounded-lg transition-colors">
-              <Pencil size={13} /> Edit
-            </button>
-          )}
-          {isOwner && editing && (
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => { setBio(profile.bio ?? ""); setEditing(false); }}
-                className="text-xs text-gray-500 hover:text-gray-800 px-2.5 py-1.5 rounded-lg hover:bg-gray-100 transition-colors"
-              >
-                Cancel
-              </button>
-              <button onClick={handleSave} disabled={saving}
-                className="flex items-center gap-1.5 text-xs bg-gray-900 text-white px-3 py-1.5 rounded-lg hover:bg-gray-700 transition-colors disabled:opacity-60">
-                {saving && <Loader2 size={12} className="animate-spin" />}
-                {saving ? "Saving…" : "Save"}
-              </button>
-            </div>
+      {profile.bio && (
+        <p className="text-gray-600 text-center text-sm leading-relaxed mb-8">{profile.bio}</p>
+      )}
+      {products.length === 0 ? (
+        <div className="bg-white rounded-2xl border border-dashed border-gray-200 px-6 py-16 text-center">
+          <p className="text-gray-400 text-sm">
+            {isOwner ? "You haven't created any products yet." : "No products yet."}
+          </p>
+          {isOwner && (
+            <Link href="/creator/upload"
+              className="inline-block mt-4 text-xs font-semibold bg-gray-900 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors">
+              + Create your first product
+            </Link>
           )}
         </div>
-        <div className="px-6 py-5">
-          <p className="text-xs font-semibold uppercase tracking-widest text-gray-400 mb-2">Bio</p>
-          {editing ? (
-            <textarea
-              value={bio}
-              onChange={(e) => setBio(e.target.value)}
-              rows={5}
-              placeholder="Write something about yourself…"
-              className="w-full text-sm text-gray-800 border border-gray-200 rounded-xl px-3 py-2.5 resize-none focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent placeholder:text-gray-300"
-            />
-          ) : bio ? (
-            <p className="text-sm text-gray-800 leading-relaxed whitespace-pre-wrap">{bio}</p>
-          ) : (
-            <p className="text-sm text-gray-400 italic">
-              {isOwner ? "No bio yet. Click Edit to add one." : "No bio added yet."}
-            </p>
-          )}
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {products.map((p) => <ProductCard key={p.id} product={p} />)}
         </div>
-      </div>
+      )}
     </div>
   );
 }
@@ -491,46 +381,58 @@ function AboutTab({
 export default function UserProfileClient({
   profile: initialProfile,
   isOwner,
+  products: initialProducts,
 }: {
   profile: Profile;
   isOwner: boolean;
+  products: Product[];
 }) {
   const [profile, setProfile] = useState<Profile>(initialProfile);
+  const [products, setProducts] = useState<Product[]>(initialProducts);
   const [coverPending, setCoverPending] = useState(false);
   const [avatarPending, setAvatarPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<"products" | "about">("products");
   const [showShare, setShowShare] = useState(false);
   const [showSocialEdit, setShowSocialEdit] = useState(false);
 
   const coverInputRef = useRef<HTMLInputElement>(null);
   const avatarInputRef = useRef<HTMLInputElement>(null);
 
-  // ── Real-time sync ─────────────────────────────────────────────────────────
+  // Real-time profile sync
   useEffect(() => {
     const channel = supabase
       .channel(`profile:${profile.username}`)
-      .on("postgres_changes", {
-        event: "UPDATE", schema: "public", table: "profiles",
-        filter: `username=eq.${profile.username}`,
-      }, (payload) => {
-        const updated = payload.new as Profile;
-        setProfile((p) => ({
-          ...p,
-          avatar_url:    updated.avatar_url    ?? p.avatar_url,
-          cover_url:     updated.cover_url     ?? p.cover_url,
-          full_name:     updated.full_name     ?? p.full_name,
-          bio:           updated.bio           ?? p.bio,
-          youtube_url:   updated.youtube_url   !== undefined ? updated.youtube_url   : p.youtube_url,
-          instagram_url: updated.instagram_url !== undefined ? updated.instagram_url : p.instagram_url,
-          x_url:         updated.x_url         !== undefined ? updated.x_url         : p.x_url,
-        }));
-      })
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "profiles", filter: `username=eq.${profile.username}` },
+        (payload) => {
+          const updated = payload.new as Profile;
+          setProfile((p) => ({
+            ...p,
+            avatar_url:    updated.avatar_url    ?? p.avatar_url,
+            cover_url:     updated.cover_url     ?? p.cover_url,
+            full_name:     updated.full_name     ?? p.full_name,
+            bio:           updated.bio           ?? p.bio,
+            youtube_url:   updated.youtube_url   !== undefined ? updated.youtube_url   : p.youtube_url,
+            instagram_url: updated.instagram_url !== undefined ? updated.instagram_url : p.instagram_url,
+            x_url:         updated.x_url         !== undefined ? updated.x_url         : p.x_url,
+          }));
+        })
       .subscribe();
     return () => { supabase.removeChannel(channel); };
   }, [profile.username]);
 
-  // ── Cover upload ───────────────────────────────────────────────────────────
+  // Real-time products sync — listen for new inserts
+  useEffect(() => {
+    const channel = supabase
+      .channel(`products:${profile.id}`)
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "videos", filter: `creator_id=eq.${profile.id}` },
+        (payload) => {
+          const newProduct = payload.new as Product;
+          setProducts((prev) => [newProduct, ...prev]);
+        })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [profile.id]);
+
   async function handleCoverChange(e: React.ChangeEvent<HTMLInputElement>) {
     if (!isOwner) return;
     const file = e.target.files?.[0];
@@ -550,7 +452,6 @@ export default function UserProfileClient({
     }
   }
 
-  // ── Avatar upload ──────────────────────────────────────────────────────────
   async function handleAvatarChange(e: React.ChangeEvent<HTMLInputElement>) {
     if (!isOwner) return;
     const file = e.target.files?.[0];
@@ -570,13 +471,6 @@ export default function UserProfileClient({
     }
   }
 
-  // ── About save ─────────────────────────────────────────────────────────────
-  async function handleAboutSave(bio: string) {
-    await supabase.from("profiles").update({ bio }).eq("username", profile.username);
-    setProfile((p) => ({ ...p, bio }));
-  }
-
-  // ── Social links save ──────────────────────────────────────────────────────
   async function handleSocialSave(links: { youtube_url: string; instagram_url: string; x_url: string }) {
     const payload = {
       youtube_url:   links.youtube_url   || null,
@@ -589,93 +483,41 @@ export default function UserProfileClient({
 
   return (
     <div className="min-h-screen bg-[#f4f4f0]">
-
       {showShare && <ShareModal profile={profile} onClose={() => setShowShare(false)} />}
       {showSocialEdit && isOwner && (
-        <SocialLinksModal
-          profile={profile}
-          onClose={() => setShowSocialEdit(false)}
-          onSave={handleSocialSave}
-        />
+        <SocialLinksModal profile={profile} onClose={() => setShowSocialEdit(false)} onSave={handleSocialSave} />
       )}
 
       {/* Cover */}
-      <CoverPhoto
-        profile={profile}
-        isOwner={isOwner}
-        pending={coverPending}
-        inputRef={coverInputRef}
-        onChange={handleCoverChange}
-      />
+      <CoverPhoto profile={profile} isOwner={isOwner} pending={coverPending} inputRef={coverInputRef} onChange={handleCoverChange} />
 
       {/* Profile header */}
       <div className="max-w-2xl mx-auto px-4">
         <div className="flex items-end justify-between -mt-16 md:-mt-20 relative z-10">
           <div className="w-10" />
-
-          <AvatarPhoto
-            profile={profile}
-            isOwner={isOwner}
-            pending={avatarPending}
-            inputRef={avatarInputRef}
-            onChange={handleAvatarChange}
-          />
-
+          <AvatarPhoto profile={profile} isOwner={isOwner} pending={avatarPending} inputRef={avatarInputRef} onChange={handleAvatarChange} />
           <div className="mb-1">
-            <button
-              onClick={() => setShowShare(true)}
-              className="flex items-center gap-1.5 bg-white hover:bg-gray-50 text-gray-700 text-xs font-medium px-3 py-2 rounded-full shadow-md border border-gray-200 transition-colors"
-            >
+            <button onClick={() => setShowShare(true)}
+              className="flex items-center gap-1.5 bg-white hover:bg-gray-50 text-gray-700 text-xs font-medium px-3 py-2 rounded-full shadow-md border border-gray-200 transition-colors">
               <Share2 size={13} /> Share
             </button>
           </div>
         </div>
 
         {error && (
-          <p className="text-red-500 text-sm text-center mt-4 bg-red-50 border border-red-200 rounded-lg py-2 px-4">
-            ⚠️ {error}
-          </p>
+          <p className="text-red-500 text-sm text-center mt-4 bg-red-50 border border-red-200 rounded-lg py-2 px-4">⚠️ {error}</p>
         )}
 
-        {/* Name + social icons */}
         <div className="mt-10 text-center">
           <h1 className="text-2xl md:text-3xl font-bold text-gray-900 tracking-tight">
             {profile.full_name ?? profile.username}
           </h1>
-          <SocialIconsRow
-            profile={profile}
-            isOwner={isOwner}
-            onEditClick={() => setShowSocialEdit(true)}
-          />
+          <SocialIconsRow profile={profile} isOwner={isOwner} onEditClick={() => setShowSocialEdit(true)} />
         </div>
       </div>
 
-      {/* Tabs */}
-      <div className="max-w-2xl mx-auto px-4 mt-8">
-        <div className="flex border-b border-gray-200">
-          {(["products", "about"] as const).map((tab) => (
-            <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              className={`relative px-6 py-3 text-sm font-medium capitalize transition-colors ${
-                activeTab === tab ? "text-amber-700" : "text-gray-500 hover:text-gray-800"
-              }`}
-            >
-              {tab.charAt(0).toUpperCase() + tab.slice(1)}
-              {activeTab === tab && (
-                <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-amber-600 rounded-full" />
-              )}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Tab content */}
-      {activeTab === "products" ? (
-        <ProductsTab profile={profile} />
-      ) : (
-        <AboutTab profile={profile} isOwner={isOwner} onSave={handleAboutSave} />
-      )}
+      {/* Products — no tabs, shown directly */}
+      <ProductsSection profile={profile} products={products} isOwner={isOwner} />
     </div>
   );
 }
