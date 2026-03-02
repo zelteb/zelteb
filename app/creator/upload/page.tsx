@@ -62,18 +62,26 @@ export default function Upload() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) { alert("Login first"); setLoading(false); return; }
 
+    // Upload main product file
     const { data, error } = await supabase.storage
       .from("videos")
       .upload(`${type}/${user.id}-${Date.now()}-${file.name}`, file);
 
     if (error) { alert(error.message); setLoading(false); return; }
 
-    let thumbnailPath = null;
+    // Upload thumbnail and get public URL
+    let thumbnailUrl = null;
     if (thumb) {
       const { data: tData, error: tError } = await supabase.storage
         .from("videos")
         .upload(`thumbs/${user.id}-${Date.now()}-${thumb.name}`, thumb);
-      if (!tError && tData) thumbnailPath = tData.path;
+
+      if (!tError && tData) {
+        const { data: urlData } = supabase.storage
+          .from("videos")
+          .getPublicUrl(tData.path);
+        thumbnailUrl = urlData.publicUrl;
+      }
     }
 
     const description = editor?.getHTML() || "";
@@ -85,7 +93,7 @@ export default function Upload() {
       price: isFree ? 0 : Number(price),
       video_path: data.path,
       product_type: type,
-      thumbnail_url: thumbnailPath,
+      thumbnail_url: thumbnailUrl, // ✅ now stores full public URL
       is_free: isFree,
     });
 
