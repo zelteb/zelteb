@@ -5,6 +5,10 @@ export async function POST(req: Request) {
     const { video, buyer_id } = await req.json();
     console.log("Incoming:", video, buyer_id);
 
+    if (!video?.id || !buyer_id) {
+      return new Response("Missing video.id or buyer_id", { status: 400 });
+    }
+
     const supabase = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.SUPABASE_SERVICE_ROLE_KEY!
@@ -21,13 +25,13 @@ export async function POST(req: Request) {
 
     if (error) {
       console.error("Insert error:", error);
-      return new Response(JSON.stringify(error), { status: 500 });
+      return new Response(error.message, { status: 500 });
     }
 
     console.log("Inserted:", data);
     return new Response("ok");
-  } catch (err) {
+  } catch (err: any) {
     console.error("Server crash:", err);
-    return new Response("server error", { status: 500 });
+    return new Response(err?.message || "server error", { status: 500 });
   }
 }
