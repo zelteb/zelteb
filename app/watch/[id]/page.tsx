@@ -82,7 +82,7 @@ export default function Watch({ params }: { params: Promise<{ id: string }> }) {
       const { error } = await supabase.from("purchases").insert({ buyer_id: user.id, video_id: video.id, amount: 0 });
       if (error) { alert(error.message); setLoading(false); return; }
     } else {
-      await fetch("/buy-video", {
+      await fetch("/api/buy-video", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ video, buyer_id: user.id }),
