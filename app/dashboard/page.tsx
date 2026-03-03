@@ -4,19 +4,15 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 import { useRouter } from "next/navigation";
 
-interface Video { title: string; creator_id: string; }
-interface Buyer { username: string; full_name: string | null; avatar_url: string | null; }
 interface Purchase {
   id: string;
   amount: number;
   creator_earnings: number;
   created_at: string;
-  videos: Video | Video[] | null;
-  buyer: Buyer | Buyer[] | null;
-}
-function first<T>(val: T | T[] | null): T | null {
-  if (!val) return null;
-  return Array.isArray(val) ? (val[0] ?? null) : val;
+  video_title: string;
+  buyer_name: string;
+  buyer_email: string;
+  buyer_avatar: string | null;
 }
 
 export default function Dashboard() {
@@ -32,7 +28,6 @@ export default function Dashboard() {
 
   const options = ["Last 7 days", "Last 30 days", "Last 90 days", "All time"];
 
-  // Load profile + purchases
   useEffect(() => {
     const loadData = async () => {
       setLoading(true);
@@ -55,34 +50,65 @@ export default function Dashboard() {
         setAvatarUrl(profile.avatar_url || null);
       }
 
-      // Step 1: get all video IDs that belong to this creator
-      const { data: myVideos } = await supabase
-        .from("videos")
-        .select("id")
-        .eq("creator_id", uid);
+      // Same pattern as sales page — filter by creator_id directly on purchases
+      const { data: purchaseData, error } = await supabase
+        .from("purchases")
+        .select(`
+          id,
+          price,
+          creator_earnings,
+          created_at,
+          buyer_id,
+          videos!purchases_video_id_fkey (
+            title
+          )
+        `)
+        .eq("creator_id", uid)
+        .order("created_at", { ascending: false });
 
-      const videoIds = (myVideos || []).map((v: any) => v.id);
-
-      let purchaseData: any[] = [];
-      if (videoIds.length > 0) {
-        // Step 2: get purchases for those video IDs
-        const { data } = await supabase
-          .from("purchases")
-          .select(`
-            id,
-            amount,
-            creator_earnings,
-            created_at,
-            videos ( title, creator_id ),
-            buyer:profiles!buyer_id ( username, full_name, avatar_url )
-          `)
-          .in("video_id", videoIds)
-          .order("created_at", { ascending: false });
-        purchaseData = data || [];
+      if (error || !purchaseData) {
+        console.error("Dashboard purchases error:", error);
+        setLoading(false);
+        return;
       }
 
-      const rows = (purchaseData || []) as Purchase[];
-      setPurchases(rows);
+      // Get unique buyer IDs
+      const buyerIds = [...new Set(purchaseData.map((p: any) => p.buyer_id))];
+
+      // Fetch buyer info via API route (same as sales page)
+      let buyerMap: Record<string, { email: string; name: string; avatar: string | null }> = {};
+      try {
+        const res = await fetch("/api/get-buyers", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ buyer_ids: buyerIds }),
+        });
+        if (res.ok) {
+          const buyers = await res.json();
+          buyers.forEach((b: any) => {
+            buyerMap[b.id] = {
+              email: b.email ?? "—",
+              name: b.raw_user_meta_data?.full_name ?? b.email ?? "Unknown",
+              avatar: b.raw_user_meta_data?.avatar_url ?? null,
+            };
+          });
+        }
+      } catch {
+        // fallback silently
+      }
+
+      const enriched: Purchase[] = purchaseData.map((p: any) => ({
+        id: p.id,
+        amount: Number(p.price),
+        creator_earnings: Number(p.creator_earnings),
+        created_at: p.created_at,
+        video_title: (p.videos as any)?.title ?? "Untitled",
+        buyer_name: buyerMap[p.buyer_id]?.name ?? "—",
+        buyer_email: buyerMap[p.buyer_id]?.email ?? "—",
+        buyer_avatar: buyerMap[p.buyer_id]?.avatar ?? null,
+      }));
+
+      setPurchases(enriched);
       setLoading(false);
     };
 
@@ -114,8 +140,7 @@ export default function Dashboard() {
     return new Date(p.created_at) >= cutoff;
   });
 
-  // Use creator_earnings from DB
-  const filteredEarnings = filteredPurchases.reduce((sum, p) => sum + (p.creator_earnings ?? 0), 0);
+  const filteredEarnings = filteredPurchases.reduce((sum, p) => sum + p.creator_earnings, 0);
   const filteredTotal = filteredPurchases.reduce((sum, p) => sum + p.amount, 0);
 
   if (loading) {
@@ -184,10 +209,9 @@ export default function Dashboard() {
         </div>
 
         {filteredPurchases.length === 0 ? (
-          /* Empty state as a table-style placeholder */
           <div className="divide-y divide-gray-50">
-            <div className="px-6 py-4">
-              <div className="flex items-center gap-4">
+            {[1, 2].map((i) => (
+              <div key={i} className="flex items-center gap-4 px-6 py-4">
                 <div className="w-10 h-10 rounded-full bg-gray-100 flex-shrink-0" />
                 <div className="flex-1 space-y-2">
                   <div className="h-3 bg-gray-100 rounded w-1/3" />
@@ -198,20 +222,7 @@ export default function Dashboard() {
                   <div className="h-2.5 bg-gray-100 rounded w-10 ml-auto" />
                 </div>
               </div>
-            </div>
-            <div className="px-6 py-4">
-              <div className="flex items-center gap-4">
-                <div className="w-10 h-10 rounded-full bg-gray-100 flex-shrink-0" />
-                <div className="flex-1 space-y-2">
-                  <div className="h-3 bg-gray-100 rounded w-2/5" />
-                  <div className="h-2.5 bg-gray-100 rounded w-1/3" />
-                </div>
-                <div className="text-right space-y-2">
-                  <div className="h-3 bg-gray-100 rounded w-16" />
-                  <div className="h-2.5 bg-gray-100 rounded w-10 ml-auto" />
-                </div>
-              </div>
-            </div>
+            ))}
             <div className="px-6 py-8 text-center">
               <p className="text-sm font-semibold text-gray-400">No transactions yet</p>
               <p className="text-xs text-gray-300 mt-1">Share your page with your audience to get started.</p>
@@ -220,42 +231,28 @@ export default function Dashboard() {
         ) : (
           <div className="divide-y divide-gray-50">
             {filteredPurchases.map((p) => {
-              const video = first(p.videos);
-              const buyer = first(p.buyer);
-              const buyerName = buyer?.full_name || buyer?.username || "Someone";
-              const buyerInitial = buyerName[0]?.toUpperCase() ?? "?";
-              const productTitle = video?.title || "Unknown product";
-              const date = p.created_at
-                ? new Date(p.created_at).toLocaleDateString("en-IN", {
-                    day: "numeric", month: "short", year: "numeric",
-                  })
-                : "";
-              const earn = p.creator_earnings ?? 0;
+              const buyerInitial = p.buyer_name !== "—" ? p.buyer_name[0].toUpperCase() : "?";
+              const date = new Date(p.created_at).toLocaleDateString("en-IN", {
+                day: "numeric", month: "short", year: "numeric",
+              });
 
               return (
                 <div key={p.id} className="flex items-center gap-4 px-6 py-4 hover:bg-gray-50 transition-colors">
-                  {/* Buyer avatar */}
                   <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center flex-shrink-0 overflow-hidden">
-                    {buyer?.avatar_url ? (
-                      <img src={buyer.avatar_url} alt={buyerName} className="w-full h-full object-cover" />
+                    {p.buyer_avatar ? (
+                      <img src={p.buyer_avatar} alt={p.buyer_name} className="w-full h-full object-cover" />
                     ) : (
                       <span className="text-amber-700 font-bold text-sm">{buyerInitial}</span>
                     )}
                   </div>
 
-                  {/* Info */}
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-gray-900 truncate">
-                      {buyerName}
-                    </p>
-                    <p className="text-xs text-gray-400 truncate">
-                      {productTitle} · {date}
-                    </p>
+                    <p className="text-sm font-semibold text-gray-900 truncate">{p.buyer_name}</p>
+                    <p className="text-xs text-gray-400 truncate">{p.video_title} · {date}</p>
                   </div>
 
-                  {/* Amount */}
                   <div className="text-right flex-shrink-0">
-                    <p className="text-sm font-bold text-green-600">+₹{earn.toFixed(2)}</p>
+                    <p className="text-sm font-bold text-green-600">+₹{p.creator_earnings.toFixed(2)}</p>
                     <p className="text-xs text-gray-400">₹{p.amount} paid</p>
                   </div>
                 </div>
