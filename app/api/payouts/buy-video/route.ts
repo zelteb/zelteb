@@ -10,10 +10,10 @@ export async function POST(req: Request) {
 
     const supabase = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!
+      process.env.SUPABASE_SERVICE_ROLE_KEY! // must be service role
     );
 
-    // 🔥 1. Get video from DB (never trust frontend price)
+    // 1️⃣ Get video securely (never trust frontend price)
     const { data: video, error: videoError } = await supabase
       .from("videos")
       .select("id, price, creator_id")
@@ -24,7 +24,7 @@ export async function POST(req: Request) {
       return new Response("Video not found", { status: 404 });
     }
 
-    // 🔥 2. Prevent duplicate purchase
+    // 2️⃣ Prevent duplicate purchase
     const { data: existing } = await supabase
       .from("purchases")
       .select("id")
@@ -36,14 +36,22 @@ export async function POST(req: Request) {
       return new Response("Already purchased", { status: 400 });
     }
 
-    // 🔥 3. Insert purchase with creator_id
+    // 3️⃣ Calculate commission (7%)
+    const price = Number(video.price);
+    const platform_fee = Number((price * 0.07).toFixed(2));
+    const creator_earnings = Number((price - platform_fee).toFixed(2));
+
+    // 4️⃣ Insert purchase (NEW STRUCTURE)
     const { error: insertError } = await supabase
       .from("purchases")
       .insert({
         video_id: video.id,
         buyer_id,
-        creator_id: video.creator_id, // ✅ REQUIRED
-        amount: video.price,
+        creator_id: video.creator_id,
+        price,
+        platform_fee,
+        creator_earnings,
+        status: "completed",
       });
 
     if (insertError) {
