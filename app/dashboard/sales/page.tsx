@@ -55,14 +55,12 @@ export default function SalesPage() {
   const fetchSales = async () => {
     setLoading(true);
 
-    // ✅ Get logged in user first
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
       setLoading(false);
       return;
     }
 
-    // ✅ Filter by creator_id + explicit foreign key for video join
     const { data: purchases, error } = await supabase
       .from("purchases")
       .select(`
@@ -86,10 +84,8 @@ export default function SalesPage() {
       return;
     }
 
-    // Step 2: get unique buyer_ids
     const buyerIds = [...new Set(purchases.map((p: any) => p.buyer_id))];
 
-    // Step 3: fetch buyer emails + names via API route
     let buyerMap: Record<string, { email: string; name: string }> = {};
     try {
       const res = await fetch("/api/get-buyers", {
@@ -110,7 +106,6 @@ export default function SalesPage() {
       // fallback silently
     }
 
-    // Step 4: build enriched rows
     const enriched: SaleRow[] = purchases.map((p: any) => ({
       id: p.id,
       price: Number(p.price),
@@ -124,7 +119,6 @@ export default function SalesPage() {
       buyer_name: buyerMap[p.buyer_id]?.name ?? "—",
     }));
 
-    // Step 5: compute totals
     const revenue = enriched.reduce((s, p) => s + p.price, 0);
     const earnings = enriched.reduce((s, p) => s + p.creator_earnings, 0);
     const fees = enriched.reduce((s, p) => s + p.platform_fee, 0);
@@ -133,7 +127,6 @@ export default function SalesPage() {
     setTotalEarnings(earnings);
     setTotalFees(fees);
 
-    // Step 6: product-wise stats
     const productMap: Record<string, ProductStat> = {};
     enriched.forEach((p) => {
       if (!productMap[p.video_title]) {
@@ -152,9 +145,9 @@ export default function SalesPage() {
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
       return (
-        <div className="bg-[#0f0f0f] border border-[#2a2a2a] rounded-xl p-3 text-sm shadow-xl">
-          <p className="text-[#a0a0a0] mb-1 truncate max-w-[160px]">{label}</p>
-          <p className="text-[#e8ff47] font-semibold">{formatINR(payload[0].value)}</p>
+        <div className="bg-white border border-gray-200 rounded-xl p-3 text-sm shadow-xl">
+          <p className="text-gray-500 mb-1 truncate max-w-[160px]">{label}</p>
+          <p className="text-gray-900 font-semibold">{formatINR(payload[0].value)}</p>
         </div>
       );
     }
@@ -163,16 +156,16 @@ export default function SalesPage() {
 
   return (
     <div
-      className="min-h-screen bg-[#0a0a0a] text-white"
-      style={{ fontFamily: "'DM Mono', 'Courier New', monospace" }}
+      className="min-h-screen bg-white text-gray-900"
+      style={{ fontFamily: "sans-serif" }}
     >
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Syne:wght@700;800&display=swap');
-        .tab-active { border-bottom: 2px solid #e8ff47; color: #e8ff47; }
-        .tab-inactive { border-bottom: 2px solid transparent; color: #555; }
-        .stat-card { background: linear-gradient(135deg, #141414 0%, #0f0f0f 100%); border: 1px solid #1e1e1e; }
-        .stat-card:hover { border-color: #2a2a2a; }
-        .row-hover:hover { background: #111; }
+        @import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800&display=swap');
+        .tab-active { border-bottom: 2px solid #111; color: #111; }
+        .tab-inactive { border-bottom: 2px solid transparent; color: #aaa; }
+        .stat-card { background: #f9f9f9; border: 1px solid #e5e5e5; }
+        .stat-card:hover { border-color: #d0d0d0; }
+        .row-hover:hover { background: #f9f9f9; }
         @keyframes fadeUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
         .fade-up { animation: fadeUp 0.4s ease forwards; }
         .fade-up-2 { animation: fadeUp 0.4s 0.1s ease both; }
@@ -183,7 +176,7 @@ export default function SalesPage() {
       <div className="max-w-6xl mx-auto px-6 py-10">
         {/* Header */}
         <div className="mb-10 fade-up">
-          <p className="text-[#555] text-xs tracking-[0.2em] uppercase mb-1">Creator Dashboard</p>
+          <p className="text-gray-400 text-xs tracking-[0.2em] uppercase mb-1">Creator Dashboard</p>
           <h1 className="text-4xl font-extrabold tracking-tight" style={{ fontFamily: "'Syne', sans-serif" }}>
             Sales
           </h1>
@@ -199,25 +192,25 @@ export default function SalesPage() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-10">
             <div className="stat-card rounded-2xl p-6 fade-up">
-              <p className="text-[#555] text-xs tracking-widest uppercase mb-3">Total Revenue</p>
-              <p className="text-3xl font-bold text-white" style={{ fontFamily: "'Syne', sans-serif" }}>
+              <p className="text-gray-400 text-xs tracking-widest uppercase mb-3">Total Revenue</p>
+              <p className="text-3xl font-bold text-gray-900" style={{ fontFamily: "'Syne', sans-serif" }}>
                 {formatINR(totalRevenue)}
               </p>
-              <p className="text-[#333] text-xs mt-2">{sales.length} transactions</p>
+              <p className="text-gray-300 text-xs mt-2">{sales.length} transactions</p>
             </div>
             <div className="stat-card rounded-2xl p-6 fade-up-2">
-              <p className="text-[#555] text-xs tracking-widest uppercase mb-3">Your Earnings</p>
-              <p className="text-3xl font-bold text-[#e8ff47]" style={{ fontFamily: "'Syne', sans-serif" }}>
+              <p className="text-gray-400 text-xs tracking-widest uppercase mb-3">Your Earnings</p>
+              <p className="text-3xl font-bold text-green-600" style={{ fontFamily: "'Syne', sans-serif" }}>
                 {formatINR(totalEarnings)}
               </p>
-              <p className="text-[#333] text-xs mt-2">After 7% platform fee</p>
+              <p className="text-gray-300 text-xs mt-2">After 7% platform fee</p>
             </div>
             <div className="stat-card rounded-2xl p-6 fade-up-3">
-              <p className="text-[#555] text-xs tracking-widest uppercase mb-3">Platform Fee (7%)</p>
-              <p className="text-3xl font-bold text-[#ff5c5c]" style={{ fontFamily: "'Syne', sans-serif" }}>
+              <p className="text-gray-400 text-xs tracking-widest uppercase mb-3">Platform Fee (7%)</p>
+              <p className="text-3xl font-bold text-red-500" style={{ fontFamily: "'Syne', sans-serif" }}>
                 {formatINR(totalFees)}
               </p>
-              <p className="text-[#333] text-xs mt-2">
+              <p className="text-gray-300 text-xs mt-2">
                 {totalRevenue > 0 ? ((totalFees / totalRevenue) * 100).toFixed(1) : 0}% of gross
               </p>
             </div>
@@ -226,39 +219,39 @@ export default function SalesPage() {
 
         {/* Product Chart */}
         {!loading && productStats.length > 0 && (
-          <div className="stat-card rounded-2xl p-6 mb-8 fade-up-4" style={{ border: "1px solid #1e1e1e" }}>
-            <p className="text-[#555] text-xs tracking-widest uppercase mb-6">Revenue by Product</p>
+          <div className="stat-card rounded-2xl p-6 mb-8 fade-up-4" style={{ border: "1px solid #e5e5e5" }}>
+            <p className="text-gray-400 text-xs tracking-widest uppercase mb-6">Revenue by Product</p>
             <ResponsiveContainer width="100%" height={220}>
               <BarChart data={productStats} margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#1a1a1a" vertical={false} />
+                <CartesianGrid strokeDasharray="3 3" stroke="#eee" vertical={false} />
                 <XAxis
                   dataKey="title"
-                  tick={{ fill: "#444", fontSize: 11 }}
+                  tick={{ fill: "#aaa", fontSize: 11 }}
                   axisLine={false}
                   tickLine={false}
                   interval={0}
                   tickFormatter={(v: string) => v.length > 14 ? v.slice(0, 14) + "…" : v}
                 />
                 <YAxis
-                  tick={{ fill: "#444", fontSize: 11 }}
+                  tick={{ fill: "#aaa", fontSize: 11 }}
                   axisLine={false}
                   tickLine={false}
                   tickFormatter={(v: number) => `₹${(v / 1000).toFixed(0)}k`}
                 />
-                <Tooltip content={<CustomTooltip />} cursor={{ fill: "#161616" }} />
-                <Bar dataKey="revenue" fill="#e8ff47" radius={[6, 6, 0, 0]} maxBarSize={56} />
+                <Tooltip content={<CustomTooltip />} cursor={{ fill: "#f5f5f5" }} />
+                <Bar dataKey="revenue" fill="#111" radius={[6, 6, 0, 0]} maxBarSize={56} />
               </BarChart>
             </ResponsiveContainer>
-            <div className="mt-6 divide-y divide-[#161616]">
+            <div className="mt-6 divide-y divide-gray-100">
               {productStats.map((p) => (
                 <div key={p.title} className="flex items-center justify-between py-3">
                   <div>
-                    <p className="text-sm text-white">{p.title}</p>
-                    <p className="text-xs text-[#444] mt-0.5">{p.sales} sale{p.sales !== 1 ? "s" : ""}</p>
+                    <p className="text-sm text-gray-900">{p.title}</p>
+                    <p className="text-xs text-gray-400 mt-0.5">{p.sales} sale{p.sales !== 1 ? "s" : ""}</p>
                   </div>
                   <div className="text-right">
-                    <p className="text-sm text-[#e8ff47]">{formatINR(p.earnings)}</p>
-                    <p className="text-xs text-[#333]">{formatINR(p.revenue)} gross</p>
+                    <p className="text-sm text-green-600">{formatINR(p.earnings)}</p>
+                    <p className="text-xs text-gray-400">{formatINR(p.revenue)} gross</p>
                   </div>
                 </div>
               ))}
@@ -269,15 +262,15 @@ export default function SalesPage() {
         {/* No sales state */}
         {!loading && sales.length === 0 && (
           <div className="text-center py-20 fade-up">
-            <p className="text-[#333] text-xs tracking-widest uppercase mb-2">No sales yet</p>
-            <p className="text-[#222] text-sm">Your transactions will appear here once you make a sale.</p>
+            <p className="text-gray-300 text-xs tracking-widest uppercase mb-2">No sales yet</p>
+            <p className="text-gray-400 text-sm">Your transactions will appear here once you make a sale.</p>
           </div>
         )}
 
         {/* Tabs + Tables */}
         {!loading && sales.length > 0 && (
           <>
-            <div className="flex gap-6 border-b border-[#1a1a1a] mb-6">
+            <div className="flex gap-6 border-b border-gray-200 mb-6">
               <button
                 onClick={() => setActiveTab("overview")}
                 className={`pb-3 text-xs tracking-widest uppercase transition-all ${activeTab === "overview" ? "tab-active" : "tab-inactive"}`}
@@ -293,25 +286,25 @@ export default function SalesPage() {
             </div>
 
             {activeTab === "overview" && (
-              <div className="rounded-2xl overflow-hidden" style={{ border: "1px solid #1a1a1a" }}>
+              <div className="rounded-2xl overflow-hidden" style={{ border: "1px solid #e5e5e5" }}>
                 <table className="w-full text-sm">
                   <thead>
-                    <tr style={{ background: "#0f0f0f", borderBottom: "1px solid #1a1a1a" }}>
-                      <th className="p-4 text-left text-[#444] text-xs tracking-widest uppercase font-normal">Product</th>
-                      <th className="p-4 text-left text-[#444] text-xs tracking-widest uppercase font-normal">Price</th>
-                      <th className="p-4 text-left text-[#444] text-xs tracking-widest uppercase font-normal">Fee</th>
-                      <th className="p-4 text-left text-[#444] text-xs tracking-widest uppercase font-normal">Earnings</th>
-                      <th className="p-4 text-left text-[#444] text-xs tracking-widest uppercase font-normal">Date</th>
+                    <tr style={{ background: "#f9f9f9", borderBottom: "1px solid #e5e5e5" }}>
+                      <th className="p-4 text-left text-gray-400 text-xs tracking-widest uppercase font-normal">Product</th>
+                      <th className="p-4 text-left text-gray-400 text-xs tracking-widest uppercase font-normal">Price</th>
+                      <th className="p-4 text-left text-gray-400 text-xs tracking-widest uppercase font-normal">Fee</th>
+                      <th className="p-4 text-left text-gray-400 text-xs tracking-widest uppercase font-normal">Earnings</th>
+                      <th className="p-4 text-left text-gray-400 text-xs tracking-widest uppercase font-normal">Date</th>
                     </tr>
                   </thead>
                   <tbody>
                     {sales.map((s) => (
-                      <tr key={s.id} className="row-hover transition-colors" style={{ borderBottom: "1px solid #111" }}>
-                        <td className="p-4 text-white max-w-[180px] truncate">{s.video_title}</td>
-                        <td className="p-4 text-[#888]">{formatINR(s.price)}</td>
-                        <td className="p-4 text-[#ff5c5c]">-{formatINR(s.platform_fee)}</td>
-                        <td className="p-4 text-[#e8ff47] font-medium">{formatINR(s.creator_earnings)}</td>
-                        <td className="p-4 text-[#444] text-xs">
+                      <tr key={s.id} className="row-hover transition-colors" style={{ borderBottom: "1px solid #f0f0f0" }}>
+                        <td className="p-4 text-gray-900 max-w-[180px] truncate">{s.video_title}</td>
+                        <td className="p-4 text-gray-500">{formatINR(s.price)}</td>
+                        <td className="p-4 text-red-500">-{formatINR(s.platform_fee)}</td>
+                        <td className="p-4 text-green-600 font-medium">{formatINR(s.creator_earnings)}</td>
+                        <td className="p-4 text-gray-400 text-xs">
                           {new Date(s.created_at).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
                         </td>
                       </tr>
@@ -322,32 +315,32 @@ export default function SalesPage() {
             )}
 
             {activeTab === "buyers" && (
-              <div className="rounded-2xl overflow-hidden" style={{ border: "1px solid #1a1a1a" }}>
+              <div className="rounded-2xl overflow-hidden" style={{ border: "1px solid #e5e5e5" }}>
                 <table className="w-full text-sm">
                   <thead>
-                    <tr style={{ background: "#0f0f0f", borderBottom: "1px solid #1a1a1a" }}>
-                      <th className="p-4 text-left text-[#444] text-xs tracking-widest uppercase font-normal">Buyer</th>
-                      <th className="p-4 text-left text-[#444] text-xs tracking-widest uppercase font-normal">Email</th>
-                      <th className="p-4 text-left text-[#444] text-xs tracking-widest uppercase font-normal">Product</th>
-                      <th className="p-4 text-left text-[#444] text-xs tracking-widest uppercase font-normal">Paid</th>
-                      <th className="p-4 text-left text-[#444] text-xs tracking-widest uppercase font-normal">Date</th>
+                    <tr style={{ background: "#f9f9f9", borderBottom: "1px solid #e5e5e5" }}>
+                      <th className="p-4 text-left text-gray-400 text-xs tracking-widest uppercase font-normal">Buyer</th>
+                      <th className="p-4 text-left text-gray-400 text-xs tracking-widest uppercase font-normal">Email</th>
+                      <th className="p-4 text-left text-gray-400 text-xs tracking-widest uppercase font-normal">Product</th>
+                      <th className="p-4 text-left text-gray-400 text-xs tracking-widest uppercase font-normal">Paid</th>
+                      <th className="p-4 text-left text-gray-400 text-xs tracking-widest uppercase font-normal">Date</th>
                     </tr>
                   </thead>
                   <tbody>
                     {sales.map((s) => (
-                      <tr key={s.id} className="row-hover transition-colors" style={{ borderBottom: "1px solid #111" }}>
+                      <tr key={s.id} className="row-hover transition-colors" style={{ borderBottom: "1px solid #f0f0f0" }}>
                         <td className="p-4">
                           <div className="flex items-center gap-3">
-                            <div className="w-7 h-7 rounded-full bg-[#1a1a1a] border border-[#2a2a2a] flex items-center justify-center text-xs text-[#555] flex-shrink-0">
+                            <div className="w-7 h-7 rounded-full bg-gray-100 border border-gray-200 flex items-center justify-center text-xs text-gray-500 flex-shrink-0">
                               {s.buyer_name !== "—" ? s.buyer_name[0].toUpperCase() : "?"}
                             </div>
-                            <span className="text-white truncate max-w-[120px]">{s.buyer_name}</span>
+                            <span className="text-gray-900 truncate max-w-[120px]">{s.buyer_name}</span>
                           </div>
                         </td>
-                        <td className="p-4 text-[#555] text-xs">{s.buyer_email}</td>
-                        <td className="p-4 text-[#888] truncate max-w-[160px]">{s.video_title}</td>
-                        <td className="p-4 text-[#e8ff47] font-medium">{formatINR(s.price)}</td>
-                        <td className="p-4 text-[#444] text-xs">
+                        <td className="p-4 text-gray-400 text-xs">{s.buyer_email}</td>
+                        <td className="p-4 text-gray-500 truncate max-w-[160px]">{s.video_title}</td>
+                        <td className="p-4 text-green-600 font-medium">{formatINR(s.price)}</td>
+                        <td className="p-4 text-gray-400 text-xs">
                           {new Date(s.created_at).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
                         </td>
                       </tr>
