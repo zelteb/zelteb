@@ -9,6 +9,7 @@ interface Buyer { username: string; full_name: string | null; avatar_url: string
 interface Purchase {
   id: string;
   amount: number;
+  creator_earnings: number;
   created_at: string;
   videos: Video | Video[] | null;
   buyer: Buyer | Buyer[] | null;
@@ -28,7 +29,6 @@ export default function Dashboard() {
   const [userId, setUserId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [purchases, setPurchases] = useState<Purchase[]>([]);
-  const [totalEarnings, setTotalEarnings] = useState(0);
 
   const options = ["Last 7 days", "Last 30 days", "Last 90 days", "All time"];
 
@@ -71,6 +71,7 @@ export default function Dashboard() {
           .select(`
             id,
             amount,
+            creator_earnings,
             created_at,
             videos ( title, creator_id ),
             buyer:profiles!buyer_id ( username, full_name, avatar_url )
@@ -82,9 +83,6 @@ export default function Dashboard() {
 
       const rows = (purchaseData || []) as Purchase[];
       setPurchases(rows);
-
-      const total = rows.reduce((sum, p) => sum + p.amount, 0);
-      setTotalEarnings(total);
       setLoading(false);
     };
 
@@ -116,8 +114,9 @@ export default function Dashboard() {
     return new Date(p.created_at) >= cutoff;
   });
 
+  // Use creator_earnings from DB
+  const filteredEarnings = filteredPurchases.reduce((sum, p) => sum + (p.creator_earnings ?? 0), 0);
   const filteredTotal = filteredPurchases.reduce((sum, p) => sum + p.amount, 0);
-  const creatorTotal = filteredTotal * 0.94;
 
   if (loading) {
     return <div className="p-10 text-gray-500">Loading dashboard...</div>;
@@ -171,30 +170,54 @@ export default function Dashboard() {
           </div>
         </div>
 
-        <p className="text-5xl font-black mb-2">₹{filteredTotal.toFixed(2)}</p>
-        <p className="text-sm text-gray-400 mb-6">You keep ₹{creatorTotal.toFixed(2)} after 7% platform fee</p>
+        <p className="text-5xl font-black mb-6">₹{filteredEarnings.toFixed(2)}</p>
 
         <div className="flex gap-6 text-sm text-gray-600">
           <div>₹{filteredTotal.toFixed(2)} Products</div>
         </div>
       </div>
 
-      {/* Recent purchases or empty state */}
-      {filteredPurchases.length === 0 ? (
-        <div className="bg-white rounded-2xl p-12 border border-gray-100 shadow-sm flex flex-col items-center text-center">
-          <div className="w-14 h-14 rounded-full bg-gray-100 flex items-center justify-center mb-4">
-            <svg className="w-6 h-6 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-          </div>
-          <p className="font-bold text-lg mb-2">You don't have any earnings yet</p>
-          <p className="text-gray-400 text-sm">Share your page with your audience to get started.</p>
+      {/* Transactions table — always shown */}
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+        <div className="px-6 py-4 border-b border-gray-100">
+          <h2 className="text-base font-bold text-gray-900">Recent Purchases</h2>
         </div>
-      ) : (
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-          <div className="px-6 py-4 border-b border-gray-100">
-            <h2 className="text-base font-bold text-gray-900">Recent Purchases</h2>
+
+        {filteredPurchases.length === 0 ? (
+          /* Empty state as a table-style placeholder */
+          <div className="divide-y divide-gray-50">
+            <div className="px-6 py-4">
+              <div className="flex items-center gap-4">
+                <div className="w-10 h-10 rounded-full bg-gray-100 flex-shrink-0" />
+                <div className="flex-1 space-y-2">
+                  <div className="h-3 bg-gray-100 rounded w-1/3" />
+                  <div className="h-2.5 bg-gray-100 rounded w-1/2" />
+                </div>
+                <div className="text-right space-y-2">
+                  <div className="h-3 bg-gray-100 rounded w-16" />
+                  <div className="h-2.5 bg-gray-100 rounded w-10 ml-auto" />
+                </div>
+              </div>
+            </div>
+            <div className="px-6 py-4">
+              <div className="flex items-center gap-4">
+                <div className="w-10 h-10 rounded-full bg-gray-100 flex-shrink-0" />
+                <div className="flex-1 space-y-2">
+                  <div className="h-3 bg-gray-100 rounded w-2/5" />
+                  <div className="h-2.5 bg-gray-100 rounded w-1/3" />
+                </div>
+                <div className="text-right space-y-2">
+                  <div className="h-3 bg-gray-100 rounded w-16" />
+                  <div className="h-2.5 bg-gray-100 rounded w-10 ml-auto" />
+                </div>
+              </div>
+            </div>
+            <div className="px-6 py-8 text-center">
+              <p className="text-sm font-semibold text-gray-400">No transactions yet</p>
+              <p className="text-xs text-gray-300 mt-1">Share your page with your audience to get started.</p>
+            </div>
           </div>
+        ) : (
           <div className="divide-y divide-gray-50">
             {filteredPurchases.map((p) => {
               const video = first(p.videos);
@@ -207,7 +230,7 @@ export default function Dashboard() {
                     day: "numeric", month: "short", year: "numeric",
                   })
                 : "";
-              const earn = p.amount * 0.94;
+              const earn = p.creator_earnings ?? 0;
 
               return (
                 <div key={p.id} className="flex items-center gap-4 px-6 py-4 hover:bg-gray-50 transition-colors">
@@ -239,8 +262,8 @@ export default function Dashboard() {
               );
             })}
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }
