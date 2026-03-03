@@ -34,10 +34,13 @@ export default function Products() {
 
       if (error || !vids) { setLoading(false); return; }
 
-      // Fetch all purchases for this creator's products
+      // Fetch all purchases for this creator — use price not amount
       const videoIds = vids.map((v) => v.id);
       const { data: purchases } = videoIds.length > 0
-        ? await supabase.from("purchases").select("video_id, amount").in("video_id", videoIds)
+        ? await supabase
+            .from("purchases")
+            .select("video_id, price")  // ✅ fixed: price instead of amount
+            .in("video_id", videoIds)
         : { data: [] };
 
       // Compute sales count and revenue per video
@@ -46,7 +49,7 @@ export default function Products() {
         return {
           ...v,
           sales: vidPurchases.length,
-          revenue: vidPurchases.reduce((sum, p) => sum + (p.amount || 0), 0),
+          revenue: vidPurchases.reduce((sum, p) => sum + (Number(p.price) || 0), 0),
         };
       });
 
@@ -108,10 +111,8 @@ export default function Products() {
         </div>
         <hr style={{ border: "none", borderTop: "1px solid #e5e5e5", marginBottom: 28 }} />
 
-        {/* Loading */}
         {loading && <p style={{ textAlign: "center", color: "#888", marginTop: 80 }}>Loading...</p>}
 
-        {/* Empty State */}
         {!loading && videos.length === 0 && (
           <div style={{ display: "flex", flexDirection: "column", alignItems: "center", paddingTop: 80, gap: 12 }}>
             <h2 style={{ fontSize: 22, fontWeight: 600, color: "#111", margin: 0 }}>Create your first product</h2>
@@ -126,7 +127,6 @@ export default function Products() {
           </div>
         )}
 
-        {/* Table */}
         {!loading && videos.length > 0 && (
           <div style={{ background: "white", border: "1px solid #e5e5e5", borderRadius: 14, overflow: "hidden" }}>
             <table className="prod-table">
@@ -142,7 +142,6 @@ export default function Products() {
               <tbody>
                 {videos.map((v) => (
                   <tr key={v.id}>
-                    {/* Name + thumbnail */}
                     <td>
                       <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                         {v.thumbnail_url ? (
@@ -158,26 +157,18 @@ export default function Products() {
                         </div>
                       </div>
                     </td>
-
-                    {/* Sales */}
                     <td className="right">
                       <span className="sales-link">{v.sales}</span>
                     </td>
-
-                    {/* Revenue */}
                     <td className="right" style={{ fontWeight: 600 }}>
                       ₹{v.revenue.toLocaleString()}
                     </td>
-
-                    {/* Price */}
                     <td className="right">
                       {v.is_free
                         ? <span className="badge-free">Free</span>
                         : <span style={{ fontWeight: 500 }}>₹{v.price}</span>
                       }
                     </td>
-
-                    {/* Actions */}
                     <td className="right">
                       <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
                         <Link href={`/creator/edit/${v.id}`} className="edit-btn">
@@ -200,8 +191,6 @@ export default function Products() {
                     </td>
                   </tr>
                 ))}
-
-                {/* Totals row */}
                 <tr className="totals-row">
                   <td style={{ fontWeight: 700 }}>Totals</td>
                   <td className="right">{totalSales}</td>
@@ -213,7 +202,6 @@ export default function Products() {
             </table>
           </div>
         )}
-
       </div>
     </div>
   );
