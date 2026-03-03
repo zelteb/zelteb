@@ -166,7 +166,7 @@ export default function AnalyticsPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800&display=swap');
+        
         @keyframes fadeUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
         .au { animation: fadeUp 0.35s ease both; }
         .au1 { animation-delay: 0.05s; }
@@ -182,7 +182,7 @@ export default function AnalyticsPage() {
         <div className="flex items-center justify-between mb-8 au">
           <div>
             <p className="text-xs text-gray-400 uppercase tracking-widest mb-1">Creator Analytics</p>
-            <h1 className="text-3xl font-extrabold text-gray-900" style={{ fontFamily: "'Syne', sans-serif" }}>
+            <h1 className="text-3xl font-extrabold text-gray-900">
               Analytics
             </h1>
           </div>
@@ -215,7 +215,7 @@ export default function AnalyticsPage() {
           ].map((card) => (
             <div key={card.label} className={`bg-white rounded-2xl p-5 border border-gray-100 shadow-sm au ${card.delay}`}>
               <p className="text-xs text-gray-400 uppercase tracking-widest mb-3">{card.label}</p>
-              <p className="text-2xl font-extrabold text-gray-900" style={{ fontFamily: "'Syne', sans-serif" }}>
+              <p className="text-2xl font-extrabold text-gray-900">
                 {card.value}
               </p>
               <p className="text-xs text-gray-400 mt-1">{card.sub}</p>
