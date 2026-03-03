@@ -71,18 +71,22 @@ export default function Watch({ params }: { params: Promise<{ id: string }> }) {
   const countFor = (star: number) => allRatings.filter(r => r.rating === star).length;
   const pctFor = (star: number) => totalRatings > 0 ? Math.round((countFor(star) / totalRatings) * 100) : 0;
 
+  // ✅ FIXED: now calls /api/buy-video instead of inserting directly
   const buy = async () => {
     setLoading(true);
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) { alert("Please login"); setLoading(false); return; }
     if (owned) { setLoading(false); return; }
 
-    const { error } = await supabase
-      .from("purchases")
-      .insert({ buyer_id: user.id, video_id: video.id, amount: video.is_free ? 0 : video.price });
+    const res = await fetch("/api/buy-video", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ video_id: video.id, buyer_id: user.id }),
+    });
 
-    if (error) {
-      alert("Error: " + error.message);
+    if (!res.ok) {
+      const msg = await res.text();
+      alert("Error: " + msg);
       setLoading(false);
       return;
     }
