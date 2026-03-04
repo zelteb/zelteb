@@ -1,10 +1,12 @@
 "use client";
 
 import { use, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 
 export default function Watch({ params }: { params: Promise<{ id: string }> }) {
   const { id: videoId } = use(params);
+  const router = useRouter();
 
   const [video, setVideo] = useState<any>(null);
   const [creator, setCreator] = useState<{ username: string; full_name?: string | null; avatar_url?: string | null } | null>(null);
@@ -29,6 +31,7 @@ export default function Watch({ params }: { params: Promise<{ id: string }> }) {
 
   useEffect(() => {
     const load = async () => {
+      // ✅ Public: load video & creator without requiring login
       const { data: v } = await supabase.from("videos").select("*").eq("id", videoId).single();
       if (!v) return;
       setVideo(v);
@@ -44,14 +47,8 @@ export default function Watch({ params }: { params: Promise<{ id: string }> }) {
         if (creatorProfile) setCreator(creatorProfile);
       }
 
+      // ✅ Check login only to determine owned state — not required to view page
       const { data: { user } } = await supabase.auth.getUser();
-
-      // ✅ Track product page view (always, logged in or not)
-      await supabase.from("video_views").insert({
-        video_id: videoId,
-        viewer_id: user?.id ?? null,
-      });
-
       if (!user) return;
       setUserId(user.id);
 
@@ -80,8 +77,15 @@ export default function Watch({ params }: { params: Promise<{ id: string }> }) {
 
   const buy = async () => {
     setLoading(true);
+
+    // ✅ If not logged in, redirect to login/signup
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) { alert("Please login"); setLoading(false); return; }
+    if (!user) {
+      router.push(`/login?redirect=/watch/${videoId}`);
+      setLoading(false);
+      return;
+    }
+
     if (owned) { setLoading(false); return; }
 
     const res = await fetch("/api/buy-video", {
@@ -103,6 +107,31 @@ export default function Watch({ params }: { params: Promise<{ id: string }> }) {
       .createSignedUrl(video.video_path, 60 * 60);
     setDownloadUrl(signed?.signedUrl || null);
     setLoading(false);
+  };
+
+  const download = async (path: string, title: string) => {
+    const { data, error } = await supabase.storage
+      .from("videos")
+      .createSignedUrl(path, 60 * 60);
+
+    if (error) { alert(error.message); return; }
+
+    if (data?.signedUrl) {
+      try {
+        const response = await fetch(data.signedUrl);
+        const blob = await response.blob();
+        const blobUrl = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = blobUrl;
+        a.download = title || "download";
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setTimeout(() => URL.revokeObjectURL(blobUrl), 10000);
+      } catch {
+        window.open(data.signedUrl, "_blank");
+      }
+    }
   };
 
   const submitRating = async () => {
@@ -145,8 +174,6 @@ export default function Watch({ params }: { params: Promise<{ id: string }> }) {
 
         .watch-nav { background: white; border-bottom: 1px solid #e4e4e7; padding: 0 40px; height: 54px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 10; }
         .watch-nav-logo { font-size: 1.2rem; color: #18181b; text-decoration: none; font-weight: 800; }
-        .watch-nav-back { display: flex; align-items: center; gap: 6px; font-size: 0.85rem; color: #71717a; text-decoration: none; transition: color 0.15s; }
-        .watch-nav-back:hover { color: #18181b; }
 
         .watch-hero { width: 100%; max-height: 480px; overflow: hidden; background: #18181b; }
         .watch-hero img { width: 100%; height: 480px; object-fit: cover; display: block; }
@@ -230,7 +257,7 @@ export default function Watch({ params }: { params: Promise<{ id: string }> }) {
         .watch-buy-btn:disabled { opacity: 0.6; cursor: not-allowed; }
         .watch-buy-btn.free-btn { background: #16a34a; }
         .watch-buy-btn.free-btn:hover:not(:disabled) { background: #15803d; }
-        .watch-download-btn { width: 100%; padding: 13px; background: #7c3aed; color: white; border: none; border-radius: 10px; font-size: 0.95rem; font-weight: 700; font-family: 'DM Sans', sans-serif; cursor: pointer; text-decoration: none; display: block; text-align: center; margin-bottom: 10px; transition: background 0.15s; }
+        .watch-download-btn { width: 100%; padding: 13px; background: #7c3aed; color: white; border: none; border-radius: 10px; font-size: 0.95rem; font-weight: 700; font-family: 'DM Sans', sans-serif; cursor: pointer; display: block; text-align: center; margin-bottom: 10px; transition: background 0.15s; }
         .watch-download-btn:hover { background: #6d28d9; }
         .watch-owned-badge { display: flex; align-items: center; gap: 6px; font-size: 0.78rem; color: #16a34a; font-weight: 500; background: #f0fdf4; padding: 7px 12px; border-radius: 8px; margin-bottom: 12px; }
         .watch-secure { display: flex; align-items: center; gap: 5px; font-size: 0.73rem; color: #a1a1aa; justify-content: center; }
@@ -239,12 +266,9 @@ export default function Watch({ params }: { params: Promise<{ id: string }> }) {
       `}</style>
 
       <div className="watch-wrap">
+        {/* NAVBAR — back button removed */}
         <nav className="watch-nav">
           <a href="/" className="watch-nav-logo">Zelteb</a>
-          <a href="/discover" className="watch-nav-back">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
-            Back
-          </a>
         </nav>
 
         <div className="watch-hero">
@@ -359,6 +383,7 @@ export default function Watch({ params }: { params: Promise<{ id: string }> }) {
             )}
           </div>
 
+          {/* Sticky buy card */}
           <div className="watch-card">
             <div className="watch-card-body">
               <div className="watch-card-title">{video.title}</div>
@@ -394,14 +419,21 @@ export default function Watch({ params }: { params: Promise<{ id: string }> }) {
 
               {owned ? (
                 downloadUrl ? (
-                  <a href={downloadUrl} className="watch-download-btn">
+                  <button
+                    className="watch-download-btn"
+                    onClick={() => download(video.video_path, video.title)}
+                  >
                     {video.product_type === "video" ? "▶ Watch / Download" : "⬇ Download"}
-                  </a>
+                  </button>
                 ) : (
                   <div style={{ textAlign: "center", fontSize: "0.85rem", color: "#a1a1aa", padding: "12px 0" }}>Preparing download...</div>
                 )
               ) : (
-                <button className={`watch-buy-btn ${video.is_free ? "free-btn" : ""}`} onClick={buy} disabled={loading}>
+                <button
+                  className={`watch-buy-btn ${video.is_free ? "free-btn" : ""}`}
+                  onClick={buy}
+                  disabled={loading}
+                >
                   {loading ? "Processing..." : video.is_free ? "Get for Free" : "Buy Now"}
                 </button>
               )}
