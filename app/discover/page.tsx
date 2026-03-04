@@ -26,21 +26,18 @@ export default function Discover() {
     const { data: vids } = await query;
     if (!vids) { setVideos([]); return; }
 
-    // Fetch creator profiles for all videos
     const creatorIds = [...new Set(vids.map((v) => v.creator_id))];
     const { data: profiles } = await supabase
       .from("profiles")
       .select("id, username, full_name, avatar_url")
       .in("id", creatorIds);
 
-    // Fetch ratings for all videos
     const videoIds = vids.map((v) => v.id);
     const { data: ratings } = await supabase
       .from("ratings")
       .select("video_id, rating")
       .in("video_id", videoIds);
 
-    // Enrich videos with creator + rating info
     const enriched = vids.map((v) => {
       const creator = (profiles || []).find((p) => p.id === v.creator_id);
       const videoRatings = (ratings || []).filter((r) => r.video_id === v.id);
@@ -50,7 +47,6 @@ export default function Discover() {
       return { ...v, creator, avgRating, ratingCount: videoRatings.length };
     });
 
-    // Filter by minRating if set
     const filtered = minRating !== null
       ? enriched.filter((v) => v.avgRating !== null && Number(v.avgRating) >= minRating)
       : enriched;
@@ -185,45 +181,55 @@ export default function Discover() {
                     }
                   </div>
 
-                  <div style={{ padding: "12px 14px 14px" }}>
-                    {/* Title */}
+                  <div style={{ padding: "12px 14px 14px", display: "flex", flexDirection: "column", gap: 0 }}>
+
+                    {/* 1. Title */}
                     <p style={{ fontWeight: 600, fontSize: 14, margin: "0 0 8px", lineHeight: 1.4 }}>
                       {v.title}
                     </p>
 
-                    {/* Creator */}
-                    {v.creator && (
-                      <div
-                        onClick={(e) => { e.preventDefault(); window.location.href = `/${v.creator.username}`; }}
-                        style={{ display: "inline-flex", alignItems: "center", gap: 6, marginBottom: 7, cursor: "pointer" }}
-                      >
-                        <div className="creator-avatar">
-                          {v.creator.avatar_url
-                            ? <img src={v.creator.avatar_url} alt={v.creator.username} />
-                            : (v.creator.full_name || v.creator.username || "?")[0].toUpperCase()
-                          }
+                    {/* 2. Creator */}
+                    <div style={{ marginBottom: 8, minHeight: 24, display: "flex", alignItems: "center" }}>
+                      {v.creator && (
+                        <div
+                          onClick={(e) => { e.preventDefault(); window.location.href = `/${v.creator.username}`; }}
+                          style={{ display: "inline-flex", alignItems: "center", gap: 6, cursor: "pointer" }}
+                        >
+                          <div className="creator-avatar">
+                            {v.creator.avatar_url
+                              ? <img src={v.creator.avatar_url} alt={v.creator.username} />
+                              : (v.creator.full_name || v.creator.username || "?")[0].toUpperCase()
+                            }
+                          </div>
+                          <span style={{ fontSize: 12, color: "#555", fontWeight: 500 }}>
+                            {v.creator.full_name || v.creator.username}
+                          </span>
                         </div>
-                        <span style={{ fontSize: 12, color: "#555", fontWeight: 500 }}>
-                          {v.creator.full_name || v.creator.username}
-                        </span>
-                      </div>
-                    )}
+                      )}
+                    </div>
 
-                    {/* Rating */}
-                    {v.avgRating && (
-                      <div style={{ display: "flex", alignItems: "center", gap: 5, marginBottom: 8 }}>
-                        <svg width="13" height="13" viewBox="0 0 24 24" fill="#f59e0b" stroke="#f59e0b" strokeWidth="1.5">
-                          <polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26" />
-                        </svg>
-                        <span style={{ fontSize: 12, fontWeight: 600, color: "#111" }}>{v.avgRating}</span>
-                        <span style={{ fontSize: 11, color: "#999" }}>({v.ratingCount})</span>
-                      </div>
-                    )}
+                    {/* 3. Rating — always reserves space */}
+                    <div style={{ display: "flex", alignItems: "center", gap: 5, marginBottom: 10, minHeight: 20 }}>
+                      {v.avgRating ? (
+                        <>
+                          <svg width="13" height="13" viewBox="0 0 24 24" fill="#f59e0b" stroke="#f59e0b" strokeWidth="1.5">
+                            <polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26" />
+                          </svg>
+                          <span style={{ fontSize: 12, fontWeight: 600, color: "#111" }}>{v.avgRating}</span>
+                          <span style={{ fontSize: 11, color: "#999" }}>({v.ratingCount})</span>
+                        </>
+                      ) : (
+                        <span style={{ fontSize: 11, color: "#bbb" }}>No reviews yet</span>
+                      )}
+                    </div>
 
-                    {/* Price */}
-                    <span className="price-tag">
-                      {v.is_free ? "Free" : `₹${v.price || 0}`}
-                    </span>
+                    {/* 4. Price */}
+                    <div>
+                      <span className="price-tag">
+                        {v.is_free ? "Free" : `₹${v.price || 0}`}
+                      </span>
+                    </div>
+
                   </div>
                 </Link>
               ))}
