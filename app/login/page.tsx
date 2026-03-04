@@ -3,9 +3,9 @@
 import { supabase } from "@/lib/supabase";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 
-export default function Login() {
+function LoginContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirectTo = searchParams.get("redirect") || "/dashboard";
@@ -19,18 +19,11 @@ export default function Login() {
 
   const loginGoogle = async () => {
     setLoading(true);
-
-    // Pass the redirect destination through the OAuth callback
-    // Supabase will hit /auth/callback?code=...&next=/watch/xxx
     const callbackUrl = `${window.location.origin}/auth/callback?next=${encodeURIComponent(redirectTo)}`;
-
     await supabase.auth.signInWithOAuth({
       provider: "google",
-      options: {
-        redirectTo: callbackUrl,
-      },
+      options: { redirectTo: callbackUrl },
     });
-
     setLoading(false);
   };
 
@@ -38,152 +31,31 @@ export default function Login() {
     <>
       <style>{`
         * { box-sizing: border-box; margin: 0; padding: 0; }
-
-        .login-root {
-          min-height: 100vh;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          background: #f5f5f4;
-          font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-          position: relative;
-          overflow: hidden;
-        }
-
-        .blob {
-          position: absolute;
-          border-radius: 50%;
-          filter: blur(90px);
-          opacity: 0.3;
-          pointer-events: none;
-        }
-        .blob-1 {
-          width: 400px; height: 400px;
-          background: #c7d9ff;
-          top: -120px; left: -80px;
-          animation: drift 12s ease-in-out infinite alternate;
-        }
-        .blob-2 {
-          width: 300px; height: 300px;
-          background: #ffd6e8;
-          bottom: -80px; right: -60px;
-          animation: drift 9s ease-in-out infinite alternate-reverse;
-        }
-        .blob-3 {
-          width: 200px; height: 200px;
-          background: #d4f5e2;
-          top: 60%; left: 10%;
-          animation: drift 15s ease-in-out infinite alternate;
-        }
-
-        @keyframes drift {
-          0%   { transform: translate(0, 0) scale(1); }
-          100% { transform: translate(25px, 18px) scale(1.06); }
-        }
-
-        .card {
-          width: 100%;
-          max-width: 420px;
-          background: #fff;
-          border: 1px solid #e7e7e5;
-          border-radius: 16px;
-          padding: 40px 36px;
-          position: relative;
-          z-index: 1;
-          box-shadow: 0 2px 24px rgba(0,0,0,0.06);
-          animation: fadeUp 0.5s cubic-bezier(0.22,1,0.36,1) both;
-        }
-
-        @keyframes fadeUp {
-          from { opacity: 0; transform: translateY(20px); }
-          to   { opacity: 1; transform: translateY(0); }
-        }
-
-        .back-link {
-          display: inline-flex;
-          align-items: center;
-          gap: 6px;
-          font-size: 13px;
-          color: #888;
-          text-decoration: none;
-          margin-bottom: 32px;
-          transition: color 0.2s;
-        }
+        .login-root { min-height: 100vh; display: flex; align-items: center; justify-content: center; background: #f5f5f4; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; position: relative; overflow: hidden; }
+        .blob { position: absolute; border-radius: 50%; filter: blur(90px); opacity: 0.3; pointer-events: none; }
+        .blob-1 { width: 400px; height: 400px; background: #c7d9ff; top: -120px; left: -80px; animation: drift 12s ease-in-out infinite alternate; }
+        .blob-2 { width: 300px; height: 300px; background: #ffd6e8; bottom: -80px; right: -60px; animation: drift 9s ease-in-out infinite alternate-reverse; }
+        .blob-3 { width: 200px; height: 200px; background: #d4f5e2; top: 60%; left: 10%; animation: drift 15s ease-in-out infinite alternate; }
+        @keyframes drift { 0% { transform: translate(0, 0) scale(1); } 100% { transform: translate(25px, 18px) scale(1.06); } }
+        .card { width: 100%; max-width: 420px; background: #fff; border: 1px solid #e7e7e5; border-radius: 16px; padding: 40px 36px; position: relative; z-index: 1; box-shadow: 0 2px 24px rgba(0,0,0,0.06); animation: fadeUp 0.5s cubic-bezier(0.22,1,0.36,1) both; }
+        @keyframes fadeUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        .back-link { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: #888; text-decoration: none; margin-bottom: 32px; transition: color 0.2s; }
         .back-link:hover { color: #333; }
         .back-link svg { transition: transform 0.2s; }
         .back-link:hover svg { transform: translateX(-3px); }
-
-        .heading {
-          font-size: 26px;
-          font-weight: 700;
-          color: #111;
-          letter-spacing: -0.4px;
-          margin-bottom: 6px;
-        }
-
-        .subheading {
-          font-size: 14px;
-          color: #888;
-          margin-bottom: 32px;
-          font-weight: 400;
-        }
-
-        .divider {
-          display: flex;
-          align-items: center;
-          gap: 10px;
-          margin-bottom: 16px;
-        }
+        .heading { font-size: 26px; font-weight: 700; color: #111; letter-spacing: -0.4px; margin-bottom: 6px; }
+        .subheading { font-size: 14px; color: #888; margin-bottom: 32px; font-weight: 400; }
+        .divider { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
         .divider-line { flex: 1; height: 1px; background: #ebebea; }
         .divider-text { font-size: 11px; color: #bbb; letter-spacing: 0.6px; text-transform: uppercase; }
-
-        .google-btn {
-          width: 100%;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          gap: 10px;
-          padding: 13px 20px;
-          background: #fff;
-          border: 1.5px solid #e0e0de;
-          border-radius: 10px;
-          font-size: 14px;
-          font-weight: 500;
-          color: #111;
-          cursor: pointer;
-          font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-          transition: border-color 0.2s, box-shadow 0.2s, transform 0.15s;
-        }
-        .google-btn:hover {
-          border-color: #bbb;
-          box-shadow: 0 3px 16px rgba(0,0,0,0.08);
-          transform: translateY(-1px);
-        }
+        .google-btn { width: 100%; display: flex; align-items: center; justify-content: center; gap: 10px; padding: 13px 20px; background: #fff; border: 1.5px solid #e0e0de; border-radius: 10px; font-size: 14px; font-weight: 500; color: #111; cursor: pointer; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; transition: border-color 0.2s, box-shadow 0.2s, transform 0.15s; }
+        .google-btn:hover { border-color: #bbb; box-shadow: 0 3px 16px rgba(0,0,0,0.08); transform: translateY(-1px); }
         .google-btn:active { transform: translateY(0); box-shadow: none; }
         .google-btn:disabled { opacity: 0.55; cursor: not-allowed; transform: none; }
-
-        .spinner {
-          width: 18px; height: 18px;
-          border: 2px solid #ddd;
-          border-top-color: #555;
-          border-radius: 50%;
-          animation: spin 0.7s linear infinite;
-          flex-shrink: 0;
-        }
+        .spinner { width: 18px; height: 18px; border: 2px solid #ddd; border-top-color: #555; border-radius: 50%; animation: spin 0.7s linear infinite; flex-shrink: 0; }
         @keyframes spin { to { transform: rotate(360deg); } }
-
-        .footer-note {
-          margin-top: 28px;
-          font-size: 12px;
-          color: #bbb;
-          text-align: center;
-          line-height: 1.6;
-        }
-        .footer-note a {
-          color: #999;
-          text-decoration: underline;
-          text-underline-offset: 2px;
-        }
+        .footer-note { margin-top: 28px; font-size: 12px; color: #bbb; text-align: center; line-height: 1.6; }
+        .footer-note a { color: #999; text-decoration: underline; text-underline-offset: 2px; }
         .footer-note a:hover { color: #555; }
       `}</style>
 
@@ -191,7 +63,6 @@ export default function Login() {
         <div className="blob blob-1" />
         <div className="blob blob-2" />
         <div className="blob blob-3" />
-
         <div className="card">
           <Link href="/" className="back-link">
             <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
@@ -199,21 +70,14 @@ export default function Login() {
             </svg>
             Back
           </Link>
-
           <h1 className="heading">Welcome back</h1>
           <p className="subheading">Sign in to continue to your account.</p>
-
           <div className="divider">
             <span className="divider-line" />
             <span className="divider-text">Continue with</span>
             <span className="divider-line" />
           </div>
-
-          <button
-            onClick={loginGoogle}
-            disabled={loading}
-            className="google-btn"
-          >
+          <button onClick={loginGoogle} disabled={loading} className="google-btn">
             {loading ? (
               <div className="spinner" />
             ) : (
@@ -226,14 +90,21 @@ export default function Login() {
             )}
             <span>{loading ? "Signing in..." : "Continue with Google"}</span>
           </button>
-
           <p className="footer-note">
             By continuing, you agree to our{" "}
-            <a href="#">Terms of Service</a> and{" "}
-            <a href="#">Privacy Policy</a>.
+            <a href="#">Terms of Service</a> and <a href="#">Privacy Policy</a>.
           </p>
         </div>
       </div>
     </>
+  );
+}
+
+// Suspense wrapper required because useSearchParams() causes prerender error without it
+export default function Login() {
+  return (
+    <Suspense>
+      <LoginContent />
+    </Suspense>
   );
 }
