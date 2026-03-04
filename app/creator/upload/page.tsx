@@ -18,9 +18,14 @@ export default function Upload() {
   const [thumbPreview, setThumbPreview] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [descriptionHtml, setDescriptionHtml] = useState("");
+  const [showTextDropdown, setShowTextDropdown] = useState(false);
+  const [showLinkModal, setShowLinkModal] = useState(false);
+  const [linkText, setLinkText] = useState("");
+  const [linkUrl, setLinkUrl] = useState("");
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const thumbInputRef = useRef<HTMLInputElement>(null);
+  const editorImageInputRef = useRef<HTMLInputElement>(null);
 
   const editor = useEditor({
     immediatelyRender: false,
@@ -43,16 +48,80 @@ export default function Upload() {
     if (f) setThumbPreview(URL.createObjectURL(f));
   };
 
-  const addLink = () => {
-    const url = prompt("Enter URL:");
-    if (!url) return;
-    editor?.chain().focus().setLink({ href: url }).run();
+  const handleEditorImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0] || null;
+    if (!f) return;
+    const objectUrl = URL.createObjectURL(f);
+    editor?.chain().focus().setImage({ src: objectUrl }).run();
+    // Reset input so same file can be re-selected
+    if (editorImageInputRef.current) editorImageInputRef.current.value = "";
   };
 
-  const addImage = () => {
-    const url = prompt("Enter image URL:");
-    if (!url) return;
-    editor?.chain().focus().setImage({ src: url }).run();
+  const getActiveTextLabel = () => {
+    if (!editor) return "Text";
+    if (editor.isActive("heading", { level: 1 })) return "Header";
+    if (editor.isActive("heading", { level: 2 })) return "Title";
+    if (editor.isActive("heading", { level: 3 })) return "Subtitle";
+    if (editor.isActive("bulletList")) return "Bulleted list";
+    if (editor.isActive("orderedList")) return "Numbered list";
+    if (editor.isActive("codeBlock")) return "Code block";
+    return "Text";
+  };
+
+  const applyTextStyle = (style: string) => {
+    if (!editor) return;
+    setShowTextDropdown(false);
+    switch (style) {
+      case "text":
+        editor.chain().focus().setParagraph().run();
+        break;
+      case "h1":
+        editor.chain().focus().toggleHeading({ level: 1 }).run();
+        break;
+      case "h2":
+        editor.chain().focus().toggleHeading({ level: 2 }).run();
+        break;
+      case "h3":
+        editor.chain().focus().toggleHeading({ level: 3 }).run();
+        break;
+      case "bullet":
+        editor.chain().focus().toggleBulletList().run();
+        break;
+      case "ordered":
+        editor.chain().focus().toggleOrderedList().run();
+        break;
+      case "code":
+        editor.chain().focus().toggleCodeBlock().run();
+        break;
+    }
+  };
+
+  const openLinkModal = () => {
+    const selected = editor?.state.doc.textBetween(
+      editor.state.selection.from,
+      editor.state.selection.to
+    );
+    setLinkText(selected || "");
+    setLinkUrl("");
+    setShowLinkModal(true);
+  };
+
+  const handleAddLink = () => {
+    if (!editor || !linkUrl) return;
+    if (linkText && !editor.state.selection.empty) {
+      editor.chain().focus().setLink({ href: linkUrl }).run();
+    } else if (linkText) {
+      editor
+        .chain()
+        .focus()
+        .insertContent(`<a href="${linkUrl}">${linkText}</a>`)
+        .run();
+    } else {
+      editor.chain().focus().setLink({ href: linkUrl }).run();
+    }
+    setShowLinkModal(false);
+    setLinkText("");
+    setLinkUrl("");
   };
 
   const upload = async () => {
@@ -62,14 +131,12 @@ export default function Upload() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) { alert("Login first"); setLoading(false); return; }
 
-    // Upload main product file
     const { data, error } = await supabase.storage
       .from("videos")
       .upload(`${type}/${user.id}-${Date.now()}-${file.name}`, file);
 
     if (error) { alert(error.message); setLoading(false); return; }
 
-    // Upload thumbnail and get public URL
     let thumbnailUrl = null;
     if (thumb) {
       const { data: tData, error: tError } = await supabase.storage
@@ -93,7 +160,7 @@ export default function Upload() {
       price: isFree ? 0 : Number(price),
       video_path: data.path,
       product_type: type,
-      thumbnail_url: thumbnailUrl, // ✅ now stores full public URL
+      thumbnail_url: thumbnailUrl,
       is_free: isFree,
     });
 
@@ -133,22 +200,60 @@ export default function Upload() {
         .up-hint { font-size: 0.78rem; color: #a1a1aa; margin-top: 6px; font-weight: 400; font-family: 'Plus Jakarta Sans', system-ui, sans-serif; }
         .up-editor-wrap { border: 1px solid #e4e4e7; border-radius: 8px; overflow: hidden; background: #fafafa; transition: border-color 0.15s, box-shadow 0.15s; }
         .up-editor-wrap:focus-within { border-color: #7c3aed; box-shadow: 0 0 0 3px rgba(124,58,237,0.08); }
-        .up-toolbar { display: flex; align-items: center; gap: 2px; padding: 8px 10px; background: #18181b; flex-wrap: wrap; }
+
+        /* TOOLBAR */
+        .up-toolbar { display: flex; align-items: center; gap: 2px; padding: 8px 10px; background: #18181b; flex-wrap: wrap; position: relative; }
         .up-toolbar-btn { background: none; border: none; color: #d4d4d8; cursor: pointer; width: 30px; height: 30px; border-radius: 5px; display: flex; align-items: center; justify-content: center; font-size: 0.85rem; font-weight: 600; transition: background 0.12s, color 0.12s; font-family: 'Plus Jakarta Sans', system-ui, sans-serif; }
         .up-toolbar-btn:hover { background: #3f3f46; color: white; }
         .up-toolbar-btn.active { background: #7c3aed; color: white; }
         .up-toolbar-divider { width: 1px; height: 18px; background: #3f3f46; margin: 0 4px; flex-shrink: 0; }
+
+        /* TEXT STYLE DROPDOWN */
+        .up-text-dropdown-wrap { position: relative; }
+        .up-text-dropdown-btn { background: none; border: none; color: #d4d4d8; cursor: pointer; height: 30px; border-radius: 5px; display: flex; align-items: center; gap: 5px; padding: 0 8px; font-size: 0.82rem; font-weight: 600; font-family: 'Plus Jakarta Sans', system-ui, sans-serif; transition: background 0.12s, color 0.12s; white-space: nowrap; }
+        .up-text-dropdown-btn:hover { background: #3f3f46; color: white; }
+        .up-text-dropdown-btn svg { opacity: 0.6; }
+        .up-text-dropdown-menu { position: absolute; top: calc(100% + 6px); left: 0; background: white; border: 1px solid #e4e4e7; border-radius: 10px; box-shadow: 0 8px 24px rgba(0,0,0,0.12); z-index: 100; min-width: 170px; overflow: hidden; padding: 4px; }
+        .up-text-dropdown-item { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 6px; cursor: pointer; transition: background 0.1s; font-family: 'Plus Jakarta Sans', system-ui, sans-serif; }
+        .up-text-dropdown-item:hover { background: #f4f4f6; }
+        .up-text-dropdown-item.active { background: #faf5ff; }
+        .up-text-dropdown-item-icon { width: 28px; height: 28px; background: #f4f4f6; border-radius: 6px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+        .up-text-dropdown-item-label { font-size: 0.875rem; font-weight: 500; color: #18181b; }
+        .up-text-dropdown-item-sub { font-size: 0.7rem; color: #a1a1aa; }
+
+        /* LINK MODAL */
+        .up-modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 200; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(2px); }
+        .up-modal { background: white; border-radius: 16px; padding: 28px; width: 100%; max-width: 420px; box-shadow: 0 20px 60px rgba(0,0,0,0.15); }
+        .up-modal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+        .up-modal-title { font-size: 1.1rem; font-weight: 700; color: #18181b; font-family: 'Plus Jakarta Sans', system-ui, sans-serif; }
+        .up-modal-close { background: none; border: none; cursor: pointer; color: #71717a; width: 28px; height: 28px; border-radius: 6px; display: flex; align-items: center; justify-content: center; transition: background 0.12s; }
+        .up-modal-close:hover { background: #f4f4f6; color: #18181b; }
+        .up-modal-field { margin-bottom: 14px; }
+        .up-modal-label { display: block; font-size: 0.8125rem; font-weight: 500; color: #3f3f46; margin-bottom: 6px; font-family: 'Plus Jakarta Sans', system-ui, sans-serif; }
+        .up-modal-input { width: 100%; background: white; border: 1.5px solid #e4e4e7; border-radius: 8px; padding: 10px 14px; font-size: 0.9rem; font-family: 'Plus Jakarta Sans', system-ui, sans-serif; color: #18181b; outline: none; transition: border-color 0.15s, box-shadow 0.15s; }
+        .up-modal-input:focus { border-color: #7c3aed; box-shadow: 0 0 0 3px rgba(124,58,237,0.08); }
+        .up-modal-input::placeholder { color: #a1a1aa; }
+        .up-modal-submit { width: 100%; background: #18181b; color: white; border: none; border-radius: 9px; padding: 12px; font-size: 0.9rem; font-weight: 600; font-family: 'Plus Jakarta Sans', system-ui, sans-serif; cursor: pointer; transition: background 0.15s; margin-top: 4px; }
+        .up-modal-submit:hover { background: #3f3f46; }
+
         .tiptap-editor { min-height: 140px; padding: 12px 14px; font-size: 0.9rem; font-family: 'Manrope', sans-serif; color: #18181b; outline: none; line-height: 1.6; }
         .tiptap-editor p { margin-bottom: 6px; }
         .tiptap-editor strong { font-weight: 700; }
         .tiptap-editor em { font-style: italic; }
         .tiptap-editor u { text-decoration: underline; }
         .tiptap-editor s { text-decoration: line-through; }
+        .tiptap-editor h1 { font-size: 1.5rem; font-weight: 800; color: #18181b; margin-bottom: 8px; letter-spacing: -0.02em; }
+        .tiptap-editor h2 { font-size: 1.2rem; font-weight: 700; color: #18181b; margin-bottom: 6px; }
+        .tiptap-editor h3 { font-size: 1rem; font-weight: 600; color: #18181b; margin-bottom: 5px; }
         .tiptap-editor blockquote { border-left: 3px solid #7c3aed; padding-left: 12px; color: #71717a; margin: 8px 0; font-style: italic; }
         .tiptap-editor a { color: #7c3aed; text-decoration: underline; }
         .tiptap-editor img { max-width: 100%; border-radius: 6px; margin: 6px 0; }
-        .tiptap-editor ul { padding-left: 20px; margin: 6px 0; }
-        .tiptap-editor ol { padding-left: 20px; margin: 6px 0; }
+        .tiptap-editor ul { padding-left: 20px; margin: 6px 0; list-style-type: disc; }
+        .tiptap-editor ol { padding-left: 20px; margin: 6px 0; list-style-type: decimal; }
+        .tiptap-editor pre { background: #18181b; color: #e4e4e7; border-radius: 8px; padding: 12px 14px; font-family: 'Courier New', monospace; font-size: 0.85rem; margin: 8px 0; overflow-x: auto; }
+        .tiptap-editor code { background: #f4f4f6; padding: 2px 5px; border-radius: 4px; font-family: 'Courier New', monospace; font-size: 0.85rem; }
+        .tiptap-editor pre code { background: none; padding: 0; }
+
         .up-select-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
         .up-select-card { border: 1.5px solid #e4e4e7; border-radius: 10px; padding: 14px 16px; cursor: pointer; transition: border-color 0.15s, background 0.15s; position: relative; background: #fafafa; }
         .up-select-card.active { border-color: #7c3aed; background: #faf5ff; }
@@ -208,6 +313,41 @@ export default function Upload() {
         .pv-buy-btn.free-btn { background: #16a34a; }
       `}</style>
 
+      {/* LINK MODAL */}
+      {showLinkModal && (
+        <div className="up-modal-overlay" onClick={() => setShowLinkModal(false)}>
+          <div className="up-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="up-modal-header">
+              <span className="up-modal-title">Insert link</span>
+              <button className="up-modal-close" onClick={() => setShowLinkModal(false)}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              </button>
+            </div>
+            <div className="up-modal-field">
+              <label className="up-modal-label">Enter text</label>
+              <input
+                className="up-modal-input"
+                placeholder="Enter text"
+                value={linkText}
+                onChange={(e) => setLinkText(e.target.value)}
+                autoFocus
+              />
+            </div>
+            <div className="up-modal-field">
+              <label className="up-modal-label">Enter URL</label>
+              <input
+                className="up-modal-input"
+                placeholder="https://..."
+                value={linkUrl}
+                onChange={(e) => setLinkUrl(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Enter") handleAddLink(); }}
+              />
+            </div>
+            <button className="up-modal-submit" onClick={handleAddLink}>Add link</button>
+          </div>
+        </div>
+      )}
+
       <div className="page-layout">
 
         {/* FORM */}
@@ -232,6 +372,42 @@ export default function Upload() {
                 <label className="up-label">Description</label>
                 <div className="up-editor-wrap">
                   <div className="up-toolbar">
+
+                    {/* Text style dropdown */}
+                    <div className="up-text-dropdown-wrap">
+                      <button
+                        className="up-text-dropdown-btn"
+                        onMouseDown={(e) => { e.preventDefault(); setShowTextDropdown(v => !v); }}
+                      >
+                        {getActiveTextLabel()}
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+                      </button>
+                      {showTextDropdown && (
+                        <div className="up-text-dropdown-menu">
+                          {[
+                            { key: "text", label: "Text", sub: "Normal", icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="17" y1="10" x2="3" y2="10"/><line x1="21" y1="6" x2="3" y2="6"/><line x1="21" y1="14" x2="3" y2="14"/><line x1="17" y1="18" x2="3" y2="18"/></svg> },
+                            { key: "h1", label: "Header", sub: "H1", icon: <span style={{ fontSize: "0.75rem", fontWeight: 800, color: "#3f3f46" }}>H1</span> },
+                            { key: "h2", label: "Title", sub: "H2", icon: <span style={{ fontSize: "0.75rem", fontWeight: 700, color: "#3f3f46" }}>H2</span> },
+                            { key: "h3", label: "Subtitle", sub: "H3", icon: <span style={{ fontSize: "0.75rem", fontWeight: 600, color: "#3f3f46" }}>H3</span> },
+                            { key: "bullet", label: "Bulleted list", sub: "", icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="9" y1="6" x2="20" y2="6"/><line x1="9" y1="12" x2="20" y2="12"/><line x1="9" y1="18" x2="20" y2="18"/><circle cx="4" cy="6" r="1" fill="currentColor"/><circle cx="4" cy="12" r="1" fill="currentColor"/><circle cx="4" cy="18" r="1" fill="currentColor"/></svg> },
+                            { key: "ordered", label: "Numbered list", sub: "", icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="10" y1="6" x2="21" y2="6"/><line x1="10" y1="12" x2="21" y2="12"/><line x1="10" y1="18" x2="21" y2="18"/><path d="M4 6h1v4"/><path d="M4 10h2"/><path d="M6 18H4c0-1 2-2 2-3s-1-1.5-2-1"/></svg> },
+                            { key: "code", label: "Code block", sub: "", icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg> },
+                          ].map(item => (
+                            <div
+                              key={item.key}
+                              className={`up-text-dropdown-item ${getActiveTextLabel() === item.label ? "active" : ""}`}
+                              onMouseDown={(e) => { e.preventDefault(); applyTextStyle(item.key); }}
+                            >
+                              <div className="up-text-dropdown-item-icon">{item.icon}</div>
+                              <span className="up-text-dropdown-item-label">{item.label}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="up-toolbar-divider" />
+
                     <button className={`up-toolbar-btn ${editor?.isActive("bold") ? "active" : ""}`} onMouseDown={(e) => { e.preventDefault(); editor?.chain().focus().toggleBold().run(); }} title="Bold"><strong>B</strong></button>
                     <button className={`up-toolbar-btn ${editor?.isActive("italic") ? "active" : ""}`} onMouseDown={(e) => { e.preventDefault(); editor?.chain().focus().toggleItalic().run(); }} title="Italic"><em>I</em></button>
                     <button className={`up-toolbar-btn ${editor?.isActive("underline") ? "active" : ""}`} onMouseDown={(e) => { e.preventDefault(); editor?.chain().focus().toggleUnderline().run(); }} title="Underline" style={{ textDecoration: "underline" }}>U</button>
@@ -241,12 +417,27 @@ export default function Upload() {
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M3 21c3 0 7-1 7-8V5c0-1.25-.756-2.017-2-2H4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2 1 0 1 0 1 1v1c0 1-1 2-2 2s-1 .008-1 1.031V20c0 1 0 1 1 1z"/><path d="M15 21c3 0 7-1 7-8V5c0-1.25-.757-2.017-2-2h-4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2h.75c0 2.25.25 4-2.75 4v3c0 1 0 1 1 1z"/></svg>
                     </button>
                     <div className="up-toolbar-divider" />
-                    <button className={`up-toolbar-btn ${editor?.isActive("link") ? "active" : ""}`} onMouseDown={(e) => { e.preventDefault(); addLink(); }} title="Insert Link">
+                    <button className={`up-toolbar-btn ${editor?.isActive("link") ? "active" : ""}`} onMouseDown={(e) => { e.preventDefault(); openLinkModal(); }} title="Insert Link">
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
                     </button>
-                    <button className="up-toolbar-btn" onMouseDown={(e) => { e.preventDefault(); addImage(); }} title="Insert Image">
+
+                    {/* Image from file */}
+                    <button
+                      className="up-toolbar-btn"
+                      onMouseDown={(e) => { e.preventDefault(); editorImageInputRef.current?.click(); }}
+                      title="Insert Image from file"
+                    >
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
                     </button>
+                    {/* Hidden file input for editor images */}
+                    <input
+                      ref={editorImageInputRef}
+                      type="file"
+                      accept="image/*"
+                      style={{ display: "none" }}
+                      onChange={handleEditorImageChange}
+                    />
+
                     <div className="up-toolbar-divider" />
                     <button className="up-toolbar-btn" onMouseDown={(e) => { e.preventDefault(); editor?.chain().focus().undo().run(); }} title="Undo">
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/></svg>
