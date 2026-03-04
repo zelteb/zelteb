@@ -78,7 +78,7 @@ export default function Purchased() {
     load();
   }, []);
 
-  const download = async (path: string) => {
+  const download = async (path: string, title: string) => {
     const { data, error } = await supabase.storage
       .from("videos")
       .createSignedUrl(path, 60 * 60);
@@ -88,7 +88,14 @@ export default function Purchased() {
       return;
     }
 
-    if (data?.signedUrl) window.open(data.signedUrl, "_blank");
+    if (data?.signedUrl) {
+      const a = document.createElement("a");
+      a.href = data.signedUrl;
+      a.download = title || "download"; // forces browser to download instead of opening
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    }
   };
 
   const filtered = items.filter((v) =>
@@ -348,7 +355,7 @@ export default function Purchased() {
                     )}
                     <button
                       className="action-btn download-btn"
-                      onClick={() => download(v.video_path)}
+                      onClick={() => download(v.video_path, v.title)}
                     >
                       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#1a1a1a" strokeWidth="2">
                         <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
