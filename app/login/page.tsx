@@ -1,5 +1,7 @@
 "use client";
 
+export const dynamic = "force-dynamic";
+
 import { supabase } from "@/lib/supabase";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
@@ -100,7 +102,6 @@ function LoginContent() {
   );
 }
 
-// Suspense wrapper required because useSearchParams() causes prerender error without it
 export default function Login() {
   return (
     <Suspense>
