@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 import {
   LineChart, Line, BarChart, Bar, PieChart, Pie, Cell,
-  XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend
+  XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid,
 } from "recharts";
 
 interface Purchase {
@@ -13,6 +13,12 @@ interface Purchase {
   creator_earnings: number;
   created_at: string;
   video_title: string;
+  video_id: string;
+}
+
+interface VideoView {
+  video_id: string;
+  created_at: string;
 }
 
 type Period = "7" | "30" | "90" | "365";
@@ -32,7 +38,7 @@ function getDayLabel(date: Date, period: Period) {
 export default function AnalyticsPage() {
   const [period, setPeriod] = useState<Period>("30");
   const [purchases, setPurchases] = useState<Purchase[]>([]);
-  const [profileViews, setProfileViews] = useState<{ date: string; views: number }[]>([]);
+  const [videoViews, setVideoViews] = useState<VideoView[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -41,25 +47,39 @@ export default function AnalyticsPage() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { setLoading(false); return; }
 
-      const { data } = await supabase
+      // Fetch purchases
+      const { data: purchaseData } = await supabase
         .from("purchases")
-        .select("id, price, creator_earnings, created_at, videos!purchases_video_id_fkey(title)")
+        .select("id, price, creator_earnings, created_at, video_id, videos!purchases_video_id_fkey(title)")
         .eq("creator_id", user.id)
         .order("created_at", { ascending: true });
 
-      if (data) {
-        setPurchases(data.map((p: any) => ({
+      if (purchaseData) {
+        setPurchases(purchaseData.map((p: any) => ({
           id: p.id,
           price: Number(p.price),
           creator_earnings: Number(p.creator_earnings),
           created_at: p.created_at,
           video_title: p.videos?.title ?? "Untitled",
+          video_id: p.video_id,
         })));
       }
 
-      // Fetch profile views if you have a views table, else mock for now
-      // const { data: views } = await supabase.from("profile_views").select(...).eq("creator_id", user.id);
-      // setProfileViews(views || []);
+      // Fetch video views for creator's videos
+      const { data: myVideos } = await supabase
+        .from("videos")
+        .select("id")
+        .eq("creator_id", user.id);
+
+      const videoIds = (myVideos || []).map((v: any) => v.id);
+
+      if (videoIds.length > 0) {
+        const { data: viewsData } = await supabase
+          .from("video_views")
+          .select("video_id, created_at")
+          .in("video_id", videoIds);
+        if (viewsData) setVideoViews(viewsData);
+      }
 
       setLoading(false);
     };
@@ -70,24 +90,25 @@ export default function AnalyticsPage() {
   const cutoff = new Date();
   cutoff.setDate(cutoff.getDate() - Number(period));
   const filtered = purchases.filter(p => new Date(p.created_at) >= cutoff);
+  const filteredViews = videoViews.filter(v => new Date(v.created_at) >= cutoff);
+
+  // ── Conversion rate
+  const totalViews = filteredViews.length;
+  const totalSales = filtered.length;
+  const conversionRate = totalViews > 0 ? ((totalSales / totalViews) * 100).toFixed(1) : "0.0";
 
   // ── Revenue over time (line chart)
   const revenueMap: Record<string, { revenue: number; earnings: number }> = {};
   filtered.forEach(p => {
     const d = new Date(p.created_at);
-    // Group by week for 90d/365d, by day otherwise
-    let key: string;
-    if (period === "365") {
-      key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-    } else {
-      key = d.toISOString().split("T")[0];
-    }
+    const key = period === "365"
+      ? `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`
+      : d.toISOString().split("T")[0];
     if (!revenueMap[key]) revenueMap[key] = { revenue: 0, earnings: 0 };
     revenueMap[key].revenue += p.price;
     revenueMap[key].earnings += p.creator_earnings;
   });
 
-  // Fill in all days/months in range
   const revenueData: { label: string; revenue: number; earnings: number }[] = [];
   if (period === "365") {
     for (let i = 11; i >= 0; i--) {
@@ -113,12 +134,15 @@ export default function AnalyticsPage() {
     }
   }
 
-  // ── Top products (bar chart)
-  const productMap: Record<string, { title: string; revenue: number; sales: number }> = {};
+  // ── Top products (bar chart) + per-product conversion
+  const productMap: Record<string, { title: string; revenue: number; sales: number; views: number }> = {};
   filtered.forEach(p => {
-    if (!productMap[p.video_title]) productMap[p.video_title] = { title: p.video_title, revenue: 0, sales: 0 };
-    productMap[p.video_title].revenue += p.creator_earnings;
-    productMap[p.video_title].sales += 1;
+    if (!productMap[p.video_id]) productMap[p.video_id] = { title: p.video_title, revenue: 0, sales: 0, views: 0 };
+    productMap[p.video_id].revenue += p.creator_earnings;
+    productMap[p.video_id].sales += 1;
+  });
+  filteredViews.forEach(v => {
+    if (productMap[v.video_id]) productMap[v.video_id].views += 1;
   });
   const topProducts = Object.values(productMap).sort((a, b) => b.revenue - a.revenue).slice(0, 6);
 
@@ -128,10 +152,7 @@ export default function AnalyticsPage() {
   // ── Summary stats
   const totalRevenue = filtered.reduce((s, p) => s + p.price, 0);
   const totalEarnings = filtered.reduce((s, p) => s + p.creator_earnings, 0);
-  const totalSales = filtered.length;
   const avgOrder = totalSales > 0 ? totalRevenue / totalSales : 0;
-
-  // ── Sales velocity (sales per day)
   const salesPerDay = totalSales / Number(period);
 
   const CustomTooltip = ({ active, payload, label }: any) => {
@@ -166,7 +187,6 @@ export default function AnalyticsPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       <style>{`
-        
         @keyframes fadeUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
         .au { animation: fadeUp 0.35s ease both; }
         .au1 { animation-delay: 0.05s; }
@@ -182,9 +202,7 @@ export default function AnalyticsPage() {
         <div className="flex items-center justify-between mb-8 au">
           <div>
             <p className="text-xs text-gray-400 uppercase tracking-widest mb-1">Creator Analytics</p>
-            <h1 className="text-3xl font-extrabold text-gray-900">
-              Analytics
-            </h1>
+            <h1 className="text-3xl font-extrabold text-gray-900">Analytics</h1>
           </div>
 
           {/* Period toggle */}
@@ -194,9 +212,7 @@ export default function AnalyticsPage() {
                 key={p.value}
                 onClick={() => setPeriod(p.value)}
                 className={`px-4 py-1.5 rounded-lg text-sm font-semibold transition-all ${
-                  period === p.value
-                    ? "bg-gray-900 text-white"
-                    : "text-gray-400 hover:text-gray-700"
+                  period === p.value ? "bg-gray-900 text-white" : "text-gray-400 hover:text-gray-700"
                 }`}
               >
                 {p.label}
@@ -205,17 +221,18 @@ export default function AnalyticsPage() {
           </div>
         </div>
 
-        {/* Stat Cards */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+        {/* Stat Cards — now 5 including Conversion % */}
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
           {[
             { label: "Gross Revenue", value: formatINR(totalRevenue), sub: `${totalSales} sales`, delay: "au1" },
             { label: "Your Earnings", value: formatINR(totalEarnings), sub: "After platform fee", delay: "au2" },
             { label: "Avg Order Value", value: formatINR(avgOrder), sub: "Per transaction", delay: "au3" },
             { label: "Sales / Day", value: salesPerDay.toFixed(1), sub: `Over ${period} days`, delay: "au4" },
+            { label: "Conversion Rate", value: `${conversionRate}%`, sub: `${totalViews} views → ${totalSales} sales`, delay: "au5", highlight: true },
           ].map((card) => (
-            <div key={card.label} className={`bg-white rounded-2xl p-5 border border-gray-100 shadow-sm au ${card.delay}`}>
+            <div key={card.label} className={`bg-white rounded-2xl p-5 border shadow-sm au ${card.delay} ${card.highlight ? "border-gray-900" : "border-gray-100"}`}>
               <p className="text-xs text-gray-400 uppercase tracking-widest mb-3">{card.label}</p>
-              <p className="text-2xl font-extrabold text-gray-900">
+              <p className={`text-2xl font-extrabold ${card.highlight ? "text-gray-900" : "text-gray-900"}`}>
                 {card.value}
               </p>
               <p className="text-xs text-gray-400 mt-1">{card.sub}</p>
@@ -340,22 +357,46 @@ export default function AnalyticsPage() {
           </div>
         </div>
 
-        {/* Profile Views placeholder */}
-        <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm au au5">
-          <div className="flex items-center justify-between mb-6">
-            <div>
-              <p className="text-xs text-gray-400 uppercase tracking-widest mb-1">Profile Traffic</p>
-              <p className="text-lg font-bold text-gray-900">Page Views</p>
-            </div>
-            <span className="text-xs bg-gray-100 text-gray-400 px-3 py-1 rounded-full">Coming soon</span>
+        {/* Per-product Conversion Table */}
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden au au5">
+          <div className="px-6 py-4 border-b border-gray-100">
+            <p className="text-xs text-gray-400 uppercase tracking-widest mb-1">Conversion Breakdown</p>
+            <p className="text-lg font-bold text-gray-900">Per Product</p>
           </div>
-          <div className="h-32 flex flex-col items-center justify-center gap-2 border-2 border-dashed border-gray-100 rounded-xl">
-            <svg className="w-6 h-6 text-gray-200" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-            </svg>
-            <p className="text-xs text-gray-300">Add a <code className="bg-gray-50 px-1 rounded">profile_views</code> table to track visits</p>
-          </div>
+          {topProducts.length === 0 ? (
+            <div className="px-6 py-12 text-center text-gray-300 text-sm">No data for this period</div>
+          ) : (
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-gray-50">
+                  <th className="px-6 py-3 text-left text-xs text-gray-400 uppercase tracking-widest font-normal">Product</th>
+                  <th className="px-6 py-3 text-right text-xs text-gray-400 uppercase tracking-widest font-normal">Views</th>
+                  <th className="px-6 py-3 text-right text-xs text-gray-400 uppercase tracking-widest font-normal">Sales</th>
+                  <th className="px-6 py-3 text-right text-xs text-gray-400 uppercase tracking-widest font-normal">Conversion</th>
+                  <th className="px-6 py-3 text-right text-xs text-gray-400 uppercase tracking-widest font-normal">Earnings</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-50">
+                {topProducts.map((p) => {
+                  const conv = p.views > 0 ? ((p.sales / p.views) * 100).toFixed(1) : "—";
+                  const convNum = p.views > 0 ? (p.sales / p.views) * 100 : 0;
+                  return (
+                    <tr key={p.title} className="hover:bg-gray-50 transition-colors">
+                      <td className="px-6 py-4 text-gray-900 font-medium truncate max-w-[200px]">{p.title}</td>
+                      <td className="px-6 py-4 text-right text-gray-500">{p.views}</td>
+                      <td className="px-6 py-4 text-right text-gray-500">{p.sales}</td>
+                      <td className="px-6 py-4 text-right">
+                        <span className={`font-semibold ${convNum >= 5 ? "text-green-600" : convNum >= 2 ? "text-amber-500" : "text-gray-400"}`}>
+                          {conv}{conv !== "—" ? "%" : ""}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 text-right font-semibold text-gray-900">{formatINR(p.revenue)}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          )}
         </div>
 
       </div>

@@ -45,6 +45,13 @@ export default function Watch({ params }: { params: Promise<{ id: string }> }) {
       }
 
       const { data: { user } } = await supabase.auth.getUser();
+
+      // ✅ Track product page view (always, logged in or not)
+      await supabase.from("video_views").insert({
+        video_id: videoId,
+        viewer_id: user?.id ?? null,
+      });
+
       if (!user) return;
       setUserId(user.id);
 
@@ -71,7 +78,6 @@ export default function Watch({ params }: { params: Promise<{ id: string }> }) {
   const countFor = (star: number) => allRatings.filter(r => r.rating === star).length;
   const pctFor = (star: number) => totalRatings > 0 ? Math.round((countFor(star) / totalRatings) * 100) : 0;
 
-  // ✅ FIXED: now calls /api/buy-video instead of inserting directly
   const buy = async () => {
     setLoading(true);
     const { data: { user } } = await supabase.auth.getUser();
