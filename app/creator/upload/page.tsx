@@ -32,7 +32,7 @@ export default function Upload() {
     extensions: [
       StarterKit,
       Underline,
-      Link.configure({ openOnClick: false }),
+      Link.configure({ openOnClick: true, HTMLAttributes: { target: "_blank", rel: "noopener noreferrer" } }),
       Image,
     ],
     content: "",
@@ -108,16 +108,19 @@ export default function Upload() {
 
   const handleAddLink = () => {
     if (!editor || !linkUrl) return;
+    // Auto-prepend https:// if no protocol is present
+    const normalizedUrl =
+      /^https?:\/\//i.test(linkUrl) ? linkUrl : `https://${linkUrl}`;
     if (linkText && !editor.state.selection.empty) {
-      editor.chain().focus().setLink({ href: linkUrl }).run();
+      editor.chain().focus().setLink({ href: normalizedUrl }).run();
     } else if (linkText) {
       editor
         .chain()
         .focus()
-        .insertContent(`<a href="${linkUrl}">${linkText}</a>`)
+        .insertContent(`<a href="${normalizedUrl}">${linkText}</a>`)
         .run();
     } else {
-      editor.chain().focus().setLink({ href: linkUrl }).run();
+      editor.chain().focus().setLink({ href: normalizedUrl }).run();
     }
     setShowLinkModal(false);
     setLinkText("");
