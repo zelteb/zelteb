@@ -4,11 +4,12 @@ import { useEffect, useState, useRef } from "react";
 import { supabase } from "@/lib/supabase";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import { Camera, Loader2 } from "lucide-react";
+import { Camera, Loader2, ImagePlus } from "lucide-react";
 
 export default function Profile() {
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const coverInputRef = useRef<HTMLInputElement>(null);
 
   const [user, setUser] = useState<any>(null);
   const [username, setUsername] = useState("");
@@ -18,6 +19,8 @@ export default function Profile() {
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [avatarUploading, setAvatarUploading] = useState(false);
+  const [coverUrl, setCoverUrl] = useState<string | null>(null);
+  const [coverUploading, setCoverUploading] = useState(false);
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -49,6 +52,7 @@ export default function Profile() {
         setFullName(profile.full_name || "");
         setBio(profile.bio || "");
         setAvatarUrl(profile.avatar_url || null);
+        setCoverUrl(profile.cover_url || null);
       }
 
       setLoading(false);
@@ -81,18 +85,15 @@ export default function Profile() {
   }, [username, user]);
 
   // ── Avatar: pick file → instant preview, then upload immediately ──────────
-
   const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    e.target.value = ""; // reset so same file can be re-picked
+    e.target.value = "";
 
-    // Show local preview instantly
     const preview = URL.createObjectURL(file);
     setAvatarPreview(preview);
     setAvatarFile(file);
 
-    // Upload right away
     setAvatarUploading(true);
     try {
       const ext = file.name.split(".").pop();
@@ -107,14 +108,13 @@ export default function Profile() {
       const { data } = supabase.storage.from("avatars").getPublicUrl(path);
       const url = `${data.publicUrl}?t=${Date.now()}`;
 
-      // Save to DB immediately so UserProfileClient reflects the change
       await supabase
         .from("profiles")
         .update({ avatar_url: url })
         .eq("id", user.id);
 
       setAvatarUrl(url);
-      setAvatarPreview(null); // use the real URL now
+      setAvatarPreview(null);
     } catch (err: any) {
       alert("Avatar upload failed: " + err.message);
       setAvatarPreview(null);
@@ -123,8 +123,40 @@ export default function Profile() {
     }
   };
 
-  // ── Save the rest of the form ─────────────────────────────────────────────
+  // ── Cover: pick file → upload immediately ────────────────────────────────
+  const handleCoverChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    e.target.value = "";
 
+    setCoverUploading(true);
+    try {
+      const ext = file.name.split(".").pop();
+      const path = `${user.id}/cover.${ext}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from("covers")
+        .upload(path, file, { upsert: true, contentType: file.type });
+
+      if (uploadError) throw uploadError;
+
+      const { data } = supabase.storage.from("covers").getPublicUrl(path);
+      const url = `${data.publicUrl}?t=${Date.now()}`;
+
+      await supabase
+        .from("profiles")
+        .update({ cover_url: url })
+        .eq("id", user.id);
+
+      setCoverUrl(url);
+    } catch (err: any) {
+      alert("Cover upload failed: " + err.message);
+    } finally {
+      setCoverUploading(false);
+    }
+  };
+
+  // ── Save the rest of the form ─────────────────────────────────────────────
   const save = async () => {
     if (!username.trim()) {
       setUsernameError("username is required");
@@ -174,7 +206,68 @@ export default function Profile() {
 
       <div className="bg-white border border-gray-200 rounded-2xl p-8 max-w-3xl">
 
-        {/* ── Avatar upload ──────────────────────────────────────────────── */}
+        {/* ── Cover photo upload ──────────────────────────────────────────── */}
+        <div className="mb-8">
+          <label className="block text-sm font-semibold mb-2">Cover Photo</label>
+
+          <div
+            className="relative w-full h-36 rounded-2xl overflow-hidden border border-gray-200 bg-stone-200 group cursor-pointer"
+            onClick={() => coverInputRef.current?.click()}
+          >
+            {/* Cover preview */}
+            {coverUrl ? (
+              <Image
+                src={coverUrl}
+                alt="Cover photo"
+                fill
+                className="object-cover"
+                unoptimized
+              />
+            ) : (
+              <div className="absolute inset-0 bg-gray-800" />
+            )}
+
+            {/* Hover overlay */}
+            <div className="absolute inset-0 bg-black/0 hover:bg-black/35 transition-colors flex flex-col items-center justify-center gap-2">
+              {coverUploading ? (
+                <Loader2 size={22} className="text-white animate-spin" />
+              ) : (
+                <>
+                  <ImagePlus
+                    size={22}
+                    className="text-white opacity-0 group-hover:opacity-100 transition-opacity"
+                  />
+                  <span className="text-[11px] font-mono tracking-wide text-white/90 bg-black/40 backdrop-blur-sm px-2 py-0.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity select-none">
+                    16 : 5 · 1600 × 500 px
+                  </span>
+                </>
+              )}
+            </div>
+          </div>
+
+          <p className="text-gray-400 text-xs mt-1">
+            Recommended: 1600 × 500 px (16:5 ratio)
+          </p>
+          <button
+            onClick={() => coverInputRef.current?.click()}
+            disabled={coverUploading}
+            className="mt-2 text-xs font-medium text-gray-600 hover:text-black underline underline-offset-2 transition-colors disabled:opacity-50"
+          >
+            {coverUploading ? "Uploading…" : "Change cover photo"}
+          </button>
+
+          <input
+            ref={coverInputRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={handleCoverChange}
+          />
+        </div>
+
+        <hr className="border-gray-100 mb-8" />
+
+        {/* ── Avatar upload ───────────────────────────────────────────────── */}
         <div className="mb-8 flex items-center gap-5">
           <div className="relative group shrink-0">
             {/* Avatar preview */}
@@ -207,7 +300,10 @@ export default function Profile() {
               {avatarUploading ? (
                 <Loader2 size={20} className="text-white animate-spin" />
               ) : (
-                <Camera size={20} className="text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                <Camera
+                  size={20}
+                  className="text-white opacity-0 group-hover:opacity-100 transition-opacity"
+                />
               )}
             </button>
           </div>
