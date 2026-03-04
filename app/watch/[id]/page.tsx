@@ -32,32 +32,40 @@ export default function Watch({ params }: { params: Promise<{ id: string }> }) {
 
   useEffect(() => {
     const load = async () => {
-      const { data: v } = await supabase.from("videos").select("*").eq("id", videoId).single();
+      // Run video fetch + auth check in parallel — page shows immediately, no sequential blocking
+      const [{ data: v }, { data: { user } }] = await Promise.all([
+        supabase.from("videos").select("*").eq("id", videoId).single(),
+        supabase.auth.getUser(),
+      ]);
+
       if (!v) return;
+
+      // Render the page right away
       setVideo(v);
       if (v.thumbnail_url) setThumbnailUrl(v.thumbnail_url);
-      await loadRatings();
 
-      if (v.creator_id) {
-        const { data: creatorProfile } = await supabase
-          .from("profiles")
-          .select("username, full_name, avatar_url")
-          .eq("id", v.creator_id)
-          .single();
-        if (creatorProfile) setCreator(creatorProfile);
-      }
+      // Load creator + ratings in parallel
+      const [, creatorResult] = await Promise.all([
+        loadRatings(),
+        v.creator_id
+          ? supabase.from("profiles").select("username, full_name, avatar_url").eq("id", v.creator_id).single()
+          : Promise.resolve({ data: null }),
+      ]);
+      if (creatorResult?.data) setCreator(creatorResult.data);
 
-      const { data: { user } } = await supabase.auth.getUser();
+      // Auth-gated section — only if logged in
       if (!user) return;
       setUserId(user.id);
 
       const { data: p } = await supabase.from("purchases").select("id").eq("video_id", videoId).eq("buyer_id", user.id).single();
       if (p) {
         setOwned(true);
-        const { data: signed } = await supabase.storage.from("videos").createSignedUrl(v.video_path, 60 * 60);
-        setDownloadUrl(signed?.signedUrl || null);
-
-        const { data: existingR } = await supabase.from("ratings").select("*").eq("video_id", videoId).eq("buyer_id", user.id).maybeSingle();
+        const [signedResult, existingRResult] = await Promise.all([
+          supabase.storage.from("videos").createSignedUrl(v.video_path, 60 * 60),
+          supabase.from("ratings").select("*").eq("video_id", videoId).eq("buyer_id", user.id).maybeSingle(),
+        ]);
+        setDownloadUrl(signedResult.data?.signedUrl || null);
+        const existingR = existingRResult.data;
         if (existingR) {
           setExistingRating(existingR);
           setSelectedStar(existingR.rating);
