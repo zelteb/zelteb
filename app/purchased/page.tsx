@@ -89,12 +89,25 @@ export default function Purchased() {
     }
 
     if (data?.signedUrl) {
-      const a = document.createElement("a");
-      a.href = data.signedUrl;
-      a.download = title || "download"; // forces browser to download instead of opening
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
+      try {
+        // Fetch as blob to force native "Save As" dialog (bypasses cross-origin block)
+        const response = await fetch(data.signedUrl);
+        const blob = await response.blob();
+        const blobUrl = URL.createObjectURL(blob);
+
+        const a = document.createElement("a");
+        a.href = blobUrl;
+        a.download = title || "download";
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+
+        // Free memory
+        setTimeout(() => URL.revokeObjectURL(blobUrl), 10000);
+      } catch {
+        // Fallback: open in new tab if blob fetch fails
+        window.open(data.signedUrl, "_blank");
+      }
     }
   };
 
