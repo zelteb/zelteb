@@ -25,8 +25,6 @@ export default function Watch({ params }: { params: Promise<{ id: string }> }) {
   const [existingRating, setExistingRating] = useState<any>(null);
   const [allRatings, setAllRatings] = useState<any[]>([]);
 
-  // ✅ FIX: Normalizes bare URLs like "google.com" → "https://google.com"
-  // and forces all links to open in a new tab instead of navigating within the site.
   const fixDescriptionLinks = (html: string): string => {
     return html.replace(/href="([^"]+)"/g, (match, url) => {
       const fixedUrl =
@@ -105,44 +103,33 @@ export default function Watch({ params }: { params: Promise<{ id: string }> }) {
 
   const buy = async () => {
     setLoading(true);
-
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
       router.push(`/login?redirect=/watch/${videoId}`);
       setLoading(false);
       return;
     }
-
     if (owned) { setLoading(false); return; }
-
     const res = await fetch("/api/buy-video", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ video_id: video.id, buyer_id: user.id }),
     });
-
     if (!res.ok) {
       const msg = await res.text();
       alert("Error: " + msg);
       setLoading(false);
       return;
     }
-
     setOwned(true);
-    const { data: signed } = await supabase.storage
-      .from("videos")
-      .createSignedUrl(video.video_path, 60 * 60);
+    const { data: signed } = await supabase.storage.from("videos").createSignedUrl(video.video_path, 60 * 60);
     setDownloadUrl(signed?.signedUrl || null);
     setLoading(false);
   };
 
   const download = async (path: string, title: string) => {
-    const { data, error } = await supabase.storage
-      .from("videos")
-      .createSignedUrl(path, 60 * 60);
-
+    const { data, error } = await supabase.storage.from("videos").createSignedUrl(path, 60 * 60);
     if (error) { alert(error.message); return; }
-
     if (data?.signedUrl) {
       try {
         const response = await fetch(data.signedUrl);
@@ -165,7 +152,6 @@ export default function Watch({ params }: { params: Promise<{ id: string }> }) {
     if (!selectedStar) return alert("Please select a star rating");
     if (!userId) return;
     setRatingLoading(true);
-
     if (existingRating) {
       const { error } = await supabase.from("ratings").update({ rating: selectedStar, review }).eq("id", existingRating.id);
       if (error) { alert(error.message); setRatingLoading(false); return; }
@@ -173,7 +159,6 @@ export default function Watch({ params }: { params: Promise<{ id: string }> }) {
       const { error } = await supabase.from("ratings").insert({ video_id: videoId, buyer_id: userId, rating: selectedStar, review });
       if (error) { alert(error.message); setRatingLoading(false); return; }
     }
-
     setRatingSubmitted(true);
     setRatingLoading(false);
     await loadRatings();
@@ -274,7 +259,6 @@ export default function Watch({ params }: { params: Promise<{ id: string }> }) {
         .watch-card-body { padding: 20px; }
         .watch-card-title { font-size: 1rem; font-weight: 700; color: #18181b; line-height: 1.3; margin-bottom: 4px; }
         .watch-card-type { font-size: 0.72rem; color: #a1a1aa; font-weight: 400; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.06em; }
-
         .watch-card-creator { display: flex; align-items: center; gap: 9px; padding: 10px 11px; background: #f7f7f7; border-radius: 10px; margin-bottom: 14px; text-decoration: none; transition: background 0.15s; }
         .watch-card-creator:hover { background: #efefef; }
         .watch-card-creator-avatar { width: 32px; height: 32px; border-radius: 50%; background: linear-gradient(135deg, #7c3aed, #e879f9); display: flex; align-items: center; justify-content: center; font-size: 13px; color: white; font-weight: 700; flex-shrink: 0; overflow: hidden; }
@@ -282,7 +266,6 @@ export default function Watch({ params }: { params: Promise<{ id: string }> }) {
         .watch-card-creator-info { flex: 1; min-width: 0; }
         .watch-card-creator-name { font-size: 13px; font-weight: 600; color: #18181b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .watch-card-creator-sub { font-size: 11px; color: #a1a1aa; }
-
         .watch-card-divider { height: 1px; background: #f0f0f2; margin: 14px 0; }
         .watch-card-price { font-size: 1.5rem; font-weight: 800; color: #18181b; margin-bottom: 14px; }
         .watch-card-price .free { font-size: 1rem; font-weight: 600; color: #16a34a; background: #f0fdf4; padding: 5px 12px; border-radius: 20px; display: inline-block; }
@@ -298,13 +281,25 @@ export default function Watch({ params }: { params: Promise<{ id: string }> }) {
         .watch-owned-badge { display: flex; align-items: center; gap: 6px; font-size: 0.78rem; color: #16a34a; font-weight: 500; background: #f0fdf4; padding: 7px 12px; border-radius: 8px; margin-bottom: 12px; }
         .watch-secure { display: flex; align-items: center; gap: 5px; font-size: 0.73rem; color: #a1a1aa; justify-content: center; }
 
+        .sell-banner { background: linear-gradient(135deg, #eff6ff 0%, #eef2ff 100%); border-top: 1px solid #dbeafe; padding: 40px 24px; text-align: center; font-family: 'DM Sans', sans-serif; }
+        .sell-banner-inner { max-width: 520px; margin: 0 auto; }
+        .sell-banner-emoji { font-size: 2rem; margin-bottom: 10px; }
+        .sell-banner-heading { font-size: 1.25rem; font-weight: 800; color: #18181b; margin-bottom: 6px; letter-spacing: -0.02em; }
+        .sell-banner-sub { font-size: 0.85rem; color: #6b7280; margin-bottom: 20px; line-height: 1.5; }
+        .sell-banner-btn { display: inline-flex; align-items: center; gap: 8px; background: #2563eb; color: white; font-weight: 700; font-size: 0.95rem; padding: 13px 32px; border-radius: 12px; text-decoration: none; font-family: 'DM Sans', sans-serif; transition: background 0.15s, transform 0.1s; box-shadow: 0 4px 14px rgba(37,99,235,0.25); }
+        .sell-banner-btn:hover { background: #1d4ed8; transform: translateY(-1px); }
+
+        .powered-footer { background: #f9fafb; border-top: 1px solid #e5e7eb; padding: 14px 24px; text-align: center; font-family: 'DM Sans', sans-serif; font-size: 0.78rem; color: #9ca3af; }
+        .powered-footer a { color: #5b5bd6; font-weight: 700; text-decoration: none; }
+        .powered-footer a:hover { text-decoration: underline; }
+
         .share-toast { position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%); background: #18181b; color: white; padding: 11px 22px; border-radius: 10px; font-size: 13px; font-weight: 500; z-index: 9999; display: flex; align-items: center; gap: 8px; box-shadow: 0 4px 24px rgba(0,0,0,0.22); animation: toast-in 0.22s ease; white-space: nowrap; }
         @keyframes toast-in { from { opacity: 0; transform: translateX(-50%) translateY(10px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
-
         @keyframes spin { to { transform: rotate(360deg); } }
       `}</style>
 
       <div className="watch-wrap">
+
         {/* NAVBAR */}
         <nav className="watch-nav">
           <a href="/" className="watch-nav-logo">Zelteb</a>
@@ -317,6 +312,7 @@ export default function Watch({ params }: { params: Promise<{ id: string }> }) {
           </button>
         </nav>
 
+        {/* HERO */}
         <div className="watch-hero">
           {thumbnailUrl
             ? <img src={thumbnailUrl} alt={video.title} />
@@ -324,13 +320,13 @@ export default function Watch({ params }: { params: Promise<{ id: string }> }) {
           }
         </div>
 
+        {/* MAIN GRID */}
         <div className="watch-main">
           <div className="watch-left">
             <div className="watch-meta-row">
               <span className={`watch-price-tag ${video.is_free ? "free-tag" : ""}`}>
                 {video.is_free ? "Free" : `₹${video.price}`}
               </span>
-
               {creator && (
                 <a href={`/${creator.username}`} className="watch-creator-pill">
                   <span className="watch-creator-avatar">
@@ -342,7 +338,6 @@ export default function Watch({ params }: { params: Promise<{ id: string }> }) {
                   <span className="watch-creator-name">{creatorDisplayName}</span>
                 </a>
               )}
-
               {avgRating && (
                 <span className="watch-inline-stars">
                   <span className="stars">
@@ -362,8 +357,6 @@ export default function Watch({ params }: { params: Promise<{ id: string }> }) {
             {video.description && (
               <>
                 <div className="watch-divider-line" />
-                {/* ✅ fixDescriptionLinks ensures bare URLs like "google.com" become
-                    "https://google.com" and all links open in a new tab */}
                 <div
                   className="watch-description"
                   dangerouslySetInnerHTML={{ __html: fixDescriptionLinks(video.description) }}
@@ -371,6 +364,7 @@ export default function Watch({ params }: { params: Promise<{ id: string }> }) {
               </>
             )}
 
+            {/* RATINGS */}
             <div className="ratings-box">
               <div className="ratings-box-header">
                 <span className="ratings-box-title">Ratings</span>
@@ -399,6 +393,7 @@ export default function Watch({ params }: { params: Promise<{ id: string }> }) {
               )}
             </div>
 
+            {/* RATE THIS PRODUCT */}
             {owned && (
               <div className="rating-section">
                 <h3>Rate this product</h3>
@@ -434,12 +429,11 @@ export default function Watch({ params }: { params: Promise<{ id: string }> }) {
             )}
           </div>
 
-          {/* Sticky buy card */}
+          {/* STICKY BUY CARD */}
           <div className="watch-card">
             <div className="watch-card-body">
               <div className="watch-card-title">{video.title}</div>
               <div className="watch-card-type">{video.product_type === "video" ? "Video" : "Digital Product"}</div>
-
               {creator && (
                 <a href={`/${creator.username}`} className="watch-card-creator">
                   <div className="watch-card-creator-avatar">
@@ -450,30 +444,23 @@ export default function Watch({ params }: { params: Promise<{ id: string }> }) {
                   </div>
                   <div className="watch-card-creator-info">
                     <div className="watch-card-creator-name">{creatorDisplayName}</div>
-                    <div className="watch-card-creator-sub">View profile →</div>
+                    <div className="watch-card-creator-sub">View profile</div>
                   </div>
                 </a>
               )}
-
               <div className="watch-card-divider" />
-
               {owned && (
                 <div className="watch-owned-badge">
                   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
                   You own this product
                 </div>
               )}
-
               <div className="watch-card-price">
                 {video.is_free ? <span className="free">Free</span> : `₹${video.price}`}
               </div>
-
               {owned ? (
                 downloadUrl ? (
-                  <button
-                    className="watch-download-btn"
-                    onClick={() => download(video.video_path, video.title)}
-                  >
+                  <button className="watch-download-btn" onClick={() => download(video.video_path, video.title)}>
                     {video.product_type === "video" ? "▶ Watch / Download" : "⬇ Download"}
                   </button>
                 ) : (
@@ -488,7 +475,6 @@ export default function Watch({ params }: { params: Promise<{ id: string }> }) {
                   {loading ? "Processing..." : video.is_free ? "Get for Free" : "Buy Now"}
                 </button>
               )}
-
               <button className="watch-share-card-btn" onClick={handleShare}>
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                   <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
@@ -496,7 +482,6 @@ export default function Watch({ params }: { params: Promise<{ id: string }> }) {
                 </svg>
                 Share this product
               </button>
-
               <div className="watch-secure">
                 <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
                 Secure checkout
@@ -504,6 +489,32 @@ export default function Watch({ params }: { params: Promise<{ id: string }> }) {
             </div>
           </div>
         </div>
+
+        {/* SELL BANNER */}
+        <div className="sell-banner">
+          <div className="sell-banner-inner">
+            <div className="sell-banner-emoji">🛍️</div>
+            <h2 className="sell-banner-heading">Sell your any product</h2>
+            <p className="sell-banner-sub">Join thousands of creators selling digital products on Zelteb. Start for free, no setup fees.</p>
+            <a href={userId ? "/creator/products" : "/login"} className="sell-banner-btn">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/>
+                <line x1="3" y1="6" x2="21" y2="6"/>
+                <path d="M16 10a4 4 0 0 1-8 0"/>
+              </svg>
+              Start Selling Now
+            </a>
+          </div>
+        </div>
+
+        {/* POWERED BY FOOTER */}
+        <div className="powered-footer">
+          Powered by{" "}
+          <a href="https://zelteb.com" target="_blank" rel="noopener noreferrer">
+            Zelteb
+          </a>
+        </div>
+
       </div>
 
       {showToast && (
