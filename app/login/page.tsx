@@ -1,23 +1,36 @@
 "use client";
 
 import { supabase } from "@/lib/supabase";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
 export default function Login() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirectTo = searchParams.get("redirect") || "/dashboard";
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
-      if (data.user) router.push("/dashboard");
+      if (data.user) router.push(redirectTo);
     });
   }, []);
 
   const loginGoogle = async () => {
     setLoading(true);
-    await supabase.auth.signInWithOAuth({ provider: "google" });
+
+    // Pass the redirect destination through the OAuth callback
+    // Supabase will hit /auth/callback?code=...&next=/watch/xxx
+    const callbackUrl = `${window.location.origin}/auth/callback?next=${encodeURIComponent(redirectTo)}`;
+
+    await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        redirectTo: callbackUrl,
+      },
+    });
+
     setLoading(false);
   };
 
