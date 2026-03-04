@@ -25,6 +25,18 @@ export default function Watch({ params }: { params: Promise<{ id: string }> }) {
   const [existingRating, setExistingRating] = useState<any>(null);
   const [allRatings, setAllRatings] = useState<any[]>([]);
 
+  // ✅ FIX: Normalizes bare URLs like "google.com" → "https://google.com"
+  // and forces all links to open in a new tab instead of navigating within the site.
+  const fixDescriptionLinks = (html: string): string => {
+    return html.replace(/href="([^"]+)"/g, (match, url) => {
+      const fixedUrl =
+        /^https?:\/\//i.test(url) || url.startsWith("mailto:") || url.startsWith("#")
+          ? url
+          : `https://${url}`;
+      return `href="${fixedUrl}" target="_blank" rel="noopener noreferrer"`;
+    });
+  };
+
   const loadRatings = async () => {
     const { data } = await supabase.from("ratings").select("rating").eq("video_id", videoId);
     if (data) setAllRatings(data);
@@ -32,7 +44,6 @@ export default function Watch({ params }: { params: Promise<{ id: string }> }) {
 
   useEffect(() => {
     const load = async () => {
-      // Run video fetch + auth check in parallel — page shows immediately, no sequential blocking
       const [{ data: v }, { data: { user } }] = await Promise.all([
         supabase.from("videos").select("*").eq("id", videoId).single(),
         supabase.auth.getUser(),
@@ -40,11 +51,9 @@ export default function Watch({ params }: { params: Promise<{ id: string }> }) {
 
       if (!v) return;
 
-      // Render the page right away
       setVideo(v);
       if (v.thumbnail_url) setThumbnailUrl(v.thumbnail_url);
 
-      // Load creator + ratings in parallel
       const [, creatorResult] = await Promise.all([
         loadRatings(),
         v.creator_id
@@ -53,7 +62,6 @@ export default function Watch({ params }: { params: Promise<{ id: string }> }) {
       ]);
       if (creatorResult?.data) setCreator(creatorResult.data);
 
-      // Auth-gated section — only if logged in
       if (!user) return;
       setUserId(user.id);
 
@@ -223,9 +231,14 @@ export default function Watch({ params }: { params: Promise<{ id: string }> }) {
         .watch-description p { margin-bottom: 10px; }
         .watch-description strong { font-weight: 700; color: #18181b; }
         .watch-description blockquote { border-left: 3px solid #e879f9; padding-left: 14px; color: #71717a; font-style: italic; margin: 12px 0; }
-        .watch-description a { color: #e879f9; }
+        .watch-description a { color: #e879f9; text-decoration: underline; cursor: pointer; }
+        .watch-description a:hover { color: #c2185b; }
         .watch-description ul, .watch-description ol { padding-left: 20px; margin: 8px 0; }
         .watch-description img { max-width: 100%; border-radius: 8px; }
+        .watch-description h1 { font-size: 1.5rem; font-weight: 800; margin-bottom: 8px; }
+        .watch-description h2 { font-size: 1.2rem; font-weight: 700; margin-bottom: 6px; }
+        .watch-description h3 { font-size: 1rem; font-weight: 600; margin-bottom: 5px; }
+        .watch-description pre { background: #18181b; color: #e4e4e7; border-radius: 8px; padding: 12px 14px; font-family: monospace; font-size: 0.85rem; margin: 8px 0; overflow-x: auto; }
 
         .ratings-box { margin-top: 36px; border-top: 1px solid #f0f0f2; padding-top: 28px; }
         .ratings-box-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; }
@@ -349,7 +362,12 @@ export default function Watch({ params }: { params: Promise<{ id: string }> }) {
             {video.description && (
               <>
                 <div className="watch-divider-line" />
-                <div className="watch-description" dangerouslySetInnerHTML={{ __html: video.description }} />
+                {/* ✅ fixDescriptionLinks ensures bare URLs like "google.com" become
+                    "https://google.com" and all links open in a new tab */}
+                <div
+                  className="watch-description"
+                  dangerouslySetInnerHTML={{ __html: fixDescriptionLinks(video.description) }}
+                />
               </>
             )}
 
@@ -471,7 +489,6 @@ export default function Watch({ params }: { params: Promise<{ id: string }> }) {
                 </button>
               )}
 
-              {/* Share button in card */}
               <button className="watch-share-card-btn" onClick={handleShare}>
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                   <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
@@ -489,7 +506,6 @@ export default function Watch({ params }: { params: Promise<{ id: string }> }) {
         </div>
       </div>
 
-      {/* Toast notification */}
       {showToast && (
         <div className="share-toast">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
