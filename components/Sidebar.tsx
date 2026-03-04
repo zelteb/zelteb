@@ -47,7 +47,7 @@ export default function Sidebar() {
     { name: "Sales", icon: "💰", link: "/dashboard/sales" },
     { name: "Analytics", icon: "📊", link: "/dashboard/analytics" },
     { name: "Payouts", icon: "🏦", link: "/dashboard/payouts" },
-    { name: "Profile", icon: "✉️", link: "/dashboard/profile" },
+    { name: "Profile", icon: "👤", link: "/dashboard/profile" },
 
     // 🔥 NEW — View My Page
     ...(username

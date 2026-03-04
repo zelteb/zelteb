@@ -19,13 +19,13 @@ interface Video {
 export default function Products() {
   const [videos, setVideos] = useState<Video[]>([]);
   const [loading, setLoading] = useState(true);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
 
   useEffect(() => {
     const load = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { setLoading(false); return; }
 
-      // Fetch creator's products
       const { data: vids, error } = await supabase
         .from("videos")
         .select("id, title, price, is_free, thumbnail_url, product_type, created_at")
@@ -34,16 +34,14 @@ export default function Products() {
 
       if (error || !vids) { setLoading(false); return; }
 
-      // Fetch all purchases for this creator — use price not amount
       const videoIds = vids.map((v) => v.id);
       const { data: purchases } = videoIds.length > 0
         ? await supabase
             .from("purchases")
-            .select("video_id, price")  // ✅ fixed: price instead of amount
+            .select("video_id, price")
             .in("video_id", videoIds)
         : { data: [] };
 
-      // Compute sales count and revenue per video
       const enriched = vids.map((v) => {
         const vidPurchases = (purchases || []).filter((p) => p.video_id === v.id);
         return {
@@ -67,6 +65,14 @@ export default function Products() {
     setVideos((prev) => prev.filter((v) => v.id !== id));
   };
 
+  const copyLink = (id: string) => {
+    const url = `${window.location.origin}/watch/${id}`;
+    navigator.clipboard.writeText(url).then(() => {
+      setCopiedId(id);
+      setTimeout(() => setCopiedId(null), 2000);
+    });
+  };
+
   const totalSales = videos.reduce((s, v) => s + v.sales, 0);
   const totalRevenue = videos.reduce((s, v) => s + v.revenue, 0);
 
@@ -87,12 +93,16 @@ export default function Products() {
         .edit-btn:hover { background: #dbeafe; }
         .del-btn { display: inline-flex; align-items: center; gap: 5px; background: #fee2e2; color: #dc2626; border: 1px solid #fecaca; border-radius: 7px; padding: 6px 13px; font-size: 13px; font-weight: 600; cursor: pointer; transition: background 0.15s; white-space: nowrap; }
         .del-btn:hover { background: #fecaca; }
+        .copy-btn { display: inline-flex; align-items: center; gap: 5px; background: transparent; color: #888; border: 1px solid #e5e5e5; border-radius: 7px; padding: 4px 10px; font-size: 12px; font-weight: 500; cursor: pointer; transition: all 0.15s; white-space: nowrap; text-decoration: none; }
+        .copy-btn:hover { background: #f5f5f5; color: #555; border-color: #ccc; }
+        .copy-btn.copied { background: #f0fdf4; color: #16a34a; border-color: #bbf7d0; }
         .thumb { width: 48px; height: 36px; border-radius: 6px; object-fit: cover; background: #1a1a1a; flex-shrink: 0; display: flex; align-items: center; justify-content: center; overflow: hidden; }
         .thumb img { width: 100%; height: 100%; object-fit: cover; }
         .thumb-placeholder { width: 48px; height: 36px; border-radius: 6px; background: #e5e5e5; display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0; }
         .product-name { font-weight: 600; font-size: 14px; color: #111; margin: 0 0 2px; }
         .product-link { font-size: 12px; color: #888; text-decoration: none; }
         .product-link:hover { text-decoration: underline; color: #555; }
+        .product-meta { display: flex; align-items: center; gap: 10px; margin-top: 3px; }
         .sales-link { color: #111; text-decoration: underline; text-decoration-color: #ccc; font-size: 14px; }
         .badge-free { display: inline-block; background: #f0fdf4; color: #16a34a; font-size: 11px; font-weight: 600; padding: 2px 7px; border-radius: 20px; border: 1px solid #bbf7d0; }
       `}</style>
@@ -151,9 +161,33 @@ export default function Products() {
                         )}
                         <div>
                           <p className="product-name">{v.title}</p>
-                          <Link href={`/watch/${v.id}`} className="product-link">
-                            View product →
-                          </Link>
+                          <div className="product-meta">
+                            <Link href={`/watch/${v.id}`} className="product-link">
+                              View product →
+                            </Link>
+                            <span style={{ color: "#ddd", fontSize: 12 }}>|</span>
+                            <button
+                              className={`copy-btn${copiedId === v.id ? " copied" : ""}`}
+                              onClick={() => copyLink(v.id)}
+                            >
+                              {copiedId === v.id ? (
+                                <>
+                                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                    <polyline points="20 6 9 17 4 12"/>
+                                  </svg>
+                                  Copied!
+                                </>
+                              ) : (
+                                <>
+                                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                                  </svg>
+                                  Copy link
+                                </>
+                              )}
+                            </button>
+                          </div>
                         </div>
                       </div>
                     </td>
