@@ -15,6 +15,7 @@ export default function Watch({ params }: { params: Promise<{ id: string }> }) {
   const [thumbnailUrl, setThumbnailUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
+  const [showToast, setShowToast] = useState(false);
 
   const [hoverStar, setHoverStar] = useState(0);
   const [selectedStar, setSelectedStar] = useState(0);
@@ -31,7 +32,6 @@ export default function Watch({ params }: { params: Promise<{ id: string }> }) {
 
   useEffect(() => {
     const load = async () => {
-      // ✅ Public: load video & creator without requiring login
       const { data: v } = await supabase.from("videos").select("*").eq("id", videoId).single();
       if (!v) return;
       setVideo(v);
@@ -47,7 +47,6 @@ export default function Watch({ params }: { params: Promise<{ id: string }> }) {
         if (creatorProfile) setCreator(creatorProfile);
       }
 
-      // ✅ Check login only to determine owned state — not required to view page
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
       setUserId(user.id);
@@ -75,10 +74,22 @@ export default function Watch({ params }: { params: Promise<{ id: string }> }) {
   const countFor = (star: number) => allRatings.filter(r => r.rating === star).length;
   const pctFor = (star: number) => totalRatings > 0 ? Math.round((countFor(star) / totalRatings) * 100) : 0;
 
+  const handleShare = async () => {
+    const url = window.location.href;
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: video?.title || "Check this out", url });
+      } catch {}
+    } else {
+      await navigator.clipboard.writeText(url);
+      setShowToast(true);
+      setTimeout(() => setShowToast(false), 2500);
+    }
+  };
+
   const buy = async () => {
     setLoading(true);
 
-    // ✅ If not logged in, redirect to login/signup
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
       router.push(`/login?redirect=/watch/${videoId}`);
@@ -174,6 +185,8 @@ export default function Watch({ params }: { params: Promise<{ id: string }> }) {
 
         .watch-nav { background: white; border-bottom: 1px solid #e4e4e7; padding: 0 40px; height: 54px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 10; }
         .watch-nav-logo { font-size: 1.2rem; color: #18181b; text-decoration: none; font-weight: 800; }
+        .watch-nav-share { display: inline-flex; align-items: center; gap: 6px; padding: 7px 16px; border-radius: 8px; border: 1px solid #e4e4e7; background: white; font-size: 13px; font-weight: 600; font-family: 'DM Sans', sans-serif; color: #18181b; cursor: pointer; transition: background 0.15s, border-color 0.15s; }
+        .watch-nav-share:hover { background: #f4f4f6; border-color: #d4d4d8; }
 
         .watch-hero { width: 100%; max-height: 480px; overflow: hidden; background: #18181b; }
         .watch-hero img { width: 100%; height: 480px; object-fit: cover; display: block; }
@@ -259,16 +272,28 @@ export default function Watch({ params }: { params: Promise<{ id: string }> }) {
         .watch-buy-btn.free-btn:hover:not(:disabled) { background: #15803d; }
         .watch-download-btn { width: 100%; padding: 13px; background: #7c3aed; color: white; border: none; border-radius: 10px; font-size: 0.95rem; font-weight: 700; font-family: 'DM Sans', sans-serif; cursor: pointer; display: block; text-align: center; margin-bottom: 10px; transition: background 0.15s; }
         .watch-download-btn:hover { background: #6d28d9; }
+        .watch-share-card-btn { width: 100%; padding: 11px; background: white; color: #18181b; border: 1px solid #e4e4e7; border-radius: 10px; font-size: 0.875rem; font-weight: 600; font-family: 'DM Sans', sans-serif; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 7px; margin-bottom: 10px; transition: background 0.15s; }
+        .watch-share-card-btn:hover { background: #f4f4f6; }
         .watch-owned-badge { display: flex; align-items: center; gap: 6px; font-size: 0.78rem; color: #16a34a; font-weight: 500; background: #f0fdf4; padding: 7px 12px; border-radius: 8px; margin-bottom: 12px; }
         .watch-secure { display: flex; align-items: center; gap: 5px; font-size: 0.73rem; color: #a1a1aa; justify-content: center; }
+
+        .share-toast { position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%); background: #18181b; color: white; padding: 11px 22px; border-radius: 10px; font-size: 13px; font-weight: 500; z-index: 9999; display: flex; align-items: center; gap: 8px; box-shadow: 0 4px 24px rgba(0,0,0,0.22); animation: toast-in 0.22s ease; white-space: nowrap; }
+        @keyframes toast-in { from { opacity: 0; transform: translateX(-50%) translateY(10px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
 
         @keyframes spin { to { transform: rotate(360deg); } }
       `}</style>
 
       <div className="watch-wrap">
-        {/* NAVBAR — back button removed */}
+        {/* NAVBAR */}
         <nav className="watch-nav">
           <a href="/" className="watch-nav-logo">Zelteb</a>
+          <button className="watch-nav-share" onClick={handleShare}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
+              <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
+            </svg>
+            Share
+          </button>
         </nav>
 
         <div className="watch-hero">
@@ -438,6 +463,15 @@ export default function Watch({ params }: { params: Promise<{ id: string }> }) {
                 </button>
               )}
 
+              {/* Share button in card */}
+              <button className="watch-share-card-btn" onClick={handleShare}>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
+                  <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
+                </svg>
+                Share this product
+              </button>
+
               <div className="watch-secure">
                 <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
                 Secure checkout
@@ -446,6 +480,14 @@ export default function Watch({ params }: { params: Promise<{ id: string }> }) {
           </div>
         </div>
       </div>
+
+      {/* Toast notification */}
+      {showToast && (
+        <div className="share-toast">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+          Link copied to clipboard!
+        </div>
+      )}
     </>
   );
 }
