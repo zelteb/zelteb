@@ -127,7 +127,6 @@ export default function Home() {
             <div className="flex flex-col space-y-5 text-lg font-medium">
               <Link href="#" className="hover:text-gray-400">Discover</Link>
               <Link href="#" className="hover:text-gray-400">Pricing</Link>
-              <Link href="#" className="hover:text-gray-400">Features</Link>
               <Link href="about" className="hover:text-gray-400">About</Link>
             </div>
 

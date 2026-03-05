@@ -1,501 +1,178 @@
-"use client";
+import Link from "next/link"
 
 export default function AboutPage() {
   return (
-    <>
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap');
-        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-        body { background: #fff; }
+    <div className="bg-white min-h-screen font-sans text-black">
+      {/* NAVBAR */}
+      <header className="sticky top-0 z-50 bg-white border-b border-gray-100">
+        <div className="max-w-7xl mx-auto flex items-center justify-between px-8 py-5">
+          <Link href="/" className="text-3xl font-black tracking-tighter">
+            Zelteb
+          </Link>
+          <nav className="hidden md:flex gap-10 text-[15px] font-medium text-gray-600">
+            <Link href="/" className="hover:text-black">Home</Link>
+            <Link href="/about" className="font-semibold text-black">About</Link>
+            <Link href="/pricing" className="hover:text-black">Pricing</Link>
+          </nav>
+          <Link href="/dashboard" className="px-6 py-2.5 rounded-full bg-black text-white text-sm font-bold transition-all hover:bg-gray-800">
+            Dashboard
+          </Link>
+        </div>
+      </header>
 
-        .about-wrap {
-          font-family: 'DM Sans', sans-serif;
-          background: #fff;
-          min-height: 100vh;
-          color: #18181b;
-        }
-
-        /* NAV */
-        .about-nav {
-          background: white;
-          border-bottom: 1px solid #e4e4e7;
-          padding: 0 40px;
-          height: 54px;
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          position: sticky;
-          top: 0;
-          z-index: 10;
-        }
-        .about-nav-logo {
-          font-size: 1.2rem;
-          color: #18181b;
-          text-decoration: none;
-          font-weight: 800;
-        }
-        .about-nav-links {
-          display: flex;
-          align-items: center;
-          gap: 24px;
-        }
-        .about-nav-links a {
-          font-size: 14px;
-          font-weight: 500;
-          color: #52525b;
-          text-decoration: none;
-          transition: color 0.15s;
-        }
-        .about-nav-links a:hover { color: #18181b; }
-        .about-nav-cta {
-          background: #e91e8c;
-          color: white !important;
-          padding: 7px 18px;
-          border-radius: 8px;
-          font-weight: 600 !important;
-          font-size: 13px !important;
-          transition: background 0.15s !important;
-        }
-        .about-nav-cta:hover { background: #c2185b !important; color: white !important; }
-
-        /* HERO */
-        .about-hero {
-          text-align: center;
-          padding: 80px 24px 64px;
-          max-width: 680px;
-          margin: 0 auto;
-        }
-        .about-hero-badge {
-          display: inline-block;
-          background: #fdf2f8;
-          color: #e91e8c;
-          font-size: 12px;
-          font-weight: 700;
-          letter-spacing: 0.08em;
-          text-transform: uppercase;
-          padding: 5px 14px;
-          border-radius: 999px;
-          margin-bottom: 20px;
-          border: 1px solid #fce7f3;
-        }
-        .about-hero h1 {
-          font-size: 2.6rem;
-          font-weight: 800;
-          color: #18181b;
-          line-height: 1.15;
-          letter-spacing: -0.03em;
-          margin-bottom: 18px;
-        }
-        .about-hero h1 span {
-          color: #e91e8c;
-        }
-        .about-hero p {
-          font-size: 1rem;
-          color: #52525b;
-          line-height: 1.75;
-          max-width: 520px;
-          margin: 0 auto;
-        }
-
-        /* DIVIDER */
-        .about-divider {
-          height: 1px;
-          background: #f0f0f2;
-          max-width: 880px;
-          margin: 0 auto;
-        }
-
-        /* MISSION */
-        .about-mission {
-          max-width: 880px;
-          margin: 0 auto;
-          padding: 64px 24px;
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 60px;
-          align-items: center;
-        }
-        .about-mission-label {
-          font-size: 11px;
-          font-weight: 700;
-          letter-spacing: 0.1em;
-          text-transform: uppercase;
-          color: #e91e8c;
-          margin-bottom: 12px;
-        }
-        .about-mission h2 {
-          font-size: 1.8rem;
-          font-weight: 800;
-          color: #18181b;
-          line-height: 1.2;
-          letter-spacing: -0.02em;
-          margin-bottom: 16px;
-        }
-        .about-mission p {
-          font-size: 0.95rem;
-          color: #52525b;
-          line-height: 1.8;
-        }
-        .about-mission-visual {
-          background: linear-gradient(135deg, #fdf2f8 0%, #ede9fe 100%);
-          border-radius: 20px;
-          padding: 40px;
-          display: flex;
-          flex-direction: column;
-          gap: 16px;
-        }
-        .about-mission-stat {
-          background: white;
-          border-radius: 12px;
-          padding: 18px 20px;
-          box-shadow: 0 1px 8px rgba(0,0,0,0.06);
-        }
-        .about-mission-stat-num {
-          font-size: 1.8rem;
-          font-weight: 800;
-          color: #18181b;
-          letter-spacing: -0.03em;
-          line-height: 1;
-          margin-bottom: 4px;
-        }
-        .about-mission-stat-num span { color: #e91e8c; }
-        .about-mission-stat-label {
-          font-size: 13px;
-          color: #71717a;
-          font-weight: 500;
-        }
-
-        /* VALUES */
-        .about-values {
-          background: #fafafa;
-          border-top: 1px solid #f0f0f2;
-          border-bottom: 1px solid #f0f0f2;
-          padding: 64px 24px;
-        }
-        .about-values-inner { max-width: 880px; margin: 0 auto; }
-        .about-values-header {
-          text-align: center;
-          margin-bottom: 44px;
-        }
-        .about-values-header .label {
-          font-size: 11px;
-          font-weight: 700;
-          letter-spacing: 0.1em;
-          text-transform: uppercase;
-          color: #e91e8c;
-          margin-bottom: 10px;
-        }
-        .about-values-header h2 {
-          font-size: 1.8rem;
-          font-weight: 800;
-          color: #18181b;
-          letter-spacing: -0.02em;
-        }
-        .about-values-grid {
-          display: grid;
-          grid-template-columns: repeat(3, 1fr);
-          gap: 20px;
-        }
-        .about-value-card {
-          background: white;
-          border: 1px solid #e4e4e7;
-          border-radius: 16px;
-          padding: 28px 24px;
-          transition: box-shadow 0.2s, transform 0.2s;
-        }
-        .about-value-card:hover {
-          box-shadow: 0 4px 24px rgba(0,0,0,0.08);
-          transform: translateY(-2px);
-        }
-        .about-value-icon {
-          font-size: 1.8rem;
-          margin-bottom: 14px;
-        }
-        .about-value-card h3 {
-          font-size: 1rem;
-          font-weight: 700;
-          color: #18181b;
-          margin-bottom: 8px;
-        }
-        .about-value-card p {
-          font-size: 0.875rem;
-          color: #71717a;
-          line-height: 1.7;
-        }
-
-        /* STORY */
-        .about-story {
-          max-width: 640px;
-          margin: 0 auto;
-          padding: 64px 24px;
-          text-align: center;
-        }
-        .about-story .label {
-          font-size: 11px;
-          font-weight: 700;
-          letter-spacing: 0.1em;
-          text-transform: uppercase;
-          color: #e91e8c;
-          margin-bottom: 12px;
-        }
-        .about-story h2 {
-          font-size: 1.8rem;
-          font-weight: 800;
-          color: #18181b;
-          letter-spacing: -0.02em;
-          margin-bottom: 20px;
-        }
-        .about-story p {
-          font-size: 0.95rem;
-          color: #52525b;
-          line-height: 1.85;
-          margin-bottom: 16px;
-        }
-
-        /* CTA */
-        .about-cta {
-          background: #18181b;
-          padding: 64px 24px;
-          text-align: center;
-        }
-        .about-cta h2 {
-          font-size: 1.8rem;
-          font-weight: 800;
-          color: white;
-          letter-spacing: -0.02em;
-          margin-bottom: 10px;
-        }
-        .about-cta p {
-          font-size: 0.95rem;
-          color: #a1a1aa;
-          margin-bottom: 28px;
-        }
-        .about-cta-btns {
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          gap: 12px;
-          flex-wrap: wrap;
-        }
-        .about-cta-primary {
-          display: inline-flex;
-          align-items: center;
-          gap: 8px;
-          background: #e91e8c;
-          color: white;
-          font-weight: 700;
-          font-size: 0.95rem;
-          padding: 13px 28px;
-          border-radius: 10px;
-          text-decoration: none;
-          font-family: 'DM Sans', sans-serif;
-          transition: background 0.15s, transform 0.1s;
-        }
-        .about-cta-primary:hover { background: #c2185b; transform: translateY(-1px); }
-        .about-cta-secondary {
-          display: inline-flex;
-          align-items: center;
-          gap: 8px;
-          background: transparent;
-          color: white;
-          font-weight: 600;
-          font-size: 0.95rem;
-          padding: 13px 28px;
-          border-radius: 10px;
-          text-decoration: none;
-          border: 1px solid #3f3f46;
-          font-family: 'DM Sans', sans-serif;
-          transition: border-color 0.15s, background 0.15s;
-        }
-        .about-cta-secondary:hover { border-color: #71717a; background: #27272a; }
-
-        /* COMPACT FOOTER */
-        .about-footer {
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          gap: 18px;
-          padding: 16px 24px;
-          border-top: 1px solid #f0f0f0;
-          font-family: 'DM Sans', sans-serif;
-        }
-        .about-footer-sell {
-          display: inline-flex;
-          align-items: center;
-          gap: 6px;
-          font-size: 14px;
-          font-weight: 600;
-          color: #2563eb;
-          text-decoration: none;
-          transition: opacity 0.15s;
-        }
-        .about-footer-sell:hover { opacity: 0.75; }
-        .about-footer-dot { color: #d1d5db; font-size: 12px; }
-        .about-footer-powered { font-size: 14px; color: #9ca3af; font-weight: 500; }
-        .about-footer-powered a {
-          color: #111;
-          font-weight: 800;
-          text-decoration: none;
-          font-size: 15px;
-          letter-spacing: -0.02em;
-          transition: opacity 0.15s;
-        }
-        .about-footer-powered a:hover { opacity: 0.7; }
-
-        @media (max-width: 700px) {
-          .about-hero h1 { font-size: 1.9rem; }
-          .about-mission { grid-template-columns: 1fr; gap: 36px; }
-          .about-values-grid { grid-template-columns: 1fr; }
-          .about-nav { padding: 0 20px; }
-          .about-nav-links { display: none; }
-        }
-      `}</style>
-
-      <div className="about-wrap">
-
-        {/* NAV */}
-        <nav className="about-nav">
-          <a href="/" className="about-nav-logo">Zelteb</a>
-          <div className="about-nav-links">
-            <a href="/">Home</a>
-            <a href="/about">About</a>
-            <a href="/login" className="about-nav-cta">Get Started</a>
-          </div>
-        </nav>
+      <main className="max-w-4xl mx-auto px-8 py-24">
 
         {/* HERO */}
-        <section className="about-hero">
-          <div className="about-hero-badge">About Us</div>
-          <h1>Built for <span>Indian creators</span> who deserve more</h1>
-          <p>
-            Zelteb is a platform that lets creators sell digital products directly to their audience — videos, files, courses, and more. No middlemen. No complexity. Just you and your buyers.
-          </p>
-        </section>
+        <h1 className="text-[56px] md:text-[80px] font-bold tracking-tighter leading-none mb-6">
+          Built for creators<br />
+          <span className="underline decoration-[#f398e4] decoration-8 underline-offset-8">who mean business.</span>
+        </h1>
+        <p className="text-gray-500 text-xl leading-relaxed max-w-2xl mb-20">
+          Zelteb is a platform that lets anyone sell digital products directly to their audience — videos, files, courses, and more. No middlemen. No complexity. Just you and your buyers.
+        </p>
 
-        <div className="about-divider" />
+        <div className="space-y-20">
 
-        {/* MISSION */}
-        <section className="about-mission">
-          <div>
-            <div className="about-mission-label">Our Mission</div>
-            <h2>Empowering every creator to earn online</h2>
-            <p>
+          {/* MISSION */}
+          <section className="border-t border-gray-100 pt-12">
+            <h2 className="text-3xl font-bold mb-8 tracking-tight underline decoration-[#f398e4] decoration-4 underline-offset-8">
+              Our Mission
+            </h2>
+            <p className="text-gray-600 text-lg leading-relaxed mb-6">
               We believe anyone with knowledge, a skill, or a passion should be able to monetize it. Zelteb was built to remove every barrier — no tech skills needed, no high fees, no complicated setup.
             </p>
-            <br />
-            <p>
-              Whether you're a teacher, designer, filmmaker, or fitness coach — if you create value, Zelteb helps you get paid for it.
+            <p className="text-gray-600 text-lg leading-relaxed">
+              Whether you're a teacher, designer, filmmaker, or fitness coach — if you create value, Zelteb helps you get paid for it. We built Zelteb with the Indian creator economy in mind, with INR pricing and a dead-simple experience from day one.
             </p>
-          </div>
-          <div className="about-mission-visual">
-            <div className="about-mission-stat">
-              <div className="about-mission-stat-num">100<span>%</span></div>
-              <div className="about-mission-stat-label">Free to start — no setup fees</div>
-            </div>
-        
-            <div className="about-mission-stat">
-              <div className="about-mission-stat-num">24<span>/7</span></div>
-              <div className="about-mission-stat-label">Your store is always open</div>
-            </div>
-          </div>
-        </section>
+          </section>
 
-        <div className="about-divider" />
-
-        {/* VALUES */}
-        <section className="about-values">
-          <div className="about-values-inner">
-            <div className="about-values-header">
-              <div className="label">What We Stand For</div>
-              <h2>Our values</h2>
-            </div>
-            <div className="about-values-grid">
-              <div className="about-value-card">
-                <div className="about-value-icon">🇮🇳</div>
-                <h3>Made for India</h3>
-                <p>Built with INR pricing, UPI-friendly payments, and the Indian creator economy in mind from day one.</p>
+          {/* STATS */}
+          <section className="border-t border-gray-100 pt-12">
+            <div className="grid md:grid-cols-3 gap-0 border border-gray-100 rounded-2xl overflow-hidden">
+              <div className="p-10 border-b md:border-b-0 md:border-r border-gray-100">
+                <div className="text-5xl font-bold tracking-tighter mb-2">100<span className="text-[#f398e4]">%</span></div>
+                <div className="text-gray-500 text-lg">Free to start</div>
+                <div className="text-gray-400 text-sm mt-1">No setup fees, ever</div>
               </div>
-              <div className="about-value-card">
-                <div className="about-value-icon">⚡</div>
-                <h3>Simple by design</h3>
-                <p>No bloated dashboards. No confusing settings. Upload your product, set a price, share your link — done.</p>
+              <div className="p-10 border-b md:border-b-0 md:border-r border-gray-100">
+                <div className="text-5xl font-bold tracking-tighter mb-2">24<span className="text-[#f398e4]">/7</span></div>
+                <div className="text-gray-500 text-lg">Always open</div>
+                <div className="text-gray-400 text-sm mt-1">Your store never sleeps</div>
               </div>
-              <div className="about-value-card">
-                <div className="about-value-icon">🔒</div>
-                <h3>Secure & reliable</h3>
-                <p>Your products and your buyers' payments are protected with industry-standard security at every step.</p>
-              </div>
-              <div className="about-value-card">
-                <div className="about-value-icon">💸</div>
-                <h3>Fair pricing</h3>
-                <p>We keep our fees low so creators keep more of what they earn. Your success is our success.</p>
-              </div>
-              <div className="about-value-card">
-                <div className="about-value-icon">🤝</div>
-                <h3>Creator-first</h3>
-                <p>Every feature we build starts with one question: does this help creators earn more and grow faster?</p>
-              </div>
-              <div className="about-value-card">
-                <div className="about-value-icon">🚀</div>
-                <h3>Always improving</h3>
-                <p>We ship fast, listen to feedback, and continuously improve so you always have the best tools available.</p>
+              <div className="p-10">
+                <div className="text-5xl font-bold tracking-tighter mb-2"><span className="text-[#f398e4]">₹</span>INR</div>
+                <div className="text-gray-500 text-lg">Made for India</div>
+                <div className="text-gray-400 text-sm mt-1">Native INR pricing</div>
               </div>
             </div>
-          </div>
-        </section>
+          </section>
 
-        {/* STORY */}
-        <section className="about-story">
-          <div className="label">Our Story</div>
-          <h2>Why we built Zelteb</h2>
-          <p>
-            We saw talented creators struggling to sell their work online. Existing platforms were either too expensive, too complex, or simply not built for the Indian market.
-          </p>
-          <p>
-            So we built Zelteb — a dead-simple way to sell digital products, collect payments in INR, and grow an audience. No monthly fees to get started. No unnecessary hoops to jump through.
-          </p>
-          <p>
-            Today, Zelteb is home to creators across India selling videos, templates, courses, and more — earning on their own terms.
-          </p>
-        </section>
+          {/* WHY WE BUILT IT */}
+          <section className="border-t border-gray-100 pt-12">
+            <h2 className="text-3xl font-bold mb-8 tracking-tight">
+              Why we built Zelteb
+            </h2>
+            <p className="text-gray-600 text-lg leading-relaxed mb-6">
+              We saw talented creators struggling to sell their work online. Existing platforms were either too expensive, too complex, or simply not built for the Indian market.
+            </p>
+            <p className="text-gray-600 text-lg leading-relaxed mb-6">
+              So we built Zelteb — a dead-simple way to sell digital products, collect payments in INR, and grow an audience. No monthly fees to get started. No unnecessary hoops to jump through.
+            </p>
+            <p className="text-gray-600 text-lg leading-relaxed">
+              Today, Zelteb is home to creators across India selling videos, templates, courses, and more — earning on their own terms.
+            </p>
+          </section>
 
-        {/* CTA */}
-        <section className="about-cta">
-          <h2>Ready to start selling?</h2>
-          <p>Join creators already earning on Zelteb. It's free to get started.</p>
-          <div className="about-cta-btns">
-            <a href="/login" className="about-cta-primary">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/>
-                <line x1="3" y1="6" x2="21" y2="6"/>
-                <path d="M16 10a4 4 0 0 1-8 0"/>
-              </svg>
-              Start selling for free
-            </a>
-            <a href="/" className="about-cta-secondary">Browse products</a>
-          </div>
-        </section>
+          {/* VALUES */}
+          <section className="border-t border-gray-100 pt-12">
+            <h2 className="text-3xl font-bold mb-8 tracking-tight">
+              What we stand for
+            </h2>
+            <div className="grid md:grid-cols-2 gap-6">
+              <div className="p-6 border border-gray-100 rounded-xl">
+                <h4 className="font-bold mb-2 text-lg">Simple by design</h4>
+                <p className="text-gray-500">No bloated dashboards. Upload your product, set a price, share your link — done.</p>
+              </div>
+              <div className="p-6 border border-gray-100 rounded-xl">
+                <h4 className="font-bold mb-2 text-lg">Made for India</h4>
+                <p className="text-gray-500">Built with INR pricing and the Indian creator economy in mind from day one.</p>
+              </div>
+              <div className="p-6 border border-gray-100 rounded-xl">
+                <h4 className="font-bold mb-2 text-lg">Fair pricing</h4>
+                <p className="text-gray-500">We keep our fees low so creators keep more of what they earn. Your success is our success.</p>
+              </div>
+              <div className="p-6 border border-gray-100 rounded-xl">
+                <h4 className="font-bold mb-2 text-lg">Secure & reliable</h4>
+                <p className="text-gray-500">Your products and your buyers' payments are protected with industry-standard security.</p>
+              </div>
+              <div className="p-6 border border-gray-100 rounded-xl">
+                <h4 className="font-bold mb-2 text-lg">Creator-first</h4>
+                <p className="text-gray-500">Every feature we build starts with one question: does this help creators earn more?</p>
+              </div>
+              <div className="p-6 border border-gray-100 rounded-xl">
+                <h4 className="font-bold mb-2 text-lg">Always improving</h4>
+                <p className="text-gray-500">We ship fast, listen to feedback, and continuously improve so you have the best tools.</p>
+              </div>
+            </div>
+          </section>
 
-        {/* COMPACT FOOTER */}
-        <div className="about-footer">
-          <a href="/login" className="about-footer-sell">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/>
-              <line x1="3" y1="6" x2="21" y2="6"/>
-              <path d="M16 10a4 4 0 0 1-8 0"/>
-            </svg>
-            Sell your own product
-          </a>
-          <span className="about-footer-dot">·</span>
-          <span className="about-footer-powered">
-            Powered by{" "}
-            <a href="https://zelteb.com" target="_blank" rel="noopener noreferrer">
-              Zelteb
-            </a>
-          </span>
+          {/* CTA */}
+          <section className="border-t border-gray-100 pt-12">
+            <h2 className="text-3xl font-bold mb-4 tracking-tight">Ready to start selling?</h2>
+            <p className="text-gray-500 text-lg mb-8">Join creators already earning on Zelteb. It's free to get started.</p>
+            <div className="flex gap-4 flex-wrap">
+              <Link
+                href="/login"
+                className="px-8 py-3.5 rounded-full bg-black text-white text-base font-bold hover:bg-gray-800 transition-all"
+              >
+                Start selling for free
+              </Link>
+              <Link
+                href="/"
+                className="px-8 py-3.5 rounded-full border border-gray-200 text-base font-bold hover:border-gray-400 transition-all"
+              >
+                Browse products
+              </Link>
+            </div>
+          </section>
+
         </div>
+      </main>
 
-      </div>
-    </>
-  );
+      {/* FOOTER */}
+      <footer className="bg-black text-white py-24">
+        <div className="max-w-7xl mx-auto px-8 grid grid-cols-1 lg:grid-cols-2 gap-16 items-start">
+          <div>
+            <h2 className="text-4xl md:text-5xl font-bold leading-tight tracking-tight max-w-md">
+              Subscribe to get tips and tactics to grow the way you want.
+            </h2>
+            <div className="mt-10 flex max-w-lg bg-white rounded-md overflow-hidden p-1">
+              <input
+                type="email"
+                placeholder="Your email address"
+                className="flex-1 px-4 py-3 text-black outline-none text-lg"
+              />
+              <button className="px-6 py-3 bg-[#f398e4] hover:bg-[#ef7cdb] text-black transition-colors flex items-center justify-center rounded-sm">
+                <span className="text-2xl">→</span>
+              </button>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-x-20 gap-y-6 pt-2">
+            <div className="flex flex-col space-y-5 text-lg font-medium">
+              <Link href="/" className="hover:text-gray-400">Home</Link>
+              <Link href="/about" className="font-bold border-b-2 border-[#f398e4] w-fit">About</Link>
+              <Link href="/pricing" className="hover:text-gray-400">Pricing</Link>
+              <Link href="#" className="hover:text-gray-400">Features</Link>
+              <Link href="#" className="hover:text-gray-400">Blog</Link>
+            </div>
+            <div className="flex flex-col space-y-5 text-lg font-medium">
+              <Link href="#" className="hover:text-gray-400">Help</Link>
+              <Link href="/terms" className="hover:text-gray-400">Terms of Service</Link>
+              <Link href="/privacy" className="hover:text-gray-400">Privacy Policy</Link>
+            </div>
+          </div>
+        </div>
+      </footer>
+    </div>
+  )
 }
