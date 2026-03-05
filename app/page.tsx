@@ -132,7 +132,7 @@ export default function Home() {
             </div>
 
             <div className="flex flex-col space-y-5 text-lg font-medium">
-              <Link href="help" className="hover:text-gray-400">Help</Link>
+              <Link href="help" className="hover:text-gray-400">Contact us</Link>
               <Link href="/terms" className="hover:text-gray-400">Terms of Service</Link>
               <Link href="/priv" className="hover:text-gray-400">Privacy Policy</Link>
             </div>
