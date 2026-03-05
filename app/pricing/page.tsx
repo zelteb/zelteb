@@ -60,39 +60,6 @@ export default function Pricing() {
           </div>
         </div>
       </div>
-
-      {/* FOOTER (Consistent with Homepage) */}
-      <footer className="bg-black text-white py-24 mt-20">
-        <div className="max-w-7xl mx-auto px-8 grid grid-cols-1 lg:grid-cols-2 gap-16 items-start">
-          <div>
-            <h2 className="text-4xl font-bold tracking-tight max-w-md">
-              Subscribe to get tips and tactics to grow the way you want.
-            </h2>
-            <div className="mt-10 flex max-w-lg bg-white rounded-md overflow-hidden p-1">
-              <input
-                type="email"
-                placeholder="Your email address"
-                className="flex-1 px-4 py-3 text-black outline-none"
-              />
-              <button className="px-6 py-3 bg-[#f398e4] text-black transition-colors rounded-sm">
-                <span className="text-2xl">→</span>
-              </button>
-            </div>
-          </div>
-          <div className="grid grid-cols-2 gap-x-20 gap-y-6">
-            <div className="flex flex-col space-y-4 text-lg">
-              <Link href="#" className="hover:text-gray-400">Discover</Link>
-              <Link href="#" className="hover:text-gray-400">Blog</Link>
-              <Link href="#" className="hover:text-gray-400">Pricing</Link>
-            </div>
-            <div className="flex flex-col space-y-4 text-lg">
-              <Link href="#" className="hover:text-gray-400">Help</Link>
-              <Link href="#" className="hover:text-gray-400">Terms</Link>
-              <Link href="#" className="hover:text-gray-400">Privacy</Link>
-            </div>
-          </div>
-        </div>
-      </footer>
     </div>
   )
 }
