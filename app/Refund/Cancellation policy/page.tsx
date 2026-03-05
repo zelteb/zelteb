@@ -26,7 +26,7 @@ export default function RefundPage() {
           Refund &amp; Cancellation Policy
         </h1>
         <p className="text-gray-500 font-medium mb-16 uppercase tracking-widest text-sm">
-          Last updated: March 2025 &nbsp;·&nbsp; Effective immediately
+          Last updated: March 2026 &nbsp;·&nbsp; Effective immediately
         </p>
 
         <div className="space-y-20">
@@ -36,7 +36,7 @@ export default function RefundPage() {
             <p className="text-gray-600 text-lg leading-relaxed">
               At Zelteb, we want every buyer to feel confident purchasing digital products on our platform. This policy explains when refunds are available, how to request one, and what to expect. If you have any questions, reach us at{" "}
               <a href="mailto:support@zelteb.com" className="underline decoration-[#f398e4] decoration-2 underline-offset-4">
-                support@zelteb.com
+                helpzelteb@gmail.com
               </a>.
             </p>
           </section>
@@ -111,7 +111,7 @@ export default function RefundPage() {
             <p className="text-gray-600 text-lg leading-relaxed mb-6">
               To submit a refund request, email us at{" "}
               <a href="mailto:support@zelteb.com" className="underline decoration-[#f398e4] decoration-2 underline-offset-4">
-                support@zelteb.com
+                helpzelteb@gmail.com
               </a>{" "}
               within 7 days of your purchase. Please include the following in your email:
             </p>
@@ -166,7 +166,7 @@ export default function RefundPage() {
             <p className="text-gray-600 text-lg leading-relaxed">
               For any questions about this policy, contact us at{" "}
               <a href="mailto:support@zelteb.com" className="underline decoration-[#f398e4] decoration-2 underline-offset-4">
-                support@zelteb.com
+                helpzelteb@gmail.com
               </a>.
             </p>
           </section>
