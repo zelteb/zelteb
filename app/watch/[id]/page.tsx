@@ -281,17 +281,13 @@ export default function Watch({ params }: { params: Promise<{ id: string }> }) {
         .watch-owned-badge { display: flex; align-items: center; gap: 6px; font-size: 0.78rem; color: #16a34a; font-weight: 500; background: #f0fdf4; padding: 7px 12px; border-radius: 8px; margin-bottom: 12px; }
         .watch-secure { display: flex; align-items: center; gap: 5px; font-size: 0.73rem; color: #a1a1aa; justify-content: center; }
 
-        .sell-banner { background: linear-gradient(135deg, #eff6ff 0%, #eef2ff 100%); border-top: 1px solid #dbeafe; padding: 40px 24px; text-align: center; font-family: 'DM Sans', sans-serif; }
-        .sell-banner-inner { max-width: 520px; margin: 0 auto; }
-        .sell-banner-emoji { font-size: 2rem; margin-bottom: 10px; }
-        .sell-banner-heading { font-size: 1.25rem; font-weight: 800; color: #18181b; margin-bottom: 6px; letter-spacing: -0.02em; }
-        .sell-banner-sub { font-size: 0.85rem; color: #6b7280; margin-bottom: 20px; line-height: 1.5; }
-        .sell-banner-btn { display: inline-flex; align-items: center; gap: 8px; background: #2563eb; color: white; font-weight: 700; font-size: 0.95rem; padding: 13px 32px; border-radius: 12px; text-decoration: none; font-family: 'DM Sans', sans-serif; transition: background 0.15s, transform 0.1s; box-shadow: 0 4px 14px rgba(37,99,235,0.25); }
-        .sell-banner-btn:hover { background: #1d4ed8; transform: translateY(-1px); }
-
-        .powered-footer { background: #f9fafb; border-top: 1px solid #e5e7eb; padding: 14px 24px; text-align: center; font-family: 'DM Sans', sans-serif; font-size: 0.78rem; color: #9ca3af; }
-        .powered-footer a { color: #5b5bd6; font-weight: 700; text-decoration: none; }
-        .powered-footer a:hover { text-decoration: underline; }
+        .compact-footer { display: flex; align-items: center; justify-content: center; gap: 18px; padding: 16px 24px; border-top: 1px solid #f0f0f0; font-family: 'DM Sans', sans-serif; }
+        .compact-footer-sell { display: inline-flex; align-items: center; gap: 6px; font-size: 14px; font-weight: 600; color: #2563eb; text-decoration: none; letter-spacing: -0.01em; transition: opacity 0.15s; }
+        .compact-footer-sell:hover { opacity: 0.75; }
+        .compact-footer-dot { color: #d1d5db; font-size: 12px; }
+        .compact-footer-powered { font-size: 14px; color: #9ca3af; font-weight: 500; }
+        .compact-footer-powered a { color: #111; font-weight: 800; text-decoration: none; font-size: 15px; letter-spacing: -0.02em; transition: opacity 0.15s; }
+        .compact-footer-powered a:hover { opacity: 0.7; }
 
         .share-toast { position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%); background: #18181b; color: white; padding: 11px 22px; border-radius: 10px; font-size: 13px; font-weight: 500; z-index: 9999; display: flex; align-items: center; gap: 8px; box-shadow: 0 4px 24px rgba(0,0,0,0.22); animation: toast-in 0.22s ease; white-space: nowrap; }
         @keyframes toast-in { from { opacity: 0; transform: translateX(-50%) translateY(10px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
@@ -490,29 +486,23 @@ export default function Watch({ params }: { params: Promise<{ id: string }> }) {
           </div>
         </div>
 
-        {/* SELL BANNER */}
-        <div className="sell-banner">
-          <div className="sell-banner-inner">
-            <div className="sell-banner-emoji">🛍️</div>
-            <h2 className="sell-banner-heading">Sell your any product</h2>
-            <p className="sell-banner-sub">Join thousands of creators selling digital products on Zelteb. Start for free, no setup fees.</p>
-            <a href={userId ? "/creator/products" : "/login"} className="sell-banner-btn">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/>
-                <line x1="3" y1="6" x2="21" y2="6"/>
-                <path d="M16 10a4 4 0 0 1-8 0"/>
-              </svg>
-              Sell your own product
-            </a>
-          </div>
-        </div>
-
-        {/* POWERED BY FOOTER */}
-        <div className="powered-footer">
-          Powered by{" "}
-          <a href="https://zelteb.com" target="_blank" rel="noopener noreferrer">
-            Zelteb
+        {/* COMPACT FOOTER */}
+        <div className="compact-footer">
+          <a href={userId ? "/creator/products" : "/login"} className="compact-footer-sell">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/>
+              <line x1="3" y1="6" x2="21" y2="6"/>
+              <path d="M16 10a4 4 0 0 1-8 0"/>
+            </svg>
+            Sell your own product
           </a>
+          <span className="compact-footer-dot">·</span>
+          <span className="compact-footer-powered">
+            Powered by{" "}
+            <a href="https://zelteb.com" target="_blank" rel="noopener noreferrer">
+              Zelteb
+            </a>
+          </span>
         </div>
 
       </div>
