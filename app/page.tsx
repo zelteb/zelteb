@@ -134,6 +134,7 @@ export default function Home() {
               <Link href="help" className="hover:text-gray-400">Contact us</Link>
               <Link href="/terms" className="hover:text-gray-400">Terms of Service</Link>
               <Link href="/priv" className="hover:text-gray-400">Privacy Policy</Link>
+              <Link href="Refund/Cancellation policy" className="hover:text-gray-400">Refund/Cancellation policy</Link>
             </div>
           </div>
         </div>
