@@ -192,7 +192,7 @@ export default function RefundPolicyPage() {
               <Link href="help" className="hover:text-gray-400">Help</Link>
               <Link href="/terms" className="hover:text-gray-400">Terms of Service</Link>
               <Link href="/privacy" className="hover:text-gray-400">Privacy Policy</Link>
-              <Link href="/refund" className="font-bold border-b-2 border-[#f398e4] w-fit">Refund Policy</Link>
+              <Link href="/refund" className="hover:text-gray-400">Refund Policy</Link>
             </div>
           </div>
         </div>
