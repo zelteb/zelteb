@@ -214,9 +214,9 @@ export default function Home() {
           </div>
           <div className="grid md:grid-cols-3 gap-6">
             {[
-              { name: "Arjun S.", role: "Video creator", quote: "I made my first ₹5,000 online within a week of joining Zelteb. The setup took me 10 minutes." },
-              { name: "Priya M.", role: "Design educator", quote: "Finally a platform that actually works for Indian creators. INR payments, simple dashboard — love it." },
-              { name: "Rohit K.", role: "Fitness coach", quote: "I sell my workout plans here and it just works. Buyers get instant access and I get paid fast." },
+              { name: "Arjun S", role: "Video creator", quote: "I made my first ₹5,000 online within a week of joining Zelteb. The setup took me 10 minutes." },
+              { name: "Priya M", role: "Design educator", quote: "Finally a platform that actually works for Indian creators. INR payments, simple dashboard — love it." },
+              { name: "Rohit K", role: "Fitness coach", quote: "I sell my workout plans here and it just works. Buyers get instant access and I get paid fast." },
             ].map((t) => (
               <div key={t.name} className="p-8 border border-gray-100 rounded-2xl">
                 <div className="flex gap-1 mb-5">
