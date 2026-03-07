@@ -11,7 +11,7 @@ export default function PrivacyPolicy() {
           </Link>
           <nav className="hidden md:flex gap-10 text-[15px] font-medium text-gray-600">
             <Link href="/" className="hover:text-black">Home</Link>
-            <Link href="/about" className="hover:text-black">About</Link>
+            <Link href="/purchased" className="hover:text-black">Purchased</Link>
             <Link href="/pricing" className="hover:text-black">Pricing</Link>
           </nav>
           <Link href="/dashboard" className="px-6 py-2.5 rounded-full bg-black text-white text-sm font-bold transition-all hover:bg-gray-800">
