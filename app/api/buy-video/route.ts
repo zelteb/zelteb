@@ -1,3 +1,5 @@
+export const runtime = "nodejs";
+
 import { createClient } from "@supabase/supabase-js";
 import Razorpay from "razorpay";
 import crypto from "crypto";
