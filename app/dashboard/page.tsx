@@ -28,6 +28,9 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [purchases, setPurchases] = useState<Purchase[]>([]);
   const [withdrawModalOpen, setWithdrawModalOpen] = useState(false);
+  const [withdrawing, setWithdrawing] = useState(false);
+  const [withdrawSuccess, setWithdrawSuccess] = useState(false);
+  const [withdrawError, setWithdrawError] = useState<string | null>(null);
 
   const options = ["Last 7 days", "Last 30 days", "Last 90 days", "All time"];
 
@@ -143,6 +146,41 @@ export default function Dashboard() {
 
   const canWithdraw = filteredEarnings >= MINIMUM_WITHDRAWAL;
 
+  const withdraw = async () => {
+    setWithdrawing(true);
+    setWithdrawError(null);
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      setWithdrawError("Login required.");
+      setWithdrawing(false);
+      return;
+    }
+
+    try {
+      const res = await fetch("/api/withdraw", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          creator_id: user.id,
+          amount: filteredEarnings,
+        }),
+      });
+
+      if (res.ok) {
+        setWithdrawSuccess(true);
+        setWithdrawModalOpen(false);
+      } else {
+        const body = await res.json().catch(() => ({}));
+        setWithdrawError(body?.error ?? "Something went wrong. Please try again.");
+      }
+    } catch {
+      setWithdrawError("Network error. Please try again.");
+    } finally {
+      setWithdrawing(false);
+    }
+  };
+
   if (loading) {
     return <div className="p-10 text-gray-500">Loading dashboard...</div>;
   }
@@ -231,28 +269,48 @@ export default function Dashboard() {
               You're about to request a withdrawal of{" "}
               <span className="font-semibold text-gray-800">₹{filteredEarnings.toFixed(2)}</span>.
             </p>
-            <p className="text-xs text-gray-400 mb-6">
+            <p className="text-xs text-gray-400 mb-4">
               Withdrawals are processed within 3–5 business days to your registered bank account.
             </p>
+            {withdrawError && (
+              <p className="text-xs text-red-500 mb-4 bg-red-50 px-3 py-2 rounded-lg">{withdrawError}</p>
+            )}
             <div className="flex gap-3">
               <button
-                onClick={() => setWithdrawModalOpen(false)}
-                className="flex-1 border rounded-full py-2 text-sm font-medium text-gray-600 hover:bg-gray-50 transition"
+                onClick={() => { setWithdrawModalOpen(false); setWithdrawError(null); }}
+                disabled={withdrawing}
+                className="flex-1 border rounded-full py-2 text-sm font-medium text-gray-600 hover:bg-gray-50 transition disabled:opacity-50"
               >
                 Cancel
               </button>
               <button
-                onClick={() => {
-                  // TODO: hook up withdrawal API
-                  setWithdrawModalOpen(false);
-                  alert("Withdrawal request submitted!");
-                }}
-                className="flex-1 bg-black text-white rounded-full py-2 text-sm font-semibold hover:bg-gray-800 transition"
+                onClick={withdraw}
+                disabled={withdrawing}
+                className="flex-1 bg-black text-white rounded-full py-2 text-sm font-semibold hover:bg-gray-800 transition disabled:opacity-60 flex items-center justify-center gap-2"
               >
-                Confirm
+                {withdrawing ? (
+                  <>
+                    <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
+                    </svg>
+                    Processing...
+                  </>
+                ) : "Confirm"}
               </button>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Success toast */}
+      {withdrawSuccess && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-gray-900 text-white text-sm px-5 py-3 rounded-full shadow-lg z-50 flex items-center gap-2">
+          <svg className="w-4 h-4 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+          </svg>
+          Withdrawal request submitted!
+          <button onClick={() => setWithdrawSuccess(false)} className="ml-2 text-gray-400 hover:text-white">✕</button>
         </div>
       )}
 
