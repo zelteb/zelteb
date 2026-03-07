@@ -284,7 +284,7 @@ export default function Home() {
             <div className="flex flex-col space-y-5 text-lg font-medium">
               <Link href="/help" className="hover:text-gray-400">Contact us</Link>
               <Link href="/terms" className="hover:text-gray-400">Terms of Service</Link>
-              <Link href="/privacy" className="hover:text-gray-400">Privacy Policy</Link>
+              <Link href="/priv" className="hover:text-gray-400">Privacy Policy</Link>
               <Link href="/refund" className="hover:text-gray-400">Refund Policy</Link>
             </div>
           </div>
