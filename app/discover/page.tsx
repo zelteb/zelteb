@@ -231,6 +231,7 @@ export default function Discover() {
           <nav style={{ display: "flex", gap: 40, fontSize: 15, fontWeight: 500 }}>
             <Link href="/" style={{ color: "#666", textDecoration: "none" }}>Home</Link>
             <Link href="/discover" style={{ color: "#000", textDecoration: "none" }}>Discover</Link>
+            <Link href="/purchased" style={{ color: "#000", textDecoration: "none" }}>Purchased</Link>
           </nav>
           <Link href="/dashboard" style={{ padding: "10px 24px", borderRadius: 999, background: "#000", color: "white", fontSize: 14, fontWeight: 700, textDecoration: "none" }}>
             Dashboard
