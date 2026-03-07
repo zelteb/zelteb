@@ -35,7 +35,7 @@ export default function PrivacyPolicy() {
           <section className="border-t border-gray-100 pt-12">
             <p className="text-gray-600 text-lg leading-relaxed">
               At Zelteb, your privacy matters. This Privacy Policy explains what information we collect when you use our platform, how we use it, and the choices you have. By using Zelteb, you agree to the practices described here. If you have any questions, please contact us at{" "}
-              <a href="mailto:support@zelteb.com" className="underline decoration-[#f398e4] decoration-2 underline-offset-4">support@zelteb.com</a>.
+              <a href="mailto:helpzelteb@gmail.com" className="underline decoration-[#f398e4] decoration-2 underline-offset-4">helpzelteb@gmail.com</a>.
             </p>
           </section>
 
@@ -174,8 +174,8 @@ export default function PrivacyPolicy() {
             </ul>
             <p className="text-gray-600 text-lg leading-relaxed mt-6">
               To exercise any of these rights, contact us at{" "}
-              <a href="mailto:support@zelteb.com" className="underline decoration-[#f398e4] decoration-2 underline-offset-4">
-                support@zelteb.com
+              <a href="mailto:helpzelteb@gmail.com" className="underline decoration-[#f398e4] decoration-2 underline-offset-4">
+                helpzelteb@gmail.com
               </a>.
             </p>
           </section>
