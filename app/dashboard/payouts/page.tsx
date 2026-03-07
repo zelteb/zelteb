@@ -1,11 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
 
 export default function Payouts() {
-  const [type, setType] = useState<"individual" | "business">("individual");
-
   const [account_holder, setAccountHolder] = useState("");
   const [ifsc, setIfsc] = useState("");
   const [account_number, setAccountNumber] = useState("");
@@ -36,20 +33,15 @@ export default function Payouts() {
         setStreet(d.street || "");
         setCity(d.city || "");
         setPostalCode(d.postal_code || "");
-        setType(d.account_type || "individual");
 
-        // Don't put encrypted value into input fields
-        // Instead show a masked display and keep inputs empty for re-entry
         if (d.account_number_encrypted) {
           setHasExistingAccount(true);
-          // Show last 4 digits masked — adjust if your DB stores differently
           setMaskedAccount("••••••" + String(d.account_number_encrypted).slice(-4));
         } else {
           setHasExistingAccount(false);
           setMaskedAccount("");
         }
 
-        // Clear account number inputs so user doesn't see encrypted garbage
         setAccountNumber("");
         setConfirmAccount("");
       }
@@ -72,7 +64,6 @@ export default function Payouts() {
       return setMessage("Fill all required fields");
     }
 
-    // If existing account and user left number fields blank, skip account number update
     const isUpdatingAccountNumber = account_number.length > 0 || confirm_account.length > 0;
 
     if (isUpdatingAccountNumber) {
@@ -95,13 +86,11 @@ export default function Payouts() {
       const body: Record<string, string> = {
         account_holder,
         ifsc,
-        type,
         street,
         city,
         postal_code,
       };
 
-      // Only send account_number if user is entering/updating it
       if (isUpdatingAccountNumber) {
         body.account_number = account_number;
       }
@@ -120,7 +109,6 @@ export default function Payouts() {
       } else {
         setMessageType("success");
         setMessage("Saved successfully");
-        // Reload so all fields reflect what's actually in DB
         await load();
       }
     } catch {
@@ -141,11 +129,7 @@ export default function Payouts() {
 
   return (
     <div className="min-h-screen bg-[#f9f9f8] p-12">
-      <Link href="/dashboard" className="text-sm text-gray-500">
-        ← Back
-      </Link>
-
-      <h1 className="text-3xl font-bold mt-6">Payout method</h1>
+      <h1 className="text-3xl font-bold">Payout method</h1>
 
       <div className="mt-8 bg-white border rounded-xl p-6 max-w-4xl">
         <div className="font-bold">Bank Account</div>
@@ -204,30 +188,6 @@ export default function Payouts() {
             Leave account number fields blank to keep your existing account number.
           </p>
         )}
-      </div>
-
-      <div className="mt-8 max-w-4xl">
-        <h2 className="font-bold mb-4">Account type</h2>
-
-        <div className="grid grid-cols-2 gap-4">
-          <button
-            onClick={() => setType("individual")}
-            className={`border rounded-xl p-4 ${
-              type === "individual" ? "bg-black text-white" : ""
-            }`}
-          >
-            Individual
-          </button>
-
-          <button
-            onClick={() => setType("business")}
-            className={`border rounded-xl p-4 ${
-              type === "business" ? "bg-black text-white" : ""
-            }`}
-          >
-            Business
-          </button>
-        </div>
       </div>
 
       <div className="mt-8 bg-white border rounded-xl p-6 max-w-4xl">
