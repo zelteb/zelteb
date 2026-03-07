@@ -24,7 +24,12 @@ export async function POST(req: Request) {
     if (body.action === "create-order") {
       const { video_id, buyer_id } = body;
 
+      console.log("🟡 Creating order for video:", video_id, "buyer:", buyer_id);
+      console.log("🟡 Razorpay key_id present:", !!process.env.RAZORPAY_KEY_ID);
+      console.log("🟡 Razorpay key_secret present:", !!process.env.RAZORPAY_KEY_SECRET);
+
       if (!video_id || !buyer_id) {
+        console.error("❌ Missing video_id or buyer_id");
         return new Response("Missing video_id or buyer_id", { status: 400 });
       }
 
@@ -34,15 +39,23 @@ export async function POST(req: Request) {
         .eq("id", video_id)
         .single();
 
+      console.log("🟡 Video found:", video, "| Supabase error:", error);
+
       if (error || !video) {
+        console.error("❌ Video not found");
         return new Response("Video not found", { status: 404 });
       }
 
+      const amount = Number(video.price) * 100;
+      console.log("🟡 Razorpay order amount (paise):", amount);
+
       const order = await razorpay.orders.create({
-        amount: Number(video.price) * 100,
+        amount,
         currency: "INR",
         receipt: `video_${video_id}_${buyer_id}`,
       });
+
+      console.log("✅ Order created:", order);
 
       return Response.json({ order });
     }
@@ -109,7 +122,7 @@ export async function POST(req: Request) {
     return new Response("Invalid action", { status: 400 });
 
   } catch (err: any) {
-    console.error("RAZORPAY ERROR FULL:", JSON.stringify(err, null, 2));
+    console.error("❌ FULL ERROR:", JSON.stringify(err, null, 2));
     return new Response(
       "Error: " + (err?.error?.description || err?.message || JSON.stringify(err)),
       { status: 500 }
