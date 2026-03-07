@@ -109,6 +109,10 @@ export async function POST(req: Request) {
     return new Response("Invalid action", { status: 400 });
 
   } catch (err: any) {
-    return new Response("Error: " + err.message, { status: 500 });
+    console.error("RAZORPAY ERROR FULL:", JSON.stringify(err, null, 2));
+    return new Response(
+      "Error: " + (err?.error?.description || err?.message || JSON.stringify(err)),
+      { status: 500 }
+    );
   }
 }
