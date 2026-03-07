@@ -33,7 +33,7 @@ export default function Home() {
           <nav className="hidden md:flex gap-10 text-[15px] font-medium text-gray-600">
             <Link href="/discover" className="hover:text-black">Discover</Link>
             <Link href="/pricing" className="hover:text-black">Pricing</Link>
-            <Link href="/about" className="hover:text-black">About</Link>
+            <Link href="/purchased" className="hover:text-black">Purchased</Link>
           </nav>
           {user ? (
             <Link href="/dashboard" className="px-6 py-2.5 rounded-full bg-black text-white text-sm font-bold hover:bg-gray-800 transition-all">
