@@ -52,7 +52,7 @@ export async function POST(req: Request) {
       const order = await razorpay.orders.create({
         amount,
         currency: "INR",
-        receipt: `video_${video_id}_${buyer_id}`,
+        receipt: `vzb_${Date.now()}`,
       });
 
       console.log("✅ Order created:", order);
