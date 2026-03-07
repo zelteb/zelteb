@@ -15,6 +15,8 @@ interface Purchase {
   buyer_avatar: string | null;
 }
 
+const MINIMUM_WITHDRAWAL = 149;
+
 export default function Dashboard() {
   const router = useRouter();
 
@@ -25,6 +27,7 @@ export default function Dashboard() {
   const [userId, setUserId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [purchases, setPurchases] = useState<Purchase[]>([]);
+  const [withdrawModalOpen, setWithdrawModalOpen] = useState(false);
 
   const options = ["Last 7 days", "Last 30 days", "Last 90 days", "All time"];
 
@@ -38,7 +41,6 @@ export default function Dashboard() {
       const uid = authData.user.id;
       setUserId(uid);
 
-      // Load profile
       const { data: profile } = await supabase
         .from("profiles")
         .select("username, avatar_url")
@@ -50,7 +52,6 @@ export default function Dashboard() {
         setAvatarUrl(profile.avatar_url || null);
       }
 
-      // Same pattern as sales page — filter by creator_id directly on purchases
       const { data: purchaseData, error } = await supabase
         .from("purchases")
         .select(`
@@ -72,10 +73,8 @@ export default function Dashboard() {
         return;
       }
 
-      // Get unique buyer IDs
       const buyerIds = [...new Set(purchaseData.map((p: any) => p.buyer_id))];
 
-      // Fetch buyer info via API route (same as sales page)
       let buyerMap: Record<string, { email: string; name: string; avatar: string | null }> = {};
       try {
         const res = await fetch("/api/get-buyers", {
@@ -141,7 +140,8 @@ export default function Dashboard() {
   });
 
   const filteredEarnings = filteredPurchases.reduce((sum, p) => sum + p.creator_earnings, 0);
-  const filteredTotal = filteredPurchases.reduce((sum, p) => sum + p.amount, 0);
+
+  const canWithdraw = filteredEarnings >= MINIMUM_WITHDRAWAL;
 
   if (loading) {
     return <div className="p-10 text-gray-500">Loading dashboard...</div>;
@@ -149,26 +149,21 @@ export default function Dashboard() {
 
   return (
     <div className="max-w-4xl mx-auto py-10 px-6">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-10">
-        <div className="flex items-center gap-4">
-          <div className="w-16 h-16 rounded-full bg-gray-200 overflow-hidden flex items-center justify-center">
-            {avatarUrl ? (
-              <img src={avatarUrl} alt="avatar" className="w-full h-full object-cover" />
-            ) : (
-              <span className="text-gray-600 text-xl font-bold">
-                {username?.[0]?.toUpperCase() || "?"}
-              </span>
-            )}
-          </div>
-          <div>
-            <h1 className="text-2xl font-bold">Hi, {username || "there"}</h1>
-            <p className="text-gray-400 text-sm">zelteb.com/{username || "username"}</p>
-          </div>
+      {/* Header — share page button removed */}
+      <div className="flex items-center gap-4 mb-10">
+        <div className="w-16 h-16 rounded-full bg-gray-200 overflow-hidden flex items-center justify-center">
+          {avatarUrl ? (
+            <img src={avatarUrl} alt="avatar" className="w-full h-full object-cover" />
+          ) : (
+            <span className="text-gray-600 text-xl font-bold">
+              {username?.[0]?.toUpperCase() || "?"}
+            </span>
+          )}
         </div>
-        <button className="bg-black text-white px-5 py-2.5 rounded-full text-sm font-medium hover:bg-gray-900 transition">
-          Share page
-        </button>
+        <div>
+          <h1 className="text-2xl font-bold">Hi, {username || "there"}</h1>
+          <p className="text-gray-400 text-sm">zelteb.com/{username || "username"}</p>
+        </div>
       </div>
 
       {/* Earnings */}
@@ -197,12 +192,71 @@ export default function Dashboard() {
 
         <p className="text-5xl font-black mb-6">₹{filteredEarnings.toFixed(2)}</p>
 
-        <div className="flex gap-6 text-sm text-gray-600">
-          <div>₹{filteredTotal.toFixed(2)} Products</div>
+        {/* Withdraw button — replaces the "₹0.00 Products" text */}
+        <div className="flex items-center gap-3">
+          <div className="relative group">
+            <button
+              onClick={() => canWithdraw && setWithdrawModalOpen(true)}
+              disabled={!canWithdraw}
+              className={`px-5 py-2 rounded-full text-sm font-semibold transition-all
+                ${canWithdraw
+                  ? "bg-black text-white hover:bg-gray-800 cursor-pointer"
+                  : "bg-gray-100 text-gray-400 cursor-not-allowed"
+                }`}
+            >
+              Withdraw
+            </button>
+            {/* Tooltip when disabled */}
+            {!canWithdraw && (
+              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-1.5 bg-gray-800 text-white text-xs rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
+                Minimum withdrawal is ₹{MINIMUM_WITHDRAWAL}
+                <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-800" />
+              </div>
+            )}
+          </div>
+          {!canWithdraw && (
+            <p className="text-xs text-gray-400">
+              Minimum ₹{MINIMUM_WITHDRAWAL} required
+            </p>
+          )}
         </div>
       </div>
 
-      {/* Transactions table — always shown */}
+      {/* Withdraw Modal */}
+      {withdrawModalOpen && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 px-4">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-xl">
+            <h3 className="text-lg font-bold mb-2">Withdraw Earnings</h3>
+            <p className="text-sm text-gray-500 mb-4">
+              You're about to request a withdrawal of{" "}
+              <span className="font-semibold text-gray-800">₹{filteredEarnings.toFixed(2)}</span>.
+            </p>
+            <p className="text-xs text-gray-400 mb-6">
+              Withdrawals are processed within 3–5 business days to your registered bank account.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setWithdrawModalOpen(false)}
+                className="flex-1 border rounded-full py-2 text-sm font-medium text-gray-600 hover:bg-gray-50 transition"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  // TODO: hook up withdrawal API
+                  setWithdrawModalOpen(false);
+                  alert("Withdrawal request submitted!");
+                }}
+                className="flex-1 bg-black text-white rounded-full py-2 text-sm font-semibold hover:bg-gray-800 transition"
+              >
+                Confirm
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Transactions table */}
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
         <div className="px-6 py-4 border-b border-gray-100">
           <h2 className="text-base font-bold text-gray-900">Recent Purchases</h2>
