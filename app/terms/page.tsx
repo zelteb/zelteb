@@ -126,28 +126,6 @@ export default function TermsPage() {
             </div>
           </section>
 
-          {/* 6 */}
-          <section className="border-t border-gray-100 pt-12">
-            <h2 className="text-3xl font-bold mb-8 tracking-tight">
-              6. Refund Policy
-            </h2>
-            <p className="text-gray-600 text-lg leading-relaxed mb-6">
-              Because our platform deals exclusively in digital products, all sales are generally final once a product has been downloaded or accessed. However, we offer refunds under the following conditions:
-            </p>
-            <ul className="list-disc ml-6 space-y-2 text-gray-600 text-lg mb-6">
-              <li>A refund request is submitted within <strong>7 days</strong> of the purchase date</li>
-              <li>The product was not delivered or is inaccessible due to a technical issue on our end</li>
-              <li>The product significantly differs from its description</li>
-            </ul>
-            <div className="bg-gray-50 p-6 rounded-xl border border-gray-100 italic text-gray-700 text-lg">
-              Refunds are not granted for change of mind, accidental purchases discovered after 7 days, or products that have already been fully downloaded and accessed.
-            </div>
-            <p className="text-gray-600 text-lg leading-relaxed mt-6">
-              To request a refund, contact us at{" "}
-              <a href="mailto:support@zelteb.com" className="underline decoration-[#f398e4] decoration-2 underline-offset-4">support@zelteb.com</a>{" "}
-              within 7 days of your purchase with your order details.
-            </p>
-          </section>
 
           {/* 7 */}
           <section className="border-t border-gray-100 pt-12">
