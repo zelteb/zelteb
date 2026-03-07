@@ -4,6 +4,12 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 
+declare global {
+  interface Window {
+    Razorpay: any;
+  }
+}
+
 export default function Discover() {
   const [videos, setVideos] = useState<any[]>([]);
   const [search, setSearch] = useState("");
@@ -12,6 +18,38 @@ export default function Discover() {
   const [minRating, setMinRating] = useState<number | null>(null);
   const [priceOpen, setPriceOpen] = useState(true);
   const [ratingOpen, setRatingOpen] = useState(true);
+  const [buyingId, setBuyingId] = useState<string | null>(null);
+  const [purchasedIds, setPurchasedIds] = useState<Set<string>>(new Set());
+  const [currentUser, setCurrentUser] = useState<any>(null);
+
+  // Load Razorpay script
+  useEffect(() => {
+    const script = document.createElement("script");
+    script.src = "https://checkout.razorpay.com/v1/checkout.js";
+    script.async = true;
+    document.body.appendChild(script);
+    return () => { document.body.removeChild(script); };
+  }, []);
+
+  // Get current logged-in user
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => {
+      setCurrentUser(data?.user ?? null);
+    });
+  }, []);
+
+  // Load already-purchased video IDs for current user
+  useEffect(() => {
+    if (!currentUser) return;
+    supabase
+      .from("purchases")
+      .select("video_id")
+      .eq("buyer_id", currentUser.id)
+      .eq("status", "completed")
+      .then(({ data }) => {
+        if (data) setPurchasedIds(new Set(data.map((p: any) => p.video_id)));
+      });
+  }, [currentUser]);
 
   const load = async () => {
     let query = supabase
@@ -58,6 +96,92 @@ export default function Discover() {
     load();
   }, [search, minPrice, maxPrice, minRating]);
 
+  // ============================
+  // 🛒 BUY HANDLER
+  // ============================
+  const handleBuy = async (e: React.MouseEvent, video: any) => {
+    e.preventDefault(); // Don't navigate to watch page
+
+    if (!currentUser) {
+      window.location.href = "/login";
+      return;
+    }
+
+    if (purchasedIds.has(video.id)) {
+      window.location.href = `/watch/${video.id}`;
+      return;
+    }
+
+    setBuyingId(video.id);
+
+    try {
+      // STEP 1 — Create Razorpay order
+      const res = await fetch("/api/buy-video", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "create-order",
+          video_id: video.id,
+          buyer_id: currentUser.id,
+        }),
+      });
+
+      if (!res.ok) {
+        alert("Failed to create order. Please try again.");
+        setBuyingId(null);
+        return;
+      }
+
+      const { order } = await res.json();
+
+      // STEP 2 — Open Razorpay checkout
+      const options = {
+        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
+        amount: order.amount,
+        currency: order.currency,
+        name: "Zelteb",
+        description: video.title,
+        order_id: order.id,
+        handler: async (response: any) => {
+          // STEP 3 — Verify payment on backend
+          const verifyRes = await fetch("/api/buy-video", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              action: "verify-payment",
+              payment_id: response.razorpay_payment_id,
+              order_id: response.razorpay_order_id,
+              signature: response.razorpay_signature,
+              video_id: video.id,
+              buyer_id: currentUser.id,
+            }),
+          });
+
+          if (verifyRes.ok) {
+            setPurchasedIds((prev) => new Set([...prev, video.id]));
+            window.location.href = `/watch/${video.id}`;
+          } else {
+            const msg = await verifyRes.text();
+            alert("Payment verification failed: " + msg);
+          }
+        },
+        prefill: {
+          email: currentUser.email ?? "",
+        },
+        theme: { color: "#e91e8c" },
+        modal: {
+          ondismiss: () => setBuyingId(null),
+        },
+      };
+
+      const rzp = new window.Razorpay(options);
+      rzp.open();
+    } catch (err: any) {
+      alert("Something went wrong: " + err.message);
+      setBuyingId(null);
+    }
+  };
+
   const renderStars = (rating: number, size = 14) => {
     return Array.from({ length: 5 }, (_, i) => (
       <svg key={i} width={size} height={size} viewBox="0 0 24 24"
@@ -89,6 +213,13 @@ export default function Discover() {
         .creator-pill:hover { color: #000; text-decoration: underline; }
         .creator-avatar { width: 20px; height: 20px; border-radius: 50%; background: linear-gradient(135deg, #7c3aed, #e879f9); display: flex; align-items: center; justify-content: center; font-size: 9px; color: white; font-weight: 700; flex-shrink: 0; overflow: hidden; }
         .creator-avatar img { width: 100%; height: 100%; object-fit: cover; }
+        .buy-btn { width: 100%; margin-top: 10px; padding: 9px 0; border-radius: 8px; border: none; font-size: 13px; font-weight: 700; cursor: pointer; transition: background 0.15s, transform 0.1s; }
+        .buy-btn:active { transform: scale(0.97); }
+        .buy-btn.primary { background: #1a1a1a; color: white; }
+        .buy-btn.primary:hover { background: #333; }
+        .buy-btn.free { background: #e6f4ea; color: #1a7a3a; }
+        .buy-btn.purchased { background: #f0f0f0; color: #555; cursor: default; }
+        .buy-btn.loading { opacity: 0.6; cursor: not-allowed; }
       `}</style>
 
       {/* NAVBAR */}
@@ -169,70 +300,108 @@ export default function Discover() {
             )}
 
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: 20 }}>
-              {videos.map((v) => (
-                <Link key={v.id} href={`/watch/${v.id}`} className="card">
-                  {/* Thumbnail */}
-                  <div style={{ position: "relative", width: "100%", aspectRatio: "16/9", overflow: "hidden", background: "#1a1a1a" }}>
-                    {v.thumbnail_url
-                      ? <img src={v.thumbnail_url} alt={v.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                      : <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 32 }}>
-                          {v.product_type === "video" ? "🎬" : "📁"}
-                        </div>
-                    }
-                  </div>
+              {videos.map((v) => {
+                const alreadyPurchased = purchasedIds.has(v.id);
+                const isLoading = buyingId === v.id;
+                const isFree = v.is_free || Number(v.price) === 0;
+                const isOwner = currentUser?.id === v.creator_id;
 
-                  <div style={{ padding: "12px 14px 14px", display: "flex", flexDirection: "column", gap: 0 }}>
-
-                    {/* 1. Title */}
-                    <p style={{ fontWeight: 600, fontSize: 14, margin: "0 0 8px", lineHeight: 1.4 }}>
-                      {v.title}
-                    </p>
-
-                    {/* 2. Creator */}
-                    <div style={{ marginBottom: 8, minHeight: 24, display: "flex", alignItems: "center" }}>
-                      {v.creator && (
-                        <div
-                          onClick={(e) => { e.preventDefault(); window.location.href = `/${v.creator.username}`; }}
-                          style={{ display: "inline-flex", alignItems: "center", gap: 6, cursor: "pointer" }}
-                        >
-                          <div className="creator-avatar">
-                            {v.creator.avatar_url
-                              ? <img src={v.creator.avatar_url} alt={v.creator.username} />
-                              : (v.creator.full_name || v.creator.username || "?")[0].toUpperCase()
-                            }
+                return (
+                  <div key={v.id} className="card" onClick={(e) => {
+                    // Only navigate if not clicking the buy button
+                    if ((e.target as HTMLElement).closest(".buy-btn")) return;
+                    window.location.href = `/watch/${v.id}`;
+                  }}>
+                    {/* Thumbnail */}
+                    <div style={{ position: "relative", width: "100%", aspectRatio: "16/9", overflow: "hidden", background: "#1a1a1a" }}>
+                      {v.thumbnail_url
+                        ? <img src={v.thumbnail_url} alt={v.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                        : <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 32 }}>
+                            {v.product_type === "video" ? "🎬" : "📁"}
                           </div>
-                          <span style={{ fontSize: 12, color: "#555", fontWeight: 500 }}>
-                            {v.creator.full_name || v.creator.username}
-                          </span>
-                        </div>
-                      )}
+                      }
                     </div>
 
-                    {/* 3. Rating — always reserves space */}
-                    <div style={{ display: "flex", alignItems: "center", gap: 5, marginBottom: 10, minHeight: 20 }}>
-                      {v.avgRating ? (
-                        <>
-                          <svg width="13" height="13" viewBox="0 0 24 24" fill="#f59e0b" stroke="#f59e0b" strokeWidth="1.5">
-                            <polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26" />
-                          </svg>
-                          <span style={{ fontSize: 12, fontWeight: 600, color: "#111" }}>{v.avgRating}</span>
-                          <span style={{ fontSize: 11, color: "#999" }}>({v.ratingCount})</span>
-                        </>
+                    <div style={{ padding: "12px 14px 14px", display: "flex", flexDirection: "column", gap: 0 }}>
+
+                      {/* 1. Title */}
+                      <p style={{ fontWeight: 600, fontSize: 14, margin: "0 0 8px", lineHeight: 1.4 }}>
+                        {v.title}
+                      </p>
+
+                      {/* 2. Creator */}
+                      <div style={{ marginBottom: 8, minHeight: 24, display: "flex", alignItems: "center" }}>
+                        {v.creator && (
+                          <div
+                            onClick={(e) => { e.stopPropagation(); window.location.href = `/${v.creator.username}`; }}
+                            style={{ display: "inline-flex", alignItems: "center", gap: 6, cursor: "pointer" }}
+                          >
+                            <div className="creator-avatar">
+                              {v.creator.avatar_url
+                                ? <img src={v.creator.avatar_url} alt={v.creator.username} />
+                                : (v.creator.full_name || v.creator.username || "?")[0].toUpperCase()
+                              }
+                            </div>
+                            <span style={{ fontSize: 12, color: "#555", fontWeight: 500 }}>
+                              {v.creator.full_name || v.creator.username}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* 3. Rating */}
+                      <div style={{ display: "flex", alignItems: "center", gap: 5, marginBottom: 10, minHeight: 20 }}>
+                        {v.avgRating ? (
+                          <>
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="#f59e0b" stroke="#f59e0b" strokeWidth="1.5">
+                              <polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26" />
+                            </svg>
+                            <span style={{ fontSize: 12, fontWeight: 600, color: "#111" }}>{v.avgRating}</span>
+                            <span style={{ fontSize: 11, color: "#999" }}>({v.ratingCount})</span>
+                          </>
+                        ) : (
+                          <span style={{ fontSize: 11, color: "#bbb" }}>No reviews yet</span>
+                        )}
+                      </div>
+
+                      {/* 4. Price tag */}
+                      <div>
+                        <span className="price-tag">
+                          {isFree ? "Free" : `₹${v.price || 0}`}
+                        </span>
+                      </div>
+
+                      {/* 5. Buy Button */}
+                      {isOwner ? (
+                        <button className="buy-btn purchased" disabled>Your video</button>
+                      ) : alreadyPurchased ? (
+                        <button
+                          className="buy-btn purchased"
+                          onClick={(e) => { e.stopPropagation(); window.location.href = `/watch/${v.id}`; }}
+                        >
+                          ✓ Watch Now
+                        </button>
+                      ) : isFree ? (
+                        <button
+                          className="buy-btn free"
+                          onClick={(e) => { e.stopPropagation(); window.location.href = `/watch/${v.id}`; }}
+                        >
+                          Watch Free
+                        </button>
                       ) : (
-                        <span style={{ fontSize: 11, color: "#bbb" }}>No reviews yet</span>
+                        <button
+                          className={`buy-btn primary${isLoading ? " loading" : ""}`}
+                          disabled={isLoading}
+                          onClick={(e) => { e.stopPropagation(); handleBuy(e, v); }}
+                        >
+                          {isLoading ? "Processing..." : `Buy for ₹${v.price}`}
+                        </button>
                       )}
-                    </div>
 
-                    {/* 4. Price */}
-                    <div>
-                      <span className="price-tag">
-                        {v.is_free ? "Free" : `₹${v.price || 0}`}
-                      </span>
                     </div>
-
                   </div>
-                </Link>
-              ))}
+                );
+              })}
             </div>
           </div>
         </div>

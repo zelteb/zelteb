@@ -4,6 +4,12 @@ import { use, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 
+declare global {
+  interface Window {
+    Razorpay: any;
+  }
+}
+
 export default function Watch({ params }: { params: Promise<{ id: string }> }) {
   const { id: videoId } = use(params);
   const router = useRouter();
@@ -24,6 +30,15 @@ export default function Watch({ params }: { params: Promise<{ id: string }> }) {
   const [ratingLoading, setRatingLoading] = useState(false);
   const [existingRating, setExistingRating] = useState<any>(null);
   const [allRatings, setAllRatings] = useState<any[]>([]);
+
+  // ✅ Load Razorpay script once on mount
+  useEffect(() => {
+    if (document.querySelector('script[src="https://checkout.razorpay.com/v1/checkout.js"]')) return;
+    const script = document.createElement("script");
+    script.src = "https://checkout.razorpay.com/v1/checkout.js";
+    script.async = true;
+    document.body.appendChild(script);
+  }, []);
 
   const fixDescriptionLinks = (html: string): string => {
     return html.replace(/href="([^"]+)"/g, (match, url) => {
@@ -101,6 +116,9 @@ export default function Watch({ params }: { params: Promise<{ id: string }> }) {
     }
   };
 
+  // ============================
+  // ✅ FIXED BUY FUNCTION
+  // ============================
   const buy = async () => {
     setLoading(true);
 
@@ -112,62 +130,98 @@ export default function Watch({ params }: { params: Promise<{ id: string }> }) {
     }
     if (owned) { setLoading(false); return; }
 
-    // 1️⃣ Create Razorpay Order
-    const res = await fetch("/api/buy-video", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        action: "create-order",
-        video_id: video.id,
-        buyer_id: user.id,
-      }),
-    });
-
-    const { order } = await res.json();
-
-    // 2️⃣ Load Razorpay script
-    const script = document.createElement("script");
-    script.src = "https://checkout.razorpay.com/v1/checkout.js";
-    script.onload = () => {
-      const rzp = new (window as any).Razorpay({
-        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
-        amount: order.amount,
-        currency: "INR",
-        name: "Zelteb",
-        description: video.title,
-        order_id: order.id,
-
-        handler: async function (response: any) {
-          // 3️⃣ Verify Payment
-          await fetch("/api/buy-video", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              action: "verify-payment",
-              payment_id: response.razorpay_payment_id,
-              order_id: response.razorpay_order_id,
-              signature: response.razorpay_signature,
-              video_id: video.id,
-              buyer_id: user.id,
-            }),
-          });
-
-          // 4️⃣ Unlock video
-          setOwned(true);
-          const { data: signed } = await supabase.storage
-            .from("videos")
-            .createSignedUrl(video.video_path, 60 * 60);
-          setDownloadUrl(signed?.signedUrl || null);
-          setLoading(false);
-        },
-
-        theme: { color: "#e91e8c" },
+    try {
+      // 1️⃣ Create Razorpay Order
+      const res = await fetch("/api/buy-video", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "create-order",
+          video_id: video.id,
+          buyer_id: user.id,
+        }),
       });
 
-      rzp.open();
-    };
+      if (!res.ok) {
+        alert("Failed to create order. Please try again.");
+        setLoading(false);
+        return;
+      }
 
-    document.body.appendChild(script);
+      const { order } = await res.json();
+
+      // 2️⃣ Open Razorpay checkout (reuse script if already loaded)
+      const openCheckout = () => {
+        const rzp = new window.Razorpay({
+          key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
+          amount: order.amount,
+          currency: "INR",
+          name: "Zelteb",
+          description: video.title,
+          order_id: order.id,
+
+          handler: async function (response: any) {
+            // 3️⃣ Verify Payment
+            const verifyRes = await fetch("/api/buy-video", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                action: "verify-payment",
+                payment_id: response.razorpay_payment_id,
+                order_id: response.razorpay_order_id,
+                signature: response.razorpay_signature,
+                video_id: video.id,
+                buyer_id: user.id,
+              }),
+            });
+
+            if (verifyRes.ok) {
+              // 4️⃣ Unlock video
+              setOwned(true);
+              const { data: signed } = await supabase.storage
+                .from("videos")
+                .createSignedUrl(video.video_path, 60 * 60);
+              setDownloadUrl(signed?.signedUrl || null);
+            } else {
+              const msg = await verifyRes.text();
+              alert("Payment verification failed: " + msg);
+            }
+            setLoading(false);
+          },
+
+          prefill: {
+            email: user.email ?? "",
+          },
+
+          theme: { color: "#e91e8c" },
+
+          // ✅ Reset button if user closes popup
+          modal: {
+            ondismiss: () => setLoading(false),
+          },
+        });
+
+        rzp.open();
+      };
+
+      // ✅ Reuse script if already loaded, otherwise wait for it
+      if (window.Razorpay) {
+        openCheckout();
+      } else {
+        const existing = document.querySelector('script[src="https://checkout.razorpay.com/v1/checkout.js"]') as HTMLScriptElement | null;
+        if (existing) {
+          existing.onload = openCheckout;
+        } else {
+          const script = document.createElement("script");
+          script.src = "https://checkout.razorpay.com/v1/checkout.js";
+          script.onload = openCheckout;
+          document.body.appendChild(script);
+        }
+      }
+    } catch (err: any) {
+      alert("Something went wrong: " + err.message);
+      setLoading(false);
+    }
   };
 
   const download = async (path: string, title: string) => {
