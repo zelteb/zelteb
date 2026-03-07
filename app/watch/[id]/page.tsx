@@ -103,6 +103,7 @@ export default function Watch({ params }: { params: Promise<{ id: string }> }) {
 
   const buy = async () => {
     setLoading(true);
+
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
       router.push(`/login?redirect=/watch/${videoId}`);
@@ -110,21 +111,63 @@ export default function Watch({ params }: { params: Promise<{ id: string }> }) {
       return;
     }
     if (owned) { setLoading(false); return; }
+
+    // 1️⃣ Create Razorpay Order
     const res = await fetch("/api/buy-video", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ video_id: video.id, buyer_id: user.id }),
+      body: JSON.stringify({
+        action: "create-order",
+        video_id: video.id,
+        buyer_id: user.id,
+      }),
     });
-    if (!res.ok) {
-      const msg = await res.text();
-      alert("Error: " + msg);
-      setLoading(false);
-      return;
-    }
-    setOwned(true);
-    const { data: signed } = await supabase.storage.from("videos").createSignedUrl(video.video_path, 60 * 60);
-    setDownloadUrl(signed?.signedUrl || null);
-    setLoading(false);
+
+    const { order } = await res.json();
+
+    // 2️⃣ Load Razorpay script
+    const script = document.createElement("script");
+    script.src = "https://checkout.razorpay.com/v1/checkout.js";
+    script.onload = () => {
+      const rzp = new (window as any).Razorpay({
+        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
+        amount: order.amount,
+        currency: "INR",
+        name: "Zelteb",
+        description: video.title,
+        order_id: order.id,
+
+        handler: async function (response: any) {
+          // 3️⃣ Verify Payment
+          await fetch("/api/buy-video", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              action: "verify-payment",
+              payment_id: response.razorpay_payment_id,
+              order_id: response.razorpay_order_id,
+              signature: response.razorpay_signature,
+              video_id: video.id,
+              buyer_id: user.id,
+            }),
+          });
+
+          // 4️⃣ Unlock video
+          setOwned(true);
+          const { data: signed } = await supabase.storage
+            .from("videos")
+            .createSignedUrl(video.video_path, 60 * 60);
+          setDownloadUrl(signed?.signedUrl || null);
+          setLoading(false);
+        },
+
+        theme: { color: "#e91e8c" },
+      });
+
+      rzp.open();
+    };
+
+    document.body.appendChild(script);
   };
 
   const download = async (path: string, title: string) => {
