@@ -59,7 +59,7 @@ export default function Home() {
           </span>
         </h1>
         <p className="mt-10 max-w-xl mx-auto text-xl md:text-2xl text-gray-500 leading-relaxed">
-          Sell videos, PDFs, and digital files directly to your audience. Get paid in INR. No setup fees.
+          Sell videos, PDFs, and digital files directly to your audience
         </p>
 
         <div className="mt-12 flex justify-center gap-4 flex-wrap">
