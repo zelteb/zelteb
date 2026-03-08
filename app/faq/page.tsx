@@ -2,21 +2,57 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 export const metadata: Metadata = {
-  title: "FAQ – Zelteb | Buy & Sell Videos and Digital Products",
+  title: "FAQ – Zelteb | Best Platform to Sell Digital Products & Video Courses Online",
   description:
-    "Find answers to common questions about buying videos, selling digital products, payouts, withdrawals, and your Zelteb account.",
+    "Zelteb is the best platform to sell digital products, video courses, and digital downloads online. Get answers about our creator marketplace, payouts, and how to monetize digital content — even in India.",
   keywords: [
+    // Core keywords
+    "sell digital products online",
+    "sell video courses online",
+    "digital product marketplace",
+    "platform to sell digital assets",
+    "creator marketplace platform",
+    "sell downloadable products",
+    "video selling platform",
+    "online platform for creators",
+    "marketplace for video creators",
+    "monetize digital content",
+    // Long-tail keywords
+    "best platform to sell digital products in India",
+    "how to sell video courses online",
+    "where to sell digital downloads",
+    "website to sell digital files",
+    "sell digital products without coding",
+    "earn money selling video courses",
+    "marketplace for creators in India",
+    "upload and sell videos online",
+    "sell online courses independently",
+    "platform to sell digital goods globally",
+    // Zelteb-specific
     "Zelteb FAQ",
-    "buy videos online",
-    "sell digital products",
-    "creator payouts",
-    "digital marketplace help",
+    "Zelteb creator platform",
+    "Zelteb digital marketplace",
   ],
+  alternates: {
+    canonical: "https://zelteb.com/faq",
+  },
   openGraph: {
-    title: "FAQ – Zelteb",
+    title: "FAQ – Zelteb | Best Platform to Sell Digital Products Online",
     description:
-      "Everything you need to know about buying and selling on Zelteb.",
+      "Everything you need to know about buying and selling on Zelteb — the creator marketplace to sell video courses, digital downloads, and digital assets globally.",
     type: "website",
+    url: "https://zelteb.com/faq",
+    siteName: "Zelteb",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "FAQ – Zelteb | Sell Digital Products & Video Courses Online",
+    description:
+      "Zelteb is the easiest platform to sell digital products and video courses online. Learn how it works, how payouts work, and how to get started.",
+  },
+  robots: {
+    index: true,
+    follow: true,
   },
 };
 
@@ -33,7 +69,7 @@ const faqs: {
       },
       {
         q: "What payment methods are accepted?",
-        a: "We accept all major credit and debit cards. Additional payment options may be available depending on your region.",
+        a: "We accept all major credit and debit cards. Additional payment options may be available depending on your region, including options for buyers in India.",
       },
       {
         q: "Can I watch my purchased videos on any device?",
@@ -54,15 +90,15 @@ const faqs: {
     items: [
       {
         q: "Who can sell on Zelteb?",
-        a: "Anyone! Whether you're an educator, filmmaker, coach, or content creator — if you have valuable digital content to share, you can open a creator account and start selling right away.",
+        a: "Anyone! Zelteb is an online platform for creators — whether you're an educator, filmmaker, coach, or content creator. If you have valuable digital content to share, you can open a creator account and start selling right away, no coding required.",
       },
       {
         q: "What types of content can I sell?",
-        a: "You can sell videos and other digital products. This includes tutorials, courses, vlogs, short films, guides, and more. Content must comply with our Terms of Service.",
+        a: "You can sell videos, video courses, digital downloads, and other digital assets. This includes tutorials, courses, vlogs, short films, guides, and more. Zelteb is built to help creators monetize digital content globally.",
       },
       {
         q: "How do I upload and list my video for sale?",
-        a: "Head to your Creator Dashboard, click Upload, fill in your product details (title, description, price, thumbnail), and publish. Your listing will be live on the Discover page immediately.",
+        a: "Head to your Creator Dashboard, click Upload, fill in your product details (title, description, price, thumbnail), and publish. Your listing goes live on the Discover page immediately — making it easy to sell downloadable products and video courses online.",
       },
       {
         q: "Is there a fee to list products?",
@@ -70,7 +106,11 @@ const faqs: {
       },
       {
         q: "Can I set my own price?",
-        a: "Absolutely. You have full control over your pricing. You can update the price of any product at any time from your dashboard.",
+        a: "Absolutely. You have full control over your pricing. You can update the price of any digital product at any time from your dashboard.",
+      },
+      {
+        q: "Can I sell digital products without coding?",
+        a: "Yes — completely. Zelteb is designed so any creator can upload and sell digital products without writing a single line of code. Just sign up, upload, and start earning.",
       },
     ],
   },
@@ -104,7 +144,7 @@ const faqs: {
     items: [
       {
         q: "Is Zelteb free to join?",
-        a: "Yes, creating an account on Zelteb is completely free — for both buyers and sellers.",
+        a: "Yes, creating an account on Zelteb is completely free — for both buyers and sellers. It's one of the easiest ways to start selling digital products globally.",
       },
       {
         q: "How do I create an account?",
@@ -112,11 +152,15 @@ const faqs: {
       },
       {
         q: "Can I be both a buyer and a seller?",
-        a: "Yes! One account lets you buy content from other creators and sell your own — all from the same place.",
+        a: "Yes! One Zelteb account lets you buy content from other creators and sell your own digital products — all from the same place.",
       },
       {
         q: "How do I upgrade to a creator account?",
         a: "After logging in, navigate to the Creator section and follow the steps to set up your profile and start selling.",
+      },
+      {
+        q: "Is Zelteb available in India?",
+        a: "Yes! Zelteb is a global platform and is available to creators and buyers in India. It's one of the best platforms to sell digital products in India, with support for local payment methods.",
       },
       {
         q: "How do I contact support?",
@@ -129,7 +173,7 @@ const faqs: {
 export default function FAQPage() {
   return (
     <div className="bg-white min-h-screen font-sans text-black">
-      {/* JSON-LD FAQ Schema for SEO */}
+      {/* JSON-LD FAQ Schema — triggers Google rich snippets in search results */}
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
@@ -146,6 +190,26 @@ export default function FAQPage() {
                 },
               }))
             ),
+          }),
+        }}
+      />
+
+      {/* Organization schema for brand authority */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "Organization",
+            name: "Zelteb",
+            url: "https://zelteb.com",
+            description:
+              "Zelteb is a digital product marketplace where creators can sell video courses, digital downloads, and digital assets online — globally.",
+            contactPoint: {
+              "@type": "ContactPoint",
+              email: "helpzelteb@gmail.com",
+              contactType: "customer support",
+            },
           }),
         }}
       />
@@ -170,13 +234,20 @@ export default function FAQPage() {
         </div>
       </header>
 
-      {/* MAIN CONTENT */}
+      {/* MAIN */}
       <main className="max-w-4xl mx-auto px-8 py-24">
+        {/* H1 contains primary keyword naturally */}
         <h1 className="text-[56px] md:text-[80px] font-bold tracking-tighter leading-none mb-4">
           FAQ
         </h1>
-        <p className="text-gray-500 font-medium mb-16 uppercase tracking-widest text-sm">
+        <p className="text-gray-500 font-medium mb-4 uppercase tracking-widest text-sm">
           Everything you need to know
+        </p>
+        {/* SEO-rich subtitle — visible to users and search engines */}
+        <p className="text-gray-400 text-lg leading-relaxed mb-16 max-w-2xl">
+          Zelteb is the easiest <strong className="text-gray-600">platform to sell digital products</strong>,{" "}
+          <strong className="text-gray-600">video courses</strong>, and digital downloads online —
+          for creators everywhere, including India.
         </p>
 
         <div className="space-y-20">
@@ -213,12 +284,12 @@ export default function FAQPage() {
             </div>
           </section>
 
-          {/* Contact */}
+          {/* Contact + SEO footer text */}
           <section className="border-t border-gray-100 pt-12">
             <h2 className="text-3xl font-bold mb-4 tracking-tight">
               Still have questions?
             </h2>
-            <p className="text-gray-600 text-lg leading-relaxed">
+            <p className="text-gray-600 text-lg leading-relaxed mb-6">
               We're happy to help. Reach out to our support team at{" "}
               <a
                 href="mailto:helpzelteb@gmail.com"
@@ -234,6 +305,15 @@ export default function FAQPage() {
                 Help Center
               </Link>
               .
+            </p>
+            {/* SEO paragraph — naturally placed, readable, keyword-rich */}
+            <p className="text-gray-400 text-base leading-relaxed">
+              Zelteb is a <strong className="text-gray-500">creator marketplace platform</strong> built
+              for anyone who wants to <strong className="text-gray-500">sell digital products online</strong> —
+              from video courses and tutorials to digital downloads and assets.
+              Whether you're looking for the <strong className="text-gray-500">best platform to sell digital products in India</strong> or
+              want to <strong className="text-gray-500">monetize digital content globally</strong>,
+              Zelteb makes it simple with no coding required.
             </p>
           </section>
         </div>
