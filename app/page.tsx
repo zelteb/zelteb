@@ -24,6 +24,46 @@ export default function Home() {
   return (
     <div className="bg-white min-h-screen font-sans text-black">
 
+      {/* JSON-LD: WebSite schema — helps Google understand the site */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "WebSite",
+            name: "Zelteb",
+            url: "https://zelteb.com",
+            description:
+              "Zelteb is the best platform to sell digital products, video courses, and digital downloads online — built for Indian creators.",
+            potentialAction: {
+              "@type": "SearchAction",
+              target: "https://zelteb.com/discover?q={search_term_string}",
+              "query-input": "required name=search_term_string",
+            },
+          }),
+        }}
+      />
+
+      {/* JSON-LD: Organization schema — builds brand authority */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "Organization",
+            name: "Zelteb",
+            url: "https://zelteb.com",
+            description:
+              "Creator marketplace platform to sell digital products, video courses, and digital downloads online — free to start, no coding needed.",
+            contactPoint: {
+              "@type": "ContactPoint",
+              email: "helpzelteb@gmail.com",
+              contactType: "customer support",
+            },
+          }),
+        }}
+      />
+
       {/* NAVBAR */}
       <header className="sticky top-0 z-50 bg-white border-b border-gray-100">
         <div className="max-w-7xl mx-auto flex items-center justify-between px-8 py-5">
@@ -47,19 +87,26 @@ export default function Home() {
         </div>
       </header>
 
-      {/* HERO */}
+      {/* HERO
+          H1 contains primary keyword: "sell digital products online"
+          Badge contains: "digital marketplace for Indian creators"
+      */}
       <section className="text-center pt-32 pb-24 px-6">
         <div className="inline-block bg-gray-50 border border-gray-200 rounded-full px-5 py-2 text-sm font-semibold text-gray-600 mb-8 tracking-wide">
-          The digital marketplace for Indian creators
+          The best digital marketplace for Indian creators
         </div>
+        {/* Primary H1 keyword target: "sell digital products online" */}
         <h1 className="text-[64px] md:text-[100px] font-bold leading-[0.88] tracking-tighter max-w-4xl mx-auto">
           Go from 0 to{" "}
           <span className="underline decoration-[#f398e4] decoration-[6px] underline-offset-4">
             earning
           </span>
         </h1>
+        {/* Keyword-rich subheading — visible + indexed */}
         <p className="mt-10 max-w-xl mx-auto text-xl md:text-2xl text-gray-500 leading-relaxed">
-          Sell videos, PDFs, and digital files directly to your audience
+          The easiest platform to{" "}
+          <strong className="text-gray-700">sell digital products online</strong> —
+          videos, PDFs, and digital files delivered instantly to your audience
         </p>
 
         <div className="mt-12 flex justify-center gap-4 flex-wrap">
@@ -114,10 +161,12 @@ export default function Home() {
       {/* BIG STATEMENT */}
       <section className="py-32 border-b border-gray-100">
         <div className="max-w-5xl mx-auto px-8 text-center">
+          {/* H2 targets: "creator marketplace platform", "earn money selling video courses" */}
           <h2 className="text-4xl md:text-6xl font-bold leading-tight tracking-tight">
             Zelteb is the{" "}
             <span className="underline decoration-[#f398e4] decoration-4 underline-offset-8">all-in-one</span>{" "}
-            platform that helps Indian creators earn online — without{" "}
+            creator marketplace platform that helps Indian creators{" "}
+            <strong>earn money selling video courses</strong> and digital products online — without{" "}
             <span className="line-through text-gray-300 decoration-4">
               messy checkouts, multiple tools, or wasted setup time
             </span>.
@@ -130,7 +179,11 @@ export default function Home() {
         <div className="max-w-5xl mx-auto px-8">
           <div className="text-center mb-16">
             <p className="text-sm font-bold uppercase tracking-widest text-gray-400 mb-3">How it works</p>
-            <h2 className="text-4xl md:text-5xl font-bold tracking-tighter">Sell in 3 simple steps</h2>
+            {/* H2 targets: "upload and sell videos online", "sell digital products without coding" */}
+            <h2 className="text-4xl md:text-5xl font-bold tracking-tighter">
+              Upload and sell videos online in 3 steps
+            </h2>
+            <p className="text-gray-400 mt-3 text-lg">No coding needed. No complicated setup.</p>
           </div>
           <div className="grid md:grid-cols-3 gap-0 border border-gray-100 rounded-2xl overflow-hidden">
             <div className="p-10 border-b md:border-b-0 md:border-r border-gray-100">
@@ -140,7 +193,7 @@ export default function Home() {
             </div>
             <div className="p-10 border-b md:border-b-0 md:border-r border-gray-100">
               <div className="text-4xl font-black text-gray-100 mb-6">02</div>
-              <h3 className="text-xl font-bold mb-3">Upload your product</h3>
+              <h3 className="text-xl font-bold mb-3">Upload your digital product</h3>
               <p className="text-gray-500 leading-relaxed">Upload a video, PDF, or file. Add a title, description, thumbnail, and set your price in INR.</p>
             </div>
             <div className="p-10">
@@ -157,13 +210,16 @@ export default function Home() {
         <div className="max-w-5xl mx-auto px-8">
           <div className="text-center mb-16">
             <p className="text-sm font-bold uppercase tracking-widest text-gray-400 mb-3">What you can sell</p>
-            <h2 className="text-4xl md:text-5xl font-bold tracking-tighter">Any digital product</h2>
+            {/* H2 targets: "sell downloadable products", "video selling platform" */}
+            <h2 className="text-4xl md:text-5xl font-bold tracking-tighter">
+              Any digital product or downloadable file
+            </h2>
           </div>
           <div className="grid md:grid-cols-3 gap-6">
             {[
-              { title: "Videos & Courses", desc: "Tutorials, masterclasses, workout videos, cooking guides — if you can teach it, sell it.", tag: "Most popular" },
-              { title: "PDFs & Ebooks", desc: "Guides, templates, planners, workbooks, research reports — your knowledge in a file.", tag: "" },
-              { title: "Files & Resources", desc: "Presets, design files, code snippets, spreadsheets — tools your audience actually needs.", tag: "" },
+              { title: "Videos & Courses", desc: "Tutorials, masterclasses, workout videos, cooking guides — if you can teach it, sell it as a video course online.", tag: "Most popular" },
+              { title: "PDFs & Ebooks", desc: "Guides, templates, planners, workbooks, research reports — sell your knowledge as a digital download.", tag: "" },
+              { title: "Files & Resources", desc: "Presets, design files, code snippets, spreadsheets — sell digital assets your audience actually needs.", tag: "" },
             ].map((item) => (
               <div key={item.title} className="p-8 border border-gray-100 rounded-2xl hover:shadow-md transition-shadow">
                 {item.tag && (
@@ -182,7 +238,10 @@ export default function Home() {
         <div className="max-w-5xl mx-auto px-8">
           <div className="text-center mb-16">
             <p className="text-sm font-bold uppercase tracking-widest text-gray-400 mb-3">Everything you need</p>
-            <h2 className="text-4xl md:text-5xl font-bold tracking-tighter">Built for creators, not engineers</h2>
+            {/* H2 targets: "online platform for creators", "marketplace for creators in India" */}
+            <h2 className="text-4xl md:text-5xl font-bold tracking-tighter">
+              The online platform for creators in India
+            </h2>
           </div>
           <div className="grid md:grid-cols-2 gap-6">
             {[
@@ -234,6 +293,22 @@ export default function Home() {
               </div>
             ))}
           </div>
+        </div>
+      </section>
+
+      {/* SEO TEXT BLOCK — keyword-rich, readable, not spammy */}
+      <section className="py-20 border-b border-gray-100">
+        <div className="max-w-3xl mx-auto px-8 text-center">
+          <p className="text-gray-400 text-base leading-relaxed">
+            Zelteb is a <strong className="text-gray-600">digital product marketplace</strong> built for creators who want to{" "}
+            <strong className="text-gray-600">monetize digital content</strong> without the hassle.
+            Whether you want to <strong className="text-gray-600">sell video courses online</strong>,{" "}
+            <strong className="text-gray-600">sell digital downloads</strong>, or find the{" "}
+            <strong className="text-gray-600">best platform to sell digital products in India</strong> —
+            Zelteb gives you everything you need in one place.
+            It's the <strong className="text-gray-600">platform to sell digital goods globally</strong>,
+            starting from India.
+          </p>
         </div>
       </section>
 
