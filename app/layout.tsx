@@ -59,6 +59,9 @@ export const metadata: Metadata = {
   alternates: {
     canonical: "/",
   },
+  verification: {
+    google: "8RuTExUv0kI2ShmEt6mvO-TxTlpWQfF5buxCWcbgWzs",
+  },
   openGraph: {
     title: "Zelteb – Sell Digital Products & Video Courses Online in India",
     description:
