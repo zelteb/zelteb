@@ -103,7 +103,7 @@ export default function Discover() {
     }
 
     if (purchasedIds.has(video.id)) {
-      window.location.href = `/watch/${video.id}`;
+      window.location.href = `/watch/${video.slug}`;
       return;
     }
 
@@ -130,7 +130,7 @@ export default function Discover() {
 
       if (data.free) {
         setPurchasedIds((prev) => new Set([...prev, video.id]));
-        window.location.href = `/watch/${video.id}`;
+        window.location.href = `/watch/${video.slug}`;
         setBuyingId(null);
         return;
       }
@@ -160,7 +160,7 @@ export default function Discover() {
 
           if (verifyRes.ok) {
             setPurchasedIds((prev) => new Set([...prev, video.id]));
-            window.location.href = `/watch/${video.id}`;
+            window.location.href = `/watch/${video.slug}`;
           } else {
             const msg = await verifyRes.text();
             alert("Payment verification failed: " + msg);
