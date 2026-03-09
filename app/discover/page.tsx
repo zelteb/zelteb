@@ -97,7 +97,7 @@ export default function Discover() {
   }, [search, minPrice, maxPrice, minRating]);
 
   // ============================
-  // 🛒 BUY HANDLER
+  // 🛒 BUY HANDLER (FIXED)
   // ============================
   const handleBuy = async (e: React.MouseEvent, video: any) => {
     e.preventDefault();
@@ -131,7 +131,17 @@ export default function Discover() {
         return;
       }
 
-      const { order } = await res.json();
+      const data = await res.json();
+
+      // ✅ FIX: FREE VIDEO — skip Razorpay, go straight to watch page
+      if (data.free) {
+        setPurchasedIds((prev) => new Set([...prev, video.id]));
+        window.location.href = `/watch/${video.id}`;
+        setBuyingId(null);
+        return;
+      }
+
+      const { order } = data;
 
       const options = {
         key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
@@ -298,11 +308,18 @@ export default function Discover() {
                 const isOwner = currentUser?.id === v.creator_id;
 
                 return (
-                  <div key={v.id} className="card" onClick={() => {
-                    if (isOwner) { window.location.href = `/watch/${v.id}`; return; }
-                    if (alreadyPurchased || isFree) { window.location.href = `/watch/${v.id}`; return; }
-                    handleBuy({ preventDefault: () => {} } as any, v);
-                  }}>
+                  <div
+                    key={v.id}
+                    className="card"
+                    onClick={() => {
+                      // ✅ FIX: consolidate all "go straight to watch" cases
+                      if (isOwner || alreadyPurchased || isFree) {
+                        window.location.href = `/watch/${v.id}`;
+                        return;
+                      }
+                      handleBuy({ preventDefault: () => {} } as any, v);
+                    }}
+                  >
                     {/* Thumbnail */}
                     <div style={{ position: "relative", width: "100%", aspectRatio: "16/9", overflow: "hidden", background: "#1a1a1a" }}>
                       {v.thumbnail_url

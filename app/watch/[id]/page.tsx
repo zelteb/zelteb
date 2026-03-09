@@ -31,7 +31,7 @@ export default function Watch({ params }: { params: Promise<{ id: string }> }) {
   const [existingRating, setExistingRating] = useState<any>(null);
   const [allRatings, setAllRatings] = useState<any[]>([]);
 
-  // ✅ Load Razorpay script once on mount
+  // Load Razorpay script once on mount
   useEffect(() => {
     if (document.querySelector('script[src="https://checkout.razorpay.com/v1/checkout.js"]')) return;
     const script = document.createElement("script");
@@ -67,6 +67,8 @@ export default function Watch({ params }: { params: Promise<{ id: string }> }) {
       setVideo(v);
       if (v.thumbnail_url) setThumbnailUrl(v.thumbnail_url);
 
+      const isFree = v.is_free || Number(v.price) === 0;
+
       const [, creatorResult] = await Promise.all([
         loadRatings(),
         v.creator_id
@@ -78,7 +80,38 @@ export default function Watch({ params }: { params: Promise<{ id: string }> }) {
       if (!user) return;
       setUserId(user.id);
 
-      const { data: p } = await supabase.from("purchases").select("id").eq("video_id", videoId).eq("buyer_id", user.id).single();
+      // ✅ FIX: if free, treat as owned immediately without checking purchases
+      if (isFree) {
+        setOwned(true);
+        const { data: signed } = await supabase.storage
+          .from("videos")
+          .createSignedUrl(v.video_path, 60 * 60);
+        setDownloadUrl(signed?.signedUrl || null);
+
+        // Still check for existing rating
+        const { data: existingR } = await supabase
+          .from("ratings")
+          .select("*")
+          .eq("video_id", videoId)
+          .eq("buyer_id", user.id)
+          .maybeSingle();
+        if (existingR) {
+          setExistingRating(existingR);
+          setSelectedStar(existingR.rating);
+          setReview(existingR.review || "");
+          setRatingSubmitted(true);
+        }
+        return;
+      }
+
+      // Paid: check purchase record
+      const { data: p } = await supabase
+        .from("purchases")
+        .select("id")
+        .eq("video_id", videoId)
+        .eq("buyer_id", user.id)
+        .single();
+
       if (p) {
         setOwned(true);
         const [signedResult, existingRResult] = await Promise.all([
@@ -117,7 +150,7 @@ export default function Watch({ params }: { params: Promise<{ id: string }> }) {
   };
 
   // ============================
-  // ✅ FIXED BUY FUNCTION
+  // BUY FUNCTION (FIXED)
   // ============================
   const buy = async () => {
     setLoading(true);
@@ -131,7 +164,6 @@ export default function Watch({ params }: { params: Promise<{ id: string }> }) {
     if (owned) { setLoading(false); return; }
 
     try {
-      // 1️⃣ Create Razorpay Order
       const res = await fetch("/api/buy-video", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -150,23 +182,20 @@ export default function Watch({ params }: { params: Promise<{ id: string }> }) {
 
       const data = await res.json();
 
-// 🟢 FREE PRODUCT — skip Razorpay
-if (data.free) {
-  setOwned(true);
+      // ✅ FIX: FREE PRODUCT — skip Razorpay, unlock immediately
+      if (data.free) {
+        setOwned(true);
+        const { data: signed } = await supabase.storage
+          .from("videos")
+          .createSignedUrl(video.video_path, 60 * 60);
+        setDownloadUrl(signed?.signedUrl || null);
+        setLoading(false);
+        return;
+      }
 
-  const { data: signed } = await supabase.storage
-    .from("videos")
-    .createSignedUrl(video.video_path, 60 * 60);
+      // PAID PRODUCT
+      const order = data.order;
 
-  setDownloadUrl(signed?.signedUrl || null);
-  setLoading(false);
-  return;
-}
-
-// 🟢 PAID PRODUCT
-const order = data.order;
-
-      // 2️⃣ Open Razorpay checkout (reuse script if already loaded)
       const openCheckout = () => {
         const rzp = new window.Razorpay({
           key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
@@ -177,7 +206,6 @@ const order = data.order;
           order_id: order.id,
 
           handler: async function (response: any) {
-            // 3️⃣ Verify Payment
             const verifyRes = await fetch("/api/buy-video", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
@@ -192,7 +220,6 @@ const order = data.order;
             });
 
             if (verifyRes.ok) {
-              // 4️⃣ Unlock video
               setOwned(true);
               const { data: signed } = await supabase.storage
                 .from("videos")
@@ -211,7 +238,6 @@ const order = data.order;
 
           theme: { color: "#e91e8c" },
 
-          // ✅ Reset button if user closes popup
           modal: {
             ondismiss: () => setLoading(false),
           },
@@ -220,7 +246,6 @@ const order = data.order;
         rzp.open();
       };
 
-      // ✅ Reuse script if already loaded, otherwise wait for it
       if (window.Razorpay) {
         openCheckout();
       } else {
@@ -629,4 +654,3 @@ const order = data.order;
     </>
   );
 }
-
