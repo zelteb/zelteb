@@ -10,6 +10,8 @@ import Image from "@tiptap/extension-image";
 
 export default function Upload() {
   const [title, setTitle] = useState("");
+  const [slug, setSlug] = useState("");
+  const [slugManuallyEdited, setSlugManuallyEdited] = useState(false);
   const [price, setPrice] = useState("");
   const [isFree, setIsFree] = useState(false);
   const [type, setType] = useState<"video" | "digital">("video");
@@ -42,6 +44,24 @@ export default function Upload() {
     },
   });
 
+  // Auto-generate slug from title
+  const generateSlug = (value: string) =>
+    value.toLowerCase().trim().replace(/[^a-z0-9\s-]/g, "").replace(/\s+/g, "-").replace(/-+/g, "-").slice(0, 60);
+
+  const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    setTitle(val);
+    if (!slugManuallyEdited) {
+      setSlug(generateSlug(val));
+    }
+  };
+
+  const handleSlugChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, "").replace(/-+/g, "-");
+    setSlug(val);
+    setSlugManuallyEdited(true);
+  };
+
   const handleThumbChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0] || null;
     setThumb(f);
@@ -53,7 +73,6 @@ export default function Upload() {
     if (!f) return;
     const objectUrl = URL.createObjectURL(f);
     editor?.chain().focus().setImage({ src: objectUrl }).run();
-    // Reset input so same file can be re-selected
     if (editorImageInputRef.current) editorImageInputRef.current.value = "";
   };
 
@@ -72,35 +91,18 @@ export default function Upload() {
     if (!editor) return;
     setShowTextDropdown(false);
     switch (style) {
-      case "text":
-        editor.chain().focus().setParagraph().run();
-        break;
-      case "h1":
-        editor.chain().focus().toggleHeading({ level: 1 }).run();
-        break;
-      case "h2":
-        editor.chain().focus().toggleHeading({ level: 2 }).run();
-        break;
-      case "h3":
-        editor.chain().focus().toggleHeading({ level: 3 }).run();
-        break;
-      case "bullet":
-        editor.chain().focus().toggleBulletList().run();
-        break;
-      case "ordered":
-        editor.chain().focus().toggleOrderedList().run();
-        break;
-      case "code":
-        editor.chain().focus().toggleCodeBlock().run();
-        break;
+      case "text": editor.chain().focus().setParagraph().run(); break;
+      case "h1": editor.chain().focus().toggleHeading({ level: 1 }).run(); break;
+      case "h2": editor.chain().focus().toggleHeading({ level: 2 }).run(); break;
+      case "h3": editor.chain().focus().toggleHeading({ level: 3 }).run(); break;
+      case "bullet": editor.chain().focus().toggleBulletList().run(); break;
+      case "ordered": editor.chain().focus().toggleOrderedList().run(); break;
+      case "code": editor.chain().focus().toggleCodeBlock().run(); break;
     }
   };
 
   const openLinkModal = () => {
-    const selected = editor?.state.doc.textBetween(
-      editor.state.selection.from,
-      editor.state.selection.to
-    );
+    const selected = editor?.state.doc.textBetween(editor.state.selection.from, editor.state.selection.to);
     setLinkText(selected || "");
     setLinkUrl("");
     setShowLinkModal(true);
@@ -108,17 +110,11 @@ export default function Upload() {
 
   const handleAddLink = () => {
     if (!editor || !linkUrl) return;
-    // Auto-prepend https:// if no protocol is present
-    const normalizedUrl =
-      /^https?:\/\//i.test(linkUrl) ? linkUrl : `https://${linkUrl}`;
+    const normalizedUrl = /^https?:\/\//i.test(linkUrl) ? linkUrl : `https://${linkUrl}`;
     if (linkText && !editor.state.selection.empty) {
       editor.chain().focus().setLink({ href: normalizedUrl }).run();
     } else if (linkText) {
-      editor
-        .chain()
-        .focus()
-        .insertContent(`<a href="${normalizedUrl}">${linkText}</a>`)
-        .run();
+      editor.chain().focus().insertContent(`<a href="${normalizedUrl}">${linkText}</a>`).run();
     } else {
       editor.chain().focus().setLink({ href: normalizedUrl }).run();
     }
@@ -145,20 +141,19 @@ export default function Upload() {
       const { data: tData, error: tError } = await supabase.storage
         .from("videos")
         .upload(`thumbs/${user.id}-${Date.now()}-${thumb.name}`, thumb);
-
       if (!tError && tData) {
-        const { data: urlData } = supabase.storage
-          .from("videos")
-          .getPublicUrl(tData.path);
+        const { data: urlData } = supabase.storage.from("videos").getPublicUrl(tData.path);
         thumbnailUrl = urlData.publicUrl;
       }
     }
 
     const description = editor?.getHTML() || "";
+    const finalSlug = slug || null; // if empty, leave null so DB uses id fallback
 
     const { error: dbError } = await supabase.from("videos").insert({
       creator_id: user.id,
       title,
+      slug: finalSlug,
       description,
       price: isFree ? 0 : Number(price),
       video_path: data.path,
@@ -171,7 +166,8 @@ export default function Upload() {
 
     alert("Product created!");
     setLoading(false);
-    setTitle(""); setPrice(""); setFile(null); setThumb(null);
+    setTitle(""); setSlug(""); setSlugManuallyEdited(false);
+    setPrice(""); setFile(null); setThumb(null);
     setThumbPreview(null); setIsFree(false); setType("video");
     editor?.commands.clearContent();
   };
@@ -183,17 +179,20 @@ export default function Upload() {
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
         .page-layout { display: flex; min-height: 100vh; background: #f4f4f6; font-family: 'Plus Jakarta Sans', system-ui, sans-serif; color: #18181b; }
-
         .up-wrap { flex: 1; padding: 48px 32px 48px 48px; overflow-y: auto; max-width: 700px; }
         .up-inner { display: flex; flex-direction: column; gap: 12px; }
         .up-header { margin-bottom: 8px; }
         .up-header h1 { font-family: 'Plus Jakarta Sans', system-ui, sans-serif; font-size: 1.75rem; font-weight: 800; color: #18181b; letter-spacing: -0.03em; line-height: 1.2; }
         .up-header p { font-size: 0.875rem; color: #71717a; margin-top: 4px; font-weight: 400; }
         .up-card { background: #fff; border: 1px solid #e4e4e7; border-radius: 14px; overflow: hidden; }
-        .up-card-header { display: flex; align-items: center; gap: 10px; padding: 18px 24px; border-bottom: 1px solid #f0f0f2; user-select: none; }
+        .up-card-header { display: flex; align-items: center; gap: 10px; padding: 18px 24px; border-bottom: 1px solid #f0f0f2; user-select: none; cursor: pointer; }
         .up-card-header svg { color: #a1a1aa; }
         .up-card-header h2 { font-size: 0.9375rem; font-weight: 600; color: #18181b; flex: 1; font-family: 'Plus Jakarta Sans', system-ui, sans-serif; }
         .up-card-header .required { color: #7c3aed; margin-left: 2px; }
+        .up-card-header-right { display: flex; align-items: center; gap: 8px; }
+        .up-card-header-badge { font-size: 0.72rem; font-weight: 500; color: #a1a1aa; background: #f4f4f6; padding: 3px 8px; border-radius: 20px; font-family: 'Plus Jakarta Sans', system-ui, sans-serif; }
+        .up-card-chevron { color: #a1a1aa; transition: transform 0.2s; }
+        .up-card-chevron.open { transform: rotate(180deg); }
         .up-card-body { padding: 20px 24px; }
         .up-label { display: block; font-size: 0.8125rem; font-weight: 500; color: #3f3f46; margin-bottom: 6px; font-family: 'Plus Jakarta Sans', system-ui, sans-serif; }
         .up-label .req { color: #7c3aed; }
@@ -201,30 +200,32 @@ export default function Upload() {
         .up-input::placeholder { color: #a1a1aa; }
         .up-input:focus { border-color: #7c3aed; box-shadow: 0 0 0 3px rgba(124,58,237,0.08); }
         .up-hint { font-size: 0.78rem; color: #a1a1aa; margin-top: 6px; font-weight: 400; font-family: 'Plus Jakarta Sans', system-ui, sans-serif; }
+
+        /* SLUG INPUT */
+        .slug-input-wrap { position: relative; display: flex; align-items: center; }
+        .slug-prefix { position: absolute; left: 12px; font-size: 0.85rem; color: #a1a1aa; pointer-events: none; white-space: nowrap; font-family: 'Plus Jakarta Sans', system-ui, sans-serif; }
+        .slug-input { padding-left: 72px !important; font-family: 'Courier New', monospace !important; font-size: 0.875rem !important; }
+        .slug-input:not(:placeholder-shown) { color: #7c3aed !important; }
+        .slug-preview { display: flex; align-items: center; gap: 6px; margin-top: 8px; font-size: 0.78rem; color: #a1a1aa; font-family: 'Plus Jakarta Sans', system-ui, sans-serif; }
+        .slug-preview-url { color: #7c3aed; font-weight: 500; word-break: break-all; }
+        .slug-auto-badge { display: inline-flex; align-items: center; gap: 4px; font-size: 0.7rem; background: #f0fdf4; color: #16a34a; border: 1px solid #bbf7d0; padding: 2px 7px; border-radius: 20px; font-weight: 500; margin-left: 4px; }
+
         .up-editor-wrap { border: 1px solid #e4e4e7; border-radius: 8px; overflow: hidden; background: #fafafa; transition: border-color 0.15s, box-shadow 0.15s; }
         .up-editor-wrap:focus-within { border-color: #7c3aed; box-shadow: 0 0 0 3px rgba(124,58,237,0.08); }
-
-        /* TOOLBAR */
         .up-toolbar { display: flex; align-items: center; gap: 2px; padding: 8px 10px; background: #18181b; flex-wrap: wrap; position: relative; }
         .up-toolbar-btn { background: none; border: none; color: #d4d4d8; cursor: pointer; width: 30px; height: 30px; border-radius: 5px; display: flex; align-items: center; justify-content: center; font-size: 0.85rem; font-weight: 600; transition: background 0.12s, color 0.12s; font-family: 'Plus Jakarta Sans', system-ui, sans-serif; }
         .up-toolbar-btn:hover { background: #3f3f46; color: white; }
         .up-toolbar-btn.active { background: #7c3aed; color: white; }
         .up-toolbar-divider { width: 1px; height: 18px; background: #3f3f46; margin: 0 4px; flex-shrink: 0; }
-
-        /* TEXT STYLE DROPDOWN */
         .up-text-dropdown-wrap { position: relative; }
         .up-text-dropdown-btn { background: none; border: none; color: #d4d4d8; cursor: pointer; height: 30px; border-radius: 5px; display: flex; align-items: center; gap: 5px; padding: 0 8px; font-size: 0.82rem; font-weight: 600; font-family: 'Plus Jakarta Sans', system-ui, sans-serif; transition: background 0.12s, color 0.12s; white-space: nowrap; }
         .up-text-dropdown-btn:hover { background: #3f3f46; color: white; }
-        .up-text-dropdown-btn svg { opacity: 0.6; }
         .up-text-dropdown-menu { position: absolute; top: calc(100% + 6px); left: 0; background: white; border: 1px solid #e4e4e7; border-radius: 10px; box-shadow: 0 8px 24px rgba(0,0,0,0.12); z-index: 100; min-width: 170px; overflow: hidden; padding: 4px; }
         .up-text-dropdown-item { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 6px; cursor: pointer; transition: background 0.1s; font-family: 'Plus Jakarta Sans', system-ui, sans-serif; }
         .up-text-dropdown-item:hover { background: #f4f4f6; }
         .up-text-dropdown-item.active { background: #faf5ff; }
         .up-text-dropdown-item-icon { width: 28px; height: 28px; background: #f4f4f6; border-radius: 6px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
         .up-text-dropdown-item-label { font-size: 0.875rem; font-weight: 500; color: #18181b; }
-        .up-text-dropdown-item-sub { font-size: 0.7rem; color: #a1a1aa; }
-
-        /* LINK MODAL */
         .up-modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 200; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(2px); }
         .up-modal { background: white; border-radius: 16px; padding: 28px; width: 100%; max-width: 420px; box-shadow: 0 20px 60px rgba(0,0,0,0.15); }
         .up-modal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
@@ -238,7 +239,6 @@ export default function Upload() {
         .up-modal-input::placeholder { color: #a1a1aa; }
         .up-modal-submit { width: 100%; background: #18181b; color: white; border: none; border-radius: 9px; padding: 12px; font-size: 0.9rem; font-weight: 600; font-family: 'Plus Jakarta Sans', system-ui, sans-serif; cursor: pointer; transition: background 0.15s; margin-top: 4px; }
         .up-modal-submit:hover { background: #3f3f46; }
-
         .tiptap-editor { min-height: 140px; padding: 12px 14px; font-size: 0.9rem; font-family: 'Manrope', sans-serif; color: #18181b; outline: none; line-height: 1.6; }
         .tiptap-editor p { margin-bottom: 6px; }
         .tiptap-editor strong { font-weight: 700; }
@@ -256,7 +256,6 @@ export default function Upload() {
         .tiptap-editor pre { background: #18181b; color: #e4e4e7; border-radius: 8px; padding: 12px 14px; font-family: 'Courier New', monospace; font-size: 0.85rem; margin: 8px 0; overflow-x: auto; }
         .tiptap-editor code { background: #f4f4f6; padding: 2px 5px; border-radius: 4px; font-family: 'Courier New', monospace; font-size: 0.85rem; }
         .tiptap-editor pre code { background: none; padding: 0; }
-
         .up-select-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
         .up-select-card { border: 1.5px solid #e4e4e7; border-radius: 10px; padding: 14px 16px; cursor: pointer; transition: border-color 0.15s, background 0.15s; position: relative; background: #fafafa; }
         .up-select-card.active { border-color: #7c3aed; background: #faf5ff; }
@@ -283,7 +282,6 @@ export default function Upload() {
         .up-spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid rgba(255,255,255,0.4); border-top-color: white; border-radius: 50%; animation: spin 0.7s linear infinite; margin-right: 8px; vertical-align: middle; }
         @keyframes spin { to { transform: rotate(360deg); } }
 
-        /* PREVIEW PANEL */
         .preview-panel { width: 360px; flex-shrink: 0; background: #fff; border-left: 1px solid #e4e4e7; position: sticky; top: 0; height: 100vh; overflow-y: auto; display: flex; flex-direction: column; }
         .preview-header { padding: 16px 20px; border-bottom: 1px solid #f0f0f2; display: flex; align-items: center; justify-content: space-between; background: #fafafa; flex-shrink: 0; }
         .preview-header h3 { font-size: 0.8125rem; font-weight: 600; color: #71717a; text-transform: uppercase; letter-spacing: 0.06em; font-family: 'Plus Jakarta Sans', system-ui, sans-serif; }
@@ -314,6 +312,9 @@ export default function Upload() {
         .pv-file-info { display: flex; align-items: center; gap: 6px; font-size: 0.75rem; color: #a1a1aa; margin-bottom: 14px; font-family: 'Plus Jakarta Sans', system-ui, sans-serif; }
         .pv-buy-btn { width: 100%; padding: 12px; background: #18181b; color: white; border: none; border-radius: 10px; font-size: 0.9rem; font-weight: 600; font-family: 'Plus Jakarta Sans', system-ui, sans-serif; cursor: default; text-align: center; }
         .pv-buy-btn.free-btn { background: #16a34a; }
+        .pv-slug-row { display: flex; align-items: center; gap: 5px; margin-top: 10px; padding: 7px 10px; background: #f4f4f6; border-radius: 7px; }
+        .pv-slug-label { font-size: 0.7rem; color: #a1a1aa; font-family: 'Plus Jakarta Sans', system-ui, sans-serif; }
+        .pv-slug-value { font-size: 0.7rem; color: #7c3aed; font-family: 'Courier New', monospace; font-weight: 600; word-break: break-all; }
       `}</style>
 
       {/* LINK MODAL */}
@@ -328,23 +329,11 @@ export default function Upload() {
             </div>
             <div className="up-modal-field">
               <label className="up-modal-label">Enter text</label>
-              <input
-                className="up-modal-input"
-                placeholder="Enter text"
-                value={linkText}
-                onChange={(e) => setLinkText(e.target.value)}
-                autoFocus
-              />
+              <input className="up-modal-input" placeholder="Enter text" value={linkText} onChange={(e) => setLinkText(e.target.value)} autoFocus />
             </div>
             <div className="up-modal-field">
               <label className="up-modal-label">Enter URL</label>
-              <input
-                className="up-modal-input"
-                placeholder="https://..."
-                value={linkUrl}
-                onChange={(e) => setLinkUrl(e.target.value)}
-                onKeyDown={(e) => { if (e.key === "Enter") handleAddLink(); }}
-              />
+              <input className="up-modal-input" placeholder="https://..." value={linkUrl} onChange={(e) => setLinkUrl(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") handleAddLink(); }} />
             </div>
             <button className="up-modal-submit" onClick={handleAddLink}>Add link</button>
           </div>
@@ -352,8 +341,6 @@ export default function Upload() {
       )}
 
       <div className="page-layout">
-
-        {/* FORM */}
         <div className="up-wrap">
           <div className="up-inner">
 
@@ -364,43 +351,34 @@ export default function Upload() {
 
             {/* Details */}
             <div className="up-card">
-              <div className="up-card-header">
+              <div className="up-card-header" style={{ cursor: "default" }}>
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                 <h2>Details</h2>
               </div>
               <div className="up-card-body">
                 <label className="up-label">Title <span className="req">*</span></label>
-                <input className="up-input" placeholder="Enter product title" value={title} onChange={(e) => setTitle(e.target.value)} />
+                <input className="up-input" placeholder="Enter product title" value={title} onChange={handleTitleChange} />
                 <div style={{ height: 14 }} />
                 <label className="up-label">Description</label>
                 <div className="up-editor-wrap">
                   <div className="up-toolbar">
-
-                    {/* Text style dropdown */}
                     <div className="up-text-dropdown-wrap">
-                      <button
-                        className="up-text-dropdown-btn"
-                        onMouseDown={(e) => { e.preventDefault(); setShowTextDropdown(v => !v); }}
-                      >
+                      <button className="up-text-dropdown-btn" onMouseDown={(e) => { e.preventDefault(); setShowTextDropdown(v => !v); }}>
                         {getActiveTextLabel()}
                         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
                       </button>
                       {showTextDropdown && (
                         <div className="up-text-dropdown-menu">
                           {[
-                            { key: "text", label: "Text", sub: "Normal", icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="17" y1="10" x2="3" y2="10"/><line x1="21" y1="6" x2="3" y2="6"/><line x1="21" y1="14" x2="3" y2="14"/><line x1="17" y1="18" x2="3" y2="18"/></svg> },
-                            { key: "h1", label: "Header", sub: "H1", icon: <span style={{ fontSize: "0.75rem", fontWeight: 800, color: "#3f3f46" }}>H1</span> },
-                            { key: "h2", label: "Title", sub: "H2", icon: <span style={{ fontSize: "0.75rem", fontWeight: 700, color: "#3f3f46" }}>H2</span> },
-                            { key: "h3", label: "Subtitle", sub: "H3", icon: <span style={{ fontSize: "0.75rem", fontWeight: 600, color: "#3f3f46" }}>H3</span> },
-                            { key: "bullet", label: "Bulleted list", sub: "", icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="9" y1="6" x2="20" y2="6"/><line x1="9" y1="12" x2="20" y2="12"/><line x1="9" y1="18" x2="20" y2="18"/><circle cx="4" cy="6" r="1" fill="currentColor"/><circle cx="4" cy="12" r="1" fill="currentColor"/><circle cx="4" cy="18" r="1" fill="currentColor"/></svg> },
-                            { key: "ordered", label: "Numbered list", sub: "", icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="10" y1="6" x2="21" y2="6"/><line x1="10" y1="12" x2="21" y2="12"/><line x1="10" y1="18" x2="21" y2="18"/><path d="M4 6h1v4"/><path d="M4 10h2"/><path d="M6 18H4c0-1 2-2 2-3s-1-1.5-2-1"/></svg> },
-                            { key: "code", label: "Code block", sub: "", icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg> },
+                            { key: "text", label: "Text", icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="17" y1="10" x2="3" y2="10"/><line x1="21" y1="6" x2="3" y2="6"/><line x1="21" y1="14" x2="3" y2="14"/><line x1="17" y1="18" x2="3" y2="18"/></svg> },
+                            { key: "h1", label: "Header", icon: <span style={{ fontSize: "0.75rem", fontWeight: 800, color: "#3f3f46" }}>H1</span> },
+                            { key: "h2", label: "Title", icon: <span style={{ fontSize: "0.75rem", fontWeight: 700, color: "#3f3f46" }}>H2</span> },
+                            { key: "h3", label: "Subtitle", icon: <span style={{ fontSize: "0.75rem", fontWeight: 600, color: "#3f3f46" }}>H3</span> },
+                            { key: "bullet", label: "Bulleted list", icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="9" y1="6" x2="20" y2="6"/><line x1="9" y1="12" x2="20" y2="12"/><line x1="9" y1="18" x2="20" y2="18"/><circle cx="4" cy="6" r="1" fill="currentColor"/><circle cx="4" cy="12" r="1" fill="currentColor"/><circle cx="4" cy="18" r="1" fill="currentColor"/></svg> },
+                            { key: "ordered", label: "Numbered list", icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="10" y1="6" x2="21" y2="6"/><line x1="10" y1="12" x2="21" y2="12"/><line x1="10" y1="18" x2="21" y2="18"/><path d="M4 6h1v4"/><path d="M4 10h2"/><path d="M6 18H4c0-1 2-2 2-3s-1-1.5-2-1"/></svg> },
+                            { key: "code", label: "Code block", icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg> },
                           ].map(item => (
-                            <div
-                              key={item.key}
-                              className={`up-text-dropdown-item ${getActiveTextLabel() === item.label ? "active" : ""}`}
-                              onMouseDown={(e) => { e.preventDefault(); applyTextStyle(item.key); }}
-                            >
+                            <div key={item.key} className={`up-text-dropdown-item ${getActiveTextLabel() === item.label ? "active" : ""}`} onMouseDown={(e) => { e.preventDefault(); applyTextStyle(item.key); }}>
                               <div className="up-text-dropdown-item-icon">{item.icon}</div>
                               <span className="up-text-dropdown-item-label">{item.label}</span>
                             </div>
@@ -408,44 +386,28 @@ export default function Upload() {
                         </div>
                       )}
                     </div>
-
                     <div className="up-toolbar-divider" />
-
-                    <button className={`up-toolbar-btn ${editor?.isActive("bold") ? "active" : ""}`} onMouseDown={(e) => { e.preventDefault(); editor?.chain().focus().toggleBold().run(); }} title="Bold"><strong>B</strong></button>
-                    <button className={`up-toolbar-btn ${editor?.isActive("italic") ? "active" : ""}`} onMouseDown={(e) => { e.preventDefault(); editor?.chain().focus().toggleItalic().run(); }} title="Italic"><em>I</em></button>
-                    <button className={`up-toolbar-btn ${editor?.isActive("underline") ? "active" : ""}`} onMouseDown={(e) => { e.preventDefault(); editor?.chain().focus().toggleUnderline().run(); }} title="Underline" style={{ textDecoration: "underline" }}>U</button>
-                    <button className={`up-toolbar-btn ${editor?.isActive("strike") ? "active" : ""}`} onMouseDown={(e) => { e.preventDefault(); editor?.chain().focus().toggleStrike().run(); }} title="Strikethrough" style={{ textDecoration: "line-through" }}>S</button>
+                    <button className={`up-toolbar-btn ${editor?.isActive("bold") ? "active" : ""}`} onMouseDown={(e) => { e.preventDefault(); editor?.chain().focus().toggleBold().run(); }}><strong>B</strong></button>
+                    <button className={`up-toolbar-btn ${editor?.isActive("italic") ? "active" : ""}`} onMouseDown={(e) => { e.preventDefault(); editor?.chain().focus().toggleItalic().run(); }}><em>I</em></button>
+                    <button className={`up-toolbar-btn ${editor?.isActive("underline") ? "active" : ""}`} onMouseDown={(e) => { e.preventDefault(); editor?.chain().focus().toggleUnderline().run(); }} style={{ textDecoration: "underline" }}>U</button>
+                    <button className={`up-toolbar-btn ${editor?.isActive("strike") ? "active" : ""}`} onMouseDown={(e) => { e.preventDefault(); editor?.chain().focus().toggleStrike().run(); }} style={{ textDecoration: "line-through" }}>S</button>
                     <div className="up-toolbar-divider" />
-                    <button className={`up-toolbar-btn ${editor?.isActive("blockquote") ? "active" : ""}`} onMouseDown={(e) => { e.preventDefault(); editor?.chain().focus().toggleBlockquote().run(); }} title="Quote">
+                    <button className={`up-toolbar-btn ${editor?.isActive("blockquote") ? "active" : ""}`} onMouseDown={(e) => { e.preventDefault(); editor?.chain().focus().toggleBlockquote().run(); }}>
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M3 21c3 0 7-1 7-8V5c0-1.25-.756-2.017-2-2H4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2 1 0 1 0 1 1v1c0 1-1 2-2 2s-1 .008-1 1.031V20c0 1 0 1 1 1z"/><path d="M15 21c3 0 7-1 7-8V5c0-1.25-.757-2.017-2-2h-4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2h.75c0 2.25.25 4-2.75 4v3c0 1 0 1 1 1z"/></svg>
                     </button>
                     <div className="up-toolbar-divider" />
-                    <button className={`up-toolbar-btn ${editor?.isActive("link") ? "active" : ""}`} onMouseDown={(e) => { e.preventDefault(); openLinkModal(); }} title="Insert Link">
+                    <button className={`up-toolbar-btn ${editor?.isActive("link") ? "active" : ""}`} onMouseDown={(e) => { e.preventDefault(); openLinkModal(); }}>
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
                     </button>
-
-                    {/* Image from file */}
-                    <button
-                      className="up-toolbar-btn"
-                      onMouseDown={(e) => { e.preventDefault(); editorImageInputRef.current?.click(); }}
-                      title="Insert Image from file"
-                    >
+                    <button className="up-toolbar-btn" onMouseDown={(e) => { e.preventDefault(); editorImageInputRef.current?.click(); }}>
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
                     </button>
-                    {/* Hidden file input for editor images */}
-                    <input
-                      ref={editorImageInputRef}
-                      type="file"
-                      accept="image/*"
-                      style={{ display: "none" }}
-                      onChange={handleEditorImageChange}
-                    />
-
+                    <input ref={editorImageInputRef} type="file" accept="image/*" style={{ display: "none" }} onChange={handleEditorImageChange} />
                     <div className="up-toolbar-divider" />
-                    <button className="up-toolbar-btn" onMouseDown={(e) => { e.preventDefault(); editor?.chain().focus().undo().run(); }} title="Undo">
+                    <button className="up-toolbar-btn" onMouseDown={(e) => { e.preventDefault(); editor?.chain().focus().undo().run(); }}>
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/></svg>
                     </button>
-                    <button className="up-toolbar-btn" onMouseDown={(e) => { e.preventDefault(); editor?.chain().focus().redo().run(); }} title="Redo">
+                    <button className="up-toolbar-btn" onMouseDown={(e) => { e.preventDefault(); editor?.chain().focus().redo().run(); }}>
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 7v6h-6"/><path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3L21 13"/></svg>
                     </button>
                   </div>
@@ -455,9 +417,51 @@ export default function Upload() {
               </div>
             </div>
 
+            {/* ── PRODUCT SLUG ── */}
+            <div className="up-card">
+              <div className="up-card-header" style={{ cursor: "default" }}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+                <h2>Product slug</h2>
+                <div className="up-card-header-right">
+                  {!slugManuallyEdited && slug && (
+                    <span className="up-card-header-badge">Auto-generated</span>
+                  )}
+                </div>
+              </div>
+              <div className="up-card-body">
+                <p className="up-hint" style={{ marginBottom: 14 }}>
+                  A URL-friendly identifier for your product. If you leave it blank, we will use the product's ID.
+                </p>
+                <label className="up-label">Slug</label>
+                <div className="slug-input-wrap">
+                  <span className="slug-prefix">zelteb.com/</span>
+                  <input
+                    className="up-input slug-input"
+                    placeholder="Enter product slug"
+                    value={slug}
+                    onChange={handleSlugChange}
+                    spellCheck={false}
+                  />
+                </div>
+                {slug && (
+                  <div className="slug-preview">
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+                    <span>Your URL:</span>
+                    <span className="slug-preview-url">zelteb.com/watch/{slug}</span>
+                    {!slugManuallyEdited && (
+                      <span className="slug-auto-badge">
+                        <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                        Auto
+                      </span>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+
             {/* Product File */}
             <div className="up-card">
-              <div className="up-card-header">
+              <div className="up-card-header" style={{ cursor: "default" }}>
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
                 <h2>Product file <span className="required">*</span></h2>
               </div>
@@ -486,7 +490,7 @@ export default function Upload() {
                   <div className="up-file-chosen">
                     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
                     <span style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{file.name}</span>
-                    <button onClick={() => { setFile(null); if (fileInputRef.current) fileInputRef.current.value = ""; }} style={{ background: "none", border: "none", cursor: "pointer", padding: "2px", display: "flex", alignItems: "center", color: "#a1a1aa", flexShrink: 0, borderRadius: "4px" }} onMouseEnter={e => (e.currentTarget.style.color = "#ef4444")} onMouseLeave={e => (e.currentTarget.style.color = "#a1a1aa")} title="Remove file">
+                    <button onClick={() => { setFile(null); if (fileInputRef.current) fileInputRef.current.value = ""; }} style={{ background: "none", border: "none", cursor: "pointer", padding: "2px", display: "flex", alignItems: "center", color: "#a1a1aa", flexShrink: 0, borderRadius: "4px" }} onMouseEnter={e => (e.currentTarget.style.color = "#ef4444")} onMouseLeave={e => (e.currentTarget.style.color = "#a1a1aa")}>
                       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                     </button>
                   </div>
@@ -496,7 +500,7 @@ export default function Upload() {
 
             {/* Pricing */}
             <div className="up-card">
-              <div className="up-card-header">
+              <div className="up-card-header" style={{ cursor: "default" }}>
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
                 <h2>Pricing</h2>
               </div>
@@ -528,7 +532,7 @@ export default function Upload() {
 
             {/* Thumbnail */}
             <div className="up-card">
-              <div className="up-card-header">
+              <div className="up-card-header" style={{ cursor: "default" }}>
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
                 <h2>Thumbnail</h2>
               </div>
@@ -545,11 +549,7 @@ export default function Upload() {
                 {thumbPreview && (
                   <div style={{ position: "relative", marginTop: 12 }}>
                     <img src={thumbPreview} alt="Thumbnail preview" className="up-thumb-preview" style={{ marginTop: 0 }} />
-                    <button
-                      onClick={() => { setThumb(null); setThumbPreview(null); if (thumbInputRef.current) thumbInputRef.current.value = ""; }}
-                      style={{ position: "absolute", top: 8, right: 8, background: "rgba(0,0,0,0.6)", border: "none", borderRadius: "50%", width: 28, height: 28, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: "white", backdropFilter: "blur(4px)" }}
-                      title="Remove thumbnail"
-                    >
+                    <button onClick={() => { setThumb(null); setThumbPreview(null); if (thumbInputRef.current) thumbInputRef.current.value = ""; }} style={{ position: "absolute", top: 8, right: 8, background: "rgba(0,0,0,0.6)", border: "none", borderRadius: "50%", width: 28, height: 28, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: "white", backdropFilter: "blur(4px)" }}>
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                     </button>
                   </div>
@@ -577,9 +577,7 @@ export default function Upload() {
           <div className="preview-body">
             <div className="pv-card">
               <div className="pv-thumb">
-                {thumbPreview ? (
-                  <img src={thumbPreview} alt="thumbnail" />
-                ) : (
+                {thumbPreview ? <img src={thumbPreview} alt="thumbnail" /> : (
                   <div className="pv-thumb-placeholder">
                     <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#d4d4d8" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
                     <span>No thumbnail yet</span>
@@ -606,22 +604,22 @@ export default function Upload() {
                   </div>
                 )}
                 <div className="pv-price-row">
-                  {isFree ? (
-                    <span className="pv-price free">Free</span>
-                  ) : price ? (
-                    <span className="pv-price">₹{price}</span>
-                  ) : (
-                    <span className="pv-price-placeholder">Set a price...</span>
-                  )}
+                  {isFree ? <span className="pv-price free">Free</span> : price ? <span className="pv-price">₹{price}</span> : <span className="pv-price-placeholder">Set a price...</span>}
                 </div>
                 <div className={`pv-buy-btn ${isFree ? "free-btn" : ""}`}>
                   {isFree ? "Get for Free" : price ? `Buy for ₹${price}` : "Buy Now"}
                 </div>
+                {slug && (
+                  <div className="pv-slug-row">
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#a1a1aa" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+                    <span className="pv-slug-label">URL:</span>
+                    <span className="pv-slug-value">zelteb.com/watch/{slug}</span>
+                  </div>
+                )}
               </div>
             </div>
           </div>
         </div>
-
       </div>
     </>
   );
