@@ -15,7 +15,7 @@ interface Purchase {
   buyer_avatar: string | null;
 }
 
-const MINIMUM_WITHDRAWAL = 149;
+const MINIMUM_WITHDRAWAL = 1;
 
 export default function Dashboard() {
   const router = useRouter();
