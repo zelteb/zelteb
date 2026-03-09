@@ -198,13 +198,13 @@ export default function EditProduct() {
   return (
     <>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,300&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,300&display=swap');
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
         .page-layout { display: flex; min-height: 100vh; background: #f4f4f6; font-family: 'DM Sans', sans-serif; color: #18181b; }
         .up-wrap { flex: 1; padding: 48px 32px 48px 48px; overflow-y: auto; max-width: 700px; }
         .up-inner { display: flex; flex-direction: column; gap: 12px; }
         .up-header { margin-bottom: 8px; }
-        .up-header h1 { font-family: 'Instrument Serif', serif; font-size: 2rem; font-weight: 400; color: #18181b; letter-spacing: -0.02em; line-height: 1.2; }
+        .up-header h1 { font-family: 'DM Sans', sans-serif; font-size: 2rem; font-weight: 700; color: #18181b; letter-spacing: -0.02em; line-height: 1.2; }
         .up-header p { font-size: 0.875rem; color: #71717a; margin-top: 4px; font-weight: 300; }
         .up-card { background: #fff; border: 1px solid #e4e4e7; border-radius: 14px; overflow: hidden; }
         .up-card-header { display: flex; align-items: center; gap: 10px; padding: 18px 24px; border-bottom: 1px solid #f0f0f2; user-select: none; }
@@ -259,9 +259,9 @@ export default function EditProduct() {
         .tiptap-editor em { font-style: italic; }
         .tiptap-editor u { text-decoration: underline; }
         .tiptap-editor s { text-decoration: line-through; }
-        .tiptap-editor h1 { font-size: 1.5rem; font-weight: 800; color: #18181b; margin-bottom: 8px; letter-spacing: -0.02em; }
-        .tiptap-editor h2 { font-size: 1.2rem; font-weight: 700; color: #18181b; margin-bottom: 6px; }
-        .tiptap-editor h3 { font-size: 1rem; font-weight: 600; color: #18181b; margin-bottom: 5px; }
+        .tiptap-editor h1 { font-size: 1.5rem; font-weight: 800; color: #18181b; margin-bottom: 8px; letter-spacing: -0.02em; font-family: 'DM Sans', sans-serif; }
+        .tiptap-editor h2 { font-size: 1.2rem; font-weight: 700; color: #18181b; margin-bottom: 6px; font-family: 'DM Sans', sans-serif; }
+        .tiptap-editor h3 { font-size: 1rem; font-weight: 600; color: #18181b; margin-bottom: 5px; font-family: 'DM Sans', sans-serif; }
         .tiptap-editor blockquote { border-left: 3px solid #7c3aed; padding-left: 12px; color: #71717a; margin: 8px 0; font-style: italic; }
         .tiptap-editor a { color: #7c3aed; text-decoration: underline; }
         .tiptap-editor img { max-width: 100%; border-radius: 6px; margin: 6px 0; }
@@ -314,8 +314,8 @@ export default function EditProduct() {
         .pv-thumb-placeholder span { font-size: 0.75rem; }
         .pv-type-badge { position: absolute; top: 10px; left: 10px; background: rgba(0,0,0,0.6); color: white; font-size: 0.7rem; font-weight: 600; padding: 3px 8px; border-radius: 20px; text-transform: uppercase; letter-spacing: 0.05em; backdrop-filter: blur(4px); }
         .pv-content { padding: 18px; }
-        .pv-title { font-family: 'Instrument Serif', serif; font-size: 1.25rem; font-weight: 400; color: #18181b; line-height: 1.3; margin-bottom: 8px; min-height: 1.5em; }
-        .pv-title-placeholder { color: #d4d4d8; font-style: italic; }
+        .pv-title { font-family: 'DM Sans', sans-serif; font-size: 1.25rem; font-weight: 700; color: #18181b; line-height: 1.3; margin-bottom: 8px; min-height: 1.5em; }
+        .pv-title-placeholder { color: #d4d4d8; font-style: italic; font-weight: 400; }
         .pv-description { font-size: 0.82rem; color: #71717a; line-height: 1.6; margin-bottom: 16px; font-weight: 300; }
         .pv-description p { margin-bottom: 4px; }
         .pv-description strong { font-weight: 600; color: #3f3f46; }
