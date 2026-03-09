@@ -394,11 +394,7 @@ export default function Discover() {
                     key={v.id}
                     className="card"
                    onClick={() => {
-  if (isOwner || alreadyPurchased || isFree) {
-    window.location.href = `/watch/${v.slug}`;
-    return;
-  }
-  handleBuy({ preventDefault: () => {} } as any, v);
+  window.location.href = `/product/${v.slug}`;
 }}
                   >
                     <div style={{ position: "relative", width: "100%", aspectRatio: "16/9", overflow: "hidden", background: "#1a1a1a" }}>
