@@ -148,7 +148,23 @@ export default function Watch({ params }: { params: Promise<{ id: string }> }) {
         return;
       }
 
-      const { order } = await res.json();
+      const data = await res.json();
+
+// 🟢 FREE PRODUCT — skip Razorpay
+if (data.free) {
+  setOwned(true);
+
+  const { data: signed } = await supabase.storage
+    .from("videos")
+    .createSignedUrl(video.video_path, 60 * 60);
+
+  setDownloadUrl(signed?.signedUrl || null);
+  setLoading(false);
+  return;
+}
+
+// 🟢 PAID PRODUCT
+const order = data.order;
 
       // 2️⃣ Open Razorpay checkout (reuse script if already loaded)
       const openCheckout = () => {
