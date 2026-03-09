@@ -65,7 +65,13 @@ export default function Watch({ params }: { params: Promise<{ id: string }> }) {
       if (!v) return;
 
       setVideo(v);
-      if (v.thumbnail_url) setThumbnailUrl(v.thumbnail_url);
+if (v.thumbnail_url) setThumbnailUrl(v.thumbnail_url);
+
+// Track view
+await supabase.from("video_views").insert({
+  video_id: videoId,
+  viewer_id: user?.id ?? null,
+});
 
       const isFree = v.is_free || Number(v.price) === 0;
 
