@@ -55,7 +55,9 @@ export default function Pricing() {
 
           <div className="mt-16 text-center space-y-4">
             <p className="text-2xl font-bold tracking-tight">
-              No monthly fees. Pay only when you earn.
+              No monthly fees. Pay only when you earn
+                        18% GST applicable.
+
             </p>
           </div>
         </div>
