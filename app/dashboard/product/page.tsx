@@ -7,6 +7,7 @@ import { supabase } from "@/lib/supabase";
 interface Video {
   id: string;
   title: string;
+  slug: string | null;
   price: number;
   is_free: boolean;
   thumbnail_url?: string | null;
@@ -28,7 +29,7 @@ export default function Products() {
 
       const { data: vids, error } = await supabase
         .from("videos")
-        .select("id, title, price, is_free, thumbnail_url, product_type, created_at")
+        .select("id, title, slug, price, is_free, thumbnail_url, product_type, created_at")
         .eq("creator_id", user.id)
         .order("created_at", { ascending: false });
 
@@ -65,10 +66,10 @@ export default function Products() {
     setVideos((prev) => prev.filter((v) => v.id !== id));
   };
 
-  const copyLink = (id: string) => {
-    const url = `${window.location.origin}/watch/${id}`;
+  const copyLink = (v: Video) => {
+    const url = `${window.location.origin}/watch/${v.slug ?? v.id}`;
     navigator.clipboard.writeText(url).then(() => {
-      setCopiedId(id);
+      setCopiedId(v.id);
       setTimeout(() => setCopiedId(null), 2000);
     });
   };
@@ -162,13 +163,13 @@ export default function Products() {
                         <div>
                           <p className="product-name">{v.title}</p>
                           <div className="product-meta">
-                            <Link href={`/watch/${v.id}`} className="product-link">
+                            <Link href={`/watch/${v.slug ?? v.id}`} className="product-link">
                               View product →
                             </Link>
                             <span style={{ color: "#ddd", fontSize: 12 }}>|</span>
                             <button
                               className={`copy-btn${copiedId === v.id ? " copied" : ""}`}
-                              onClick={() => copyLink(v.id)}
+                              onClick={() => copyLink(v)}
                             >
                               {copiedId === v.id ? (
                                 <>

@@ -357,7 +357,7 @@ export default function Purchased() {
                       <button
                         className="action-btn watch-btn"
                         onClick={() =>
-                          (window.location.href = `/watch/${v.id}`)
+                          (window.location.href = `/watch/${v.slug}`)
                         }
                       >
                         <svg width="13" height="13" viewBox="0 0 24 24" fill="white" stroke="white" strokeWidth="2">

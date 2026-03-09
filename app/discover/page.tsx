@@ -395,7 +395,7 @@ export default function Discover() {
                     className="card"
                     onClick={() => {
                       if (isOwner || alreadyPurchased || isFree) {
-                        window.location.href = `/watch/${v.id}`;
+                        window.location.href = `/watch/${v.slug}`;
                         return;
                       }
                       handleBuy({ preventDefault: () => {} } as any, v);

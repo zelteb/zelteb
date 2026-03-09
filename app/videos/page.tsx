@@ -18,7 +18,7 @@ export default function Videos() {
       <h1>Videos</h1>
 
       {videos.map((v) => (
-        <Link key={v.id} href={`/watch/${v.id}`}>
+        <Link key={v.id} href={`/watch/${v.slug}`}>
           <div>
             <p>{v.title}</p>
             <p>₹{v.price}</p>
