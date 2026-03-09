@@ -21,8 +21,8 @@ export default function Discover() {
   const [buyingId, setBuyingId] = useState<string | null>(null);
   const [purchasedIds, setPurchasedIds] = useState<Set<string>>(new Set());
   const [currentUser, setCurrentUser] = useState<any>(null);
+  const [filterDrawerOpen, setFilterDrawerOpen] = useState(false);
 
-  // Load Razorpay script
   useEffect(() => {
     const script = document.createElement("script");
     script.src = "https://checkout.razorpay.com/v1/checkout.js";
@@ -31,14 +31,12 @@ export default function Discover() {
     return () => { document.body.removeChild(script); };
   }, []);
 
-  // Get current logged-in user
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
       setCurrentUser(data?.user ?? null);
     });
   }, []);
 
-  // Load already-purchased video IDs for current user
   useEffect(() => {
     if (!currentUser) return;
     supabase
@@ -96,9 +94,6 @@ export default function Discover() {
     load();
   }, [search, minPrice, maxPrice, minRating]);
 
-  // ============================
-  // 🛒 BUY HANDLER (FIXED)
-  // ============================
   const handleBuy = async (e: React.MouseEvent, video: any) => {
     e.preventDefault();
 
@@ -133,7 +128,6 @@ export default function Discover() {
 
       const data = await res.json();
 
-      // ✅ FIX: FREE VIDEO — skip Razorpay, go straight to watch page
       if (data.free) {
         setPurchasedIds((prev) => new Set([...prev, video.id]));
         window.location.href = `/watch/${video.id}`;
@@ -172,13 +166,9 @@ export default function Discover() {
             alert("Payment verification failed: " + msg);
           }
         },
-        prefill: {
-          email: currentUser.email ?? "",
-        },
+        prefill: { email: currentUser.email ?? "" },
         theme: { color: "#e91e8c" },
-        modal: {
-          ondismiss: () => setBuyingId(null),
-        },
+        modal: { ondismiss: () => setBuyingId(null) },
       };
 
       const rzp = new window.Razorpay(options);
@@ -201,6 +191,49 @@ export default function Discover() {
 
   const ratingOptions = [4, 3, 2, 1];
 
+  const FilterPanel = () => (
+    <div style={{ background: "white", borderRadius: 12, padding: "8px 16px" }}>
+      <p style={{ fontWeight: 600, fontSize: 15, margin: "10px 4px 6px" }}>Filters</p>
+      <div className="filter-section">
+        <div className="filter-header" onClick={() => setPriceOpen(!priceOpen)}>
+          <span>Price</span>
+          <span style={{ fontSize: 12, color: "#999" }}>{priceOpen ? "▲" : "▼"}</span>
+        </div>
+        {priceOpen && (
+          <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 10 }}>
+            <div className="price-input">
+              <div className="price-circle">₹</div>
+              <input type="number" placeholder="Min" value={minPrice} onChange={(e) => setMinPrice(e.target.value === "" ? "" : Number(e.target.value))} />
+            </div>
+            <div className="price-input">
+              <div className="price-circle">₹</div>
+              <input type="number" placeholder="Max" value={maxPrice} onChange={(e) => setMaxPrice(e.target.value === "" ? "" : Number(e.target.value))} />
+            </div>
+          </div>
+        )}
+      </div>
+      <div className="filter-section">
+        <div className="filter-header" onClick={() => setRatingOpen(!ratingOpen)}>
+          <span>Rating</span>
+          <span style={{ fontSize: 12, color: "#999" }}>{ratingOpen ? "▲" : "▼"}</span>
+        </div>
+        {ratingOpen && (
+          <div style={{ marginTop: 10 }}>
+            {ratingOptions.map((r) => (
+              <div key={r} className="rating-row" onClick={() => setMinRating(minRating === r ? null : r)}>
+                <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                  {renderStars(r, 14)}
+                  <span style={{ fontSize: 12, color: "#555", marginLeft: 4 }}>and up</span>
+                </div>
+                <div className={`radio-circle ${minRating === r ? "selected" : ""}`} />
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+
   return (
     <div style={{ fontFamily: "system-ui, -apple-system, BlinkMacSystemFont, sans-serif", background: "#f4f3f0", minHeight: "100vh" }}>
       <style>{`
@@ -216,80 +249,129 @@ export default function Discover() {
         .radio-circle { width: 20px; height: 20px; border-radius: 50%; border: 1.5px solid #ccc; transition: all 0.15s; flex-shrink: 0; }
         .radio-circle.selected { border-color: #1a1a1a; background: #1a1a1a; box-shadow: inset 0 0 0 3px white; }
         .price-tag { display: inline-flex; align-items: center; background: #e91e8c; color: white; font-weight: 600; font-size: 13px; padding: 5px 14px 5px 10px; clip-path: polygon(0 0, 90% 0, 100% 50%, 90% 100%, 0 100%); }
-        .creator-pill { display: inline-flex; align-items: center; gap: 6px; text-decoration: none; color: #333; font-size: 12px; font-weight: 500; transition: color 0.15s; }
-        .creator-pill:hover { color: #000; text-decoration: underline; }
         .creator-avatar { width: 20px; height: 20px; border-radius: 50%; background: linear-gradient(135deg, #7c3aed, #e879f9); display: flex; align-items: center; justify-content: center; font-size: 9px; color: white; font-weight: 700; flex-shrink: 0; overflow: hidden; }
         .creator-avatar img { width: 100%; height: 100%; object-fit: cover; }
+
+        /* Desktop sidebar */
+        .desktop-filters { display: block; width: 240px; flex-shrink: 0; }
+        /* Mobile filter button */
+        .mobile-filter-btn { display: none; }
+        /* Mobile filter drawer overlay */
+        .filter-overlay { display: none; }
+
+        @media (max-width: 768px) {
+          .discover-navbar-inner { padding: 14px 16px !important; }
+          .discover-nav-links { display: none !important; }
+          .discover-logo { font-size: 22px !important; }
+          .discover-dashboard-btn { padding: 8px 16px !important; font-size: 13px !important; }
+          .discover-content { padding: 16px 16px 0 !important; }
+          .discover-layout { flex-direction: column !important; gap: 12px !important; }
+          .desktop-filters { display: none !important; }
+          .mobile-filter-btn {
+            display: flex !important;
+            align-items: center;
+            gap: 6px;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 8px 14px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            margin-bottom: 12px;
+          }
+          .filter-overlay {
+            display: flex !important;
+            position: fixed;
+            inset: 0;
+            z-index: 100;
+            background: rgba(0,0,0,0.4);
+            align-items: flex-end;
+          }
+          .filter-drawer {
+            background: white;
+            width: 100%;
+            border-radius: 20px 20px 0 0;
+            padding: 20px 16px 32px;
+            max-height: 80vh;
+            overflow-y: auto;
+          }
+          .filter-drawer-handle {
+            width: 40px; height: 4px; background: #ddd; border-radius: 99px;
+            margin: 0 auto 16px;
+          }
+          .cards-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 12px !important; }
+        }
+
+        @media (max-width: 380px) {
+          .cards-grid { grid-template-columns: 1fr !important; }
+        }
       `}</style>
 
       {/* NAVBAR */}
       <header style={{ background: "white", borderBottom: "1px solid #f0f0f0" }}>
-        <div style={{ maxWidth: 1200, margin: "0 auto", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "20px 32px" }}>
-          <Link href="/" style={{ fontSize: 28, fontWeight: 900, letterSpacing: "-0.04em", color: "#000", textDecoration: "none" }}>
+        <div className="discover-navbar-inner" style={{ maxWidth: 1200, margin: "0 auto", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "20px 32px" }}>
+          <Link href="/" className="discover-logo" style={{ fontSize: 28, fontWeight: 900, letterSpacing: "-0.04em", color: "#000", textDecoration: "none" }}>
             Zelteb
           </Link>
-          <nav style={{ display: "flex", gap: 40, fontSize: 15, fontWeight: 500 }}>
+          <nav className="discover-nav-links" style={{ display: "flex", gap: 40, fontSize: 15, fontWeight: 500 }}>
             <Link href="/" style={{ color: "#666", textDecoration: "none" }}>Home</Link>
             <Link href="/discover" style={{ color: "#000", textDecoration: "none" }}>Discover</Link>
             <Link href="/purchased" style={{ color: "#000", textDecoration: "none" }}>Purchased</Link>
           </nav>
-          <Link href="/dashboard" style={{ padding: "10px 24px", borderRadius: 999, background: "#000", color: "white", fontSize: 14, fontWeight: 700, textDecoration: "none" }}>
+          <Link href="/dashboard" className="discover-dashboard-btn" style={{ padding: "10px 24px", borderRadius: 999, background: "#000", color: "white", fontSize: 14, fontWeight: 700, textDecoration: "none" }}>
             Dashboard
           </Link>
         </div>
       </header>
 
-      <div style={{ maxWidth: 1200, margin: "0 auto", padding: "32px 24px 0" }}>
+      <div className="discover-content" style={{ maxWidth: 1200, margin: "0 auto", padding: "32px 24px 0" }}>
 
         {/* Search */}
         <input
           placeholder="Search marketplace..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          style={{ width: "100%", padding: "10px 16px", borderRadius: 8, border: "1px solid #ddd", fontSize: 14, marginBottom: 28, background: "white", outline: "none" }}
+          style={{ width: "100%", padding: "10px 16px", borderRadius: 8, border: "1px solid #ddd", fontSize: 14, marginBottom: 16, background: "white", outline: "none" }}
         />
 
-        <div style={{ display: "flex", gap: 28, alignItems: "flex-start" }}>
-          {/* Filters */}
-          <div style={{ width: 240, flexShrink: 0, background: "white", borderRadius: 12, padding: "8px 16px" }}>
-            <p style={{ fontWeight: 600, fontSize: 15, margin: "10px 4px 6px" }}>Filters</p>
+        {/* Mobile filter button */}
+        <button className="mobile-filter-btn" onClick={() => setFilterDrawerOpen(true)}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <line x1="4" y1="6" x2="20" y2="6"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="11" y1="18" x2="13" y2="18"/>
+          </svg>
+          Filters
+          {(minPrice !== "" || maxPrice !== "" || minRating !== null) && (
+            <span style={{ background: "#e91e8c", color: "white", borderRadius: "99px", fontSize: 11, fontWeight: 700, padding: "1px 7px" }}>
+              {[minPrice !== "", maxPrice !== "", minRating !== null].filter(Boolean).length}
+            </span>
+          )}
+        </button>
 
-            <div className="filter-section">
-              <div className="filter-header" onClick={() => setPriceOpen(!priceOpen)}>
-                <span>Price</span>
+        {/* Mobile filter drawer */}
+        {filterDrawerOpen && (
+          <div className="filter-overlay" onClick={() => setFilterDrawerOpen(false)}>
+            <div className="filter-drawer" onClick={(e) => e.stopPropagation()}>
+              <div className="filter-drawer-handle" />
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+                <span style={{ fontWeight: 700, fontSize: 16 }}>Filters</span>
+                <button onClick={() => setFilterDrawerOpen(false)} style={{ background: "none", border: "none", fontSize: 20, cursor: "pointer", color: "#888" }}>✕</button>
               </div>
-              {priceOpen && (
-                <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 10 }}>
-                  <div className="price-input">
-                    <div className="price-circle">₹</div>
-                    <input type="number" placeholder="Min" value={minPrice} onChange={(e) => setMinPrice(e.target.value === "" ? "" : Number(e.target.value))} />
-                  </div>
-                  <div className="price-input">
-                    <div className="price-circle">₹</div>
-                    <input type="number" placeholder="Max" value={maxPrice} onChange={(e) => setMaxPrice(e.target.value === "" ? "" : Number(e.target.value))} />
-                  </div>
-                </div>
-              )}
+              <FilterPanel />
+              <button
+                onClick={() => setFilterDrawerOpen(false)}
+                style={{ width: "100%", marginTop: 16, padding: "12px", background: "#000", color: "white", border: "none", borderRadius: 10, fontWeight: 700, fontSize: 15, cursor: "pointer" }}
+              >
+                Show results
+              </button>
             </div>
+          </div>
+        )}
 
-            <div className="filter-section">
-              <div className="filter-header" onClick={() => setRatingOpen(!ratingOpen)}>
-                <span>Rating</span>
-              </div>
-              {ratingOpen && (
-                <div style={{ marginTop: 10 }}>
-                  {ratingOptions.map((r) => (
-                    <div key={r} className="rating-row" onClick={() => setMinRating(minRating === r ? null : r)}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-                        {renderStars(r, 14)}
-                        <span style={{ fontSize: 12, color: "#555", marginLeft: 4 }}>and up</span>
-                      </div>
-                      <div className={`radio-circle ${minRating === r ? "selected" : ""}`} />
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
+        <div className="discover-layout" style={{ display: "flex", gap: 28, alignItems: "flex-start" }}>
+          {/* Desktop Filters */}
+          <div className="desktop-filters">
+            <FilterPanel />
           </div>
 
           {/* Grid */}
@@ -300,7 +382,7 @@ export default function Discover() {
               </div>
             )}
 
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: 20 }}>
+            <div className="cards-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: 20 }}>
               {videos.map((v) => {
                 const alreadyPurchased = purchasedIds.has(v.id);
                 const isLoading = buyingId === v.id;
@@ -312,7 +394,6 @@ export default function Discover() {
                     key={v.id}
                     className="card"
                     onClick={() => {
-                      // ✅ FIX: consolidate all "go straight to watch" cases
                       if (isOwner || alreadyPurchased || isFree) {
                         window.location.href = `/watch/${v.id}`;
                         return;
@@ -320,7 +401,6 @@ export default function Discover() {
                       handleBuy({ preventDefault: () => {} } as any, v);
                     }}
                   >
-                    {/* Thumbnail */}
                     <div style={{ position: "relative", width: "100%", aspectRatio: "16/9", overflow: "hidden", background: "#1a1a1a" }}>
                       {v.thumbnail_url
                         ? <img src={v.thumbnail_url} alt={v.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
@@ -331,13 +411,10 @@ export default function Discover() {
                     </div>
 
                     <div style={{ padding: "12px 14px 14px", display: "flex", flexDirection: "column", gap: 0 }}>
-
-                      {/* 1. Title */}
                       <p style={{ fontWeight: 600, fontSize: 14, margin: "0 0 8px", lineHeight: 1.4 }}>
                         {v.title}
                       </p>
 
-                      {/* 2. Creator */}
                       <div style={{ marginBottom: 8, minHeight: 24, display: "flex", alignItems: "center" }}>
                         {v.creator && (
                           <div
@@ -357,7 +434,6 @@ export default function Discover() {
                         )}
                       </div>
 
-                      {/* 3. Rating */}
                       <div style={{ display: "flex", alignItems: "center", gap: 5, marginBottom: 10, minHeight: 20 }}>
                         {v.avgRating ? (
                           <>
@@ -372,13 +448,11 @@ export default function Discover() {
                         )}
                       </div>
 
-                      {/* 4. Price tag */}
                       <div>
                         <span className="price-tag">
                           {isFree ? "Free" : `₹${v.price || 0}`}
                         </span>
                       </div>
-
                     </div>
                   </div>
                 );

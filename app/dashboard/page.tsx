@@ -57,7 +57,6 @@ export default function Dashboard() {
         setAvatarUrl(profile.avatar_url || null);
       }
 
-      // Check for any pending withdrawal request
       const { data: pendingRequests } = await supabase
         .from("withdrawal_requests")
         .select("id, amount, status")
@@ -68,7 +67,6 @@ export default function Dashboard() {
         setHasPendingRequest(true);
       }
 
-      // Sum up all approved/paid withdrawals
       const { data: paidRequests } = await supabase
         .from("withdrawal_requests")
         .select("amount")
@@ -142,7 +140,6 @@ export default function Dashboard() {
     loadData();
   }, [router]);
 
-  // Realtime profile update
   useEffect(() => {
     if (!userId) return;
     const channel = supabase
@@ -158,7 +155,6 @@ export default function Dashboard() {
     return () => { supabase.removeChannel(channel); };
   }, [userId]);
 
-  // Filter purchases by period
   const filteredPurchases = purchases.filter((p) => {
     if (period === "All time") return true;
     const days = period === "Last 7 days" ? 7 : period === "Last 30 days" ? 30 : 90;
@@ -184,7 +180,6 @@ export default function Dashboard() {
       return;
     }
 
-    // Double-check for pending request on server before submitting
     const { data: existing } = await supabase
       .from("withdrawal_requests")
       .select("id")
@@ -211,7 +206,7 @@ export default function Dashboard() {
       if (res.ok) {
         setWithdrawSuccess(true);
         setWithdrawModalOpen(false);
-        setHasPendingRequest(true); // Lock the button immediately
+        setHasPendingRequest(true);
       } else {
         const body = await res.json().catch(() => ({}));
         setWithdrawError(body?.error ?? "Something went wrong. Please try again.");
@@ -228,199 +223,220 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto py-10 px-6">
-      {/* Header */}
-      <div className="flex items-center gap-4 mb-10">
-        <div className="w-16 h-16 rounded-full bg-gray-200 overflow-hidden flex items-center justify-center">
-          {avatarUrl ? (
-            <img src={avatarUrl} alt="avatar" className="w-full h-full object-cover" />
-          ) : (
-            <span className="text-gray-600 text-xl font-bold">
-              {username?.[0]?.toUpperCase() || "?"}
-            </span>
-          )}
-        </div>
-        <div>
-          <h1 className="text-2xl font-bold">Hi, {username || "there"}</h1>
-          <p className="text-gray-400 text-sm">zelteb.com/{username || "username"}</p>
-        </div>
-      </div>
+    <>
+      <style>{`
+        @media (max-width: 640px) {
+          .dash-wrap { padding: 24px 16px !important; }
+          .dash-header { gap: 12px !important; margin-bottom: 24px !important; }
+          .dash-avatar { width: 48px !important; height: 48px !important; flex-shrink: 0; }
+          .dash-name { font-size: 20px !important; }
+          .dash-earnings-card { padding: 16px !important; }
+          .dash-earnings-row { flex-direction: column !important; align-items: flex-start !important; gap: 10px !important; }
+          .dash-amount { font-size: 36px !important; }
+          .dash-table-row { flex-wrap: wrap !important; gap: 8px !important; padding: 12px 16px !important; }
+          .dash-table-row .buyer-info { flex: 1 1 calc(100% - 50px) !important; }
+          .dash-table-row .earn-info { width: 100% !important; display: flex !important; justify-content: space-between !important; align-items: center !important; padding-left: 46px !important; }
+          .dash-table-header { padding: 12px 16px !important; }
+          .period-btn { font-size: 12px !important; padding: 6px 12px !important; }
+          .withdraw-btn { font-size: 13px !important; padding: 8px 16px !important; }
+        }
+      `}</style>
 
-      {/* Earnings */}
-      <div className="bg-white rounded-2xl p-6 mb-6 border border-gray-100 shadow-sm">
-        <div className="flex items-center justify-between mb-5">
-          <h2 className="text-xl font-bold">Earnings</h2>
-          <div className="relative">
-            <button
-              onClick={() => setOpen(!open)}
-              className="border rounded-full px-4 py-1.5 text-sm font-medium text-gray-700"
-            >
-              {period}
-            </button>
-            {open && (
-              <div className="absolute right-0 mt-2 w-44 bg-white border rounded-xl shadow-lg z-10">
-                {options.map((o) => (
-                  <button key={o} onClick={() => { setPeriod(o); setOpen(false); }}
-                    className="block w-full text-left px-4 py-2 text-sm hover:bg-gray-50">
-                    {o}
-                  </button>
-                ))}
-              </div>
+      <div className="dash-wrap max-w-4xl mx-auto py-10 px-6">
+
+        {/* Header */}
+        <div className="dash-header flex items-center gap-4 mb-10">
+          <div className="dash-avatar w-16 h-16 rounded-full bg-gray-200 overflow-hidden flex items-center justify-center flex-shrink-0">
+            {avatarUrl ? (
+              <img src={avatarUrl} alt="avatar" className="w-full h-full object-cover" />
+            ) : (
+              <span className="text-gray-600 text-xl font-bold">
+                {username?.[0]?.toUpperCase() || "?"}
+              </span>
             )}
+          </div>
+          <div>
+            <h1 className="dash-name text-2xl font-bold">Hi, {username || "there"}</h1>
+            <p className="text-gray-400 text-sm" style={{ wordBreak: "break-all" }}>zelteb.com/{username || "username"}</p>
           </div>
         </div>
 
-        <p className="text-5xl font-black mb-1">₹{filteredEarnings.toFixed(2)}</p>
-        <p className="text-sm text-gray-400 mb-6">
-          Available to withdraw: <span className="font-semibold text-gray-700">₹{availableBalance.toFixed(2)}</span>
-        </p>
+        {/* Earnings */}
+        <div className="dash-earnings-card bg-white rounded-2xl p-6 mb-6 border border-gray-100 shadow-sm">
+          <div className="dash-earnings-row flex items-center justify-between mb-5">
+            <h2 className="text-xl font-bold">Earnings</h2>
+            <div className="relative">
+              <button
+                onClick={() => setOpen(!open)}
+                className="period-btn border rounded-full px-4 py-1.5 text-sm font-medium text-gray-700"
+              >
+                {period}
+              </button>
+              {open && (
+                <div className="absolute right-0 mt-2 w-44 bg-white border rounded-xl shadow-lg z-10">
+                  {options.map((o) => (
+                    <button key={o} onClick={() => { setPeriod(o); setOpen(false); }}
+                      className="block w-full text-left px-4 py-2 text-sm hover:bg-gray-50">
+                      {o}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
 
-        {/* Withdraw button */}
-        <div className="flex items-center gap-3">
-          <div className="relative group">
-            <button
-              onClick={() => canWithdraw && setWithdrawModalOpen(true)}
-              disabled={!canWithdraw}
-              className={`px-5 py-2 rounded-full text-sm font-semibold transition-all
-                ${canWithdraw
-                  ? "bg-black text-white hover:bg-gray-800 cursor-pointer"
-                  : "bg-gray-100 text-gray-400 cursor-not-allowed"
-                }`}
-            >
-              Withdraw
-            </button>
+          <p className="dash-amount text-5xl font-black mb-1">₹{filteredEarnings.toFixed(2)}</p>
+          <p className="text-sm text-gray-400 mb-6">
+            Available to withdraw:{" "}
+            <span className="font-semibold text-gray-700">₹{availableBalance.toFixed(2)}</span>
+          </p>
+
+          <div className="flex items-center gap-3 flex-wrap">
+            <div className="relative group">
+              <button
+                onClick={() => canWithdraw && setWithdrawModalOpen(true)}
+                disabled={!canWithdraw}
+                className={`withdraw-btn px-5 py-2 rounded-full text-sm font-semibold transition-all
+                  ${canWithdraw
+                    ? "bg-black text-white hover:bg-gray-800 cursor-pointer"
+                    : "bg-gray-100 text-gray-400 cursor-not-allowed"
+                  }`}
+              >
+                Withdraw
+              </button>
+              {!canWithdraw && (
+                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-1.5 bg-gray-800 text-white text-xs rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
+                  {hasPendingRequest
+                    ? "You have a pending withdrawal request"
+                    : `Minimum withdrawal is ₹${MINIMUM_WITHDRAWAL}`}
+                  <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-800" />
+                </div>
+              )}
+            </div>
             {!canWithdraw && (
-              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-1.5 bg-gray-800 text-white text-xs rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
+              <p className="text-xs text-gray-400">
                 {hasPendingRequest
-                  ? "You have a pending withdrawal request"
-                  : `Minimum withdrawal is ₹${MINIMUM_WITHDRAWAL}`}
-                <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-800" />
-              </div>
+                  ? "Pending request under review"
+                  : `Minimum ₹${MINIMUM_WITHDRAWAL} required`}
+              </p>
             )}
           </div>
-          {!canWithdraw && (
-            <p className="text-xs text-gray-400">
-              {hasPendingRequest
-                ? "Pending request under review"
-                : `Minimum ₹${MINIMUM_WITHDRAWAL} required`}
-            </p>
-          )}
-        </div>
-      </div>
-
-      {/* Withdraw Modal */}
-      {withdrawModalOpen && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 px-4">
-          <div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-xl">
-            <h3 className="text-lg font-bold mb-2">Withdraw Earnings</h3>
-            <p className="text-sm text-gray-500 mb-4">
-              You're about to request a withdrawal of{" "}
-              <span className="font-semibold text-gray-800">₹{availableBalance.toFixed(2)}</span>.
-            </p>
-            <p className="text-xs text-gray-400 mb-4">
-              Withdrawals are processed within 3–5 business days to your registered bank account.
-            </p>
-            {withdrawError && (
-              <p className="text-xs text-red-500 mb-4 bg-red-50 px-3 py-2 rounded-lg">{withdrawError}</p>
-            )}
-            <div className="flex gap-3">
-              <button
-                onClick={() => { setWithdrawModalOpen(false); setWithdrawError(null); }}
-                disabled={withdrawing}
-                className="flex-1 border rounded-full py-2 text-sm font-medium text-gray-600 hover:bg-gray-50 transition disabled:opacity-50"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={withdraw}
-                disabled={withdrawing}
-                className="flex-1 bg-black text-white rounded-full py-2 text-sm font-semibold hover:bg-gray-800 transition disabled:opacity-60 flex items-center justify-center gap-2"
-              >
-                {withdrawing ? (
-                  <>
-                    <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
-                    </svg>
-                    Processing...
-                  </>
-                ) : "Confirm"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Success toast */}
-      {withdrawSuccess && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-gray-900 text-white text-sm px-5 py-3 rounded-full shadow-lg z-50 flex items-center gap-2">
-          <svg className="w-4 h-4 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-          </svg>
-          Withdrawal request submitted!
-          <button onClick={() => setWithdrawSuccess(false)} className="ml-2 text-gray-400 hover:text-white">✕</button>
-        </div>
-      )}
-
-      {/* Transactions table */}
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-        <div className="px-6 py-4 border-b border-gray-100">
-          <h2 className="text-base font-bold text-gray-900">Recent Purchases</h2>
         </div>
 
-        {filteredPurchases.length === 0 ? (
-          <div className="divide-y divide-gray-50">
-            {[1, 2].map((i) => (
-              <div key={i} className="flex items-center gap-4 px-6 py-4">
-                <div className="w-10 h-10 rounded-full bg-gray-100 flex-shrink-0" />
-                <div className="flex-1 space-y-2">
-                  <div className="h-3 bg-gray-100 rounded w-1/3" />
-                  <div className="h-2.5 bg-gray-100 rounded w-1/2" />
-                </div>
-                <div className="text-right space-y-2">
-                  <div className="h-3 bg-gray-100 rounded w-16" />
-                  <div className="h-2.5 bg-gray-100 rounded w-10 ml-auto" />
-                </div>
+        {/* Withdraw Modal */}
+        {withdrawModalOpen && (
+          <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 px-4">
+            <div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-xl">
+              <h3 className="text-lg font-bold mb-2">Withdraw Earnings</h3>
+              <p className="text-sm text-gray-500 mb-4">
+                You're about to request a withdrawal of{" "}
+                <span className="font-semibold text-gray-800">₹{availableBalance.toFixed(2)}</span>.
+              </p>
+              <p className="text-xs text-gray-400 mb-4">
+                Withdrawals are processed within 3–5 business days to your registered bank account.
+              </p>
+              {withdrawError && (
+                <p className="text-xs text-red-500 mb-4 bg-red-50 px-3 py-2 rounded-lg">{withdrawError}</p>
+              )}
+              <div className="flex gap-3">
+                <button
+                  onClick={() => { setWithdrawModalOpen(false); setWithdrawError(null); }}
+                  disabled={withdrawing}
+                  className="flex-1 border rounded-full py-2 text-sm font-medium text-gray-600 hover:bg-gray-50 transition disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={withdraw}
+                  disabled={withdrawing}
+                  className="flex-1 bg-black text-white rounded-full py-2 text-sm font-semibold hover:bg-gray-800 transition disabled:opacity-60 flex items-center justify-center gap-2"
+                >
+                  {withdrawing ? (
+                    <>
+                      <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
+                      </svg>
+                      Processing...
+                    </>
+                  ) : "Confirm"}
+                </button>
               </div>
-            ))}
-            <div className="px-6 py-8 text-center">
-              <p className="text-sm font-semibold text-gray-400">No transactions yet</p>
-              <p className="text-xs text-gray-300 mt-1">Share your page with your audience to get started.</p>
             </div>
-          </div>
-        ) : (
-          <div className="divide-y divide-gray-50">
-            {filteredPurchases.map((p) => {
-              const buyerInitial = p.buyer_name !== "—" ? p.buyer_name[0].toUpperCase() : "?";
-              const date = new Date(p.created_at).toLocaleDateString("en-IN", {
-                day: "numeric", month: "short", year: "numeric",
-              });
-
-              return (
-                <div key={p.id} className="flex items-center gap-4 px-6 py-4 hover:bg-gray-50 transition-colors">
-                  <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center flex-shrink-0 overflow-hidden">
-                    {p.buyer_avatar ? (
-                      <img src={p.buyer_avatar} alt={p.buyer_name} className="w-full h-full object-cover" />
-                    ) : (
-                      <span className="text-amber-700 font-bold text-sm">{buyerInitial}</span>
-                    )}
-                  </div>
-
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-gray-900 truncate">{p.buyer_name}</p>
-                    <p className="text-xs text-gray-400 truncate">{p.video_title} · {date}</p>
-                  </div>
-
-                  <div className="text-right flex-shrink-0">
-                    <p className="text-sm font-bold text-green-600">+₹{p.creator_earnings.toFixed(2)}</p>
-                    <p className="text-xs text-gray-400">₹{p.amount} paid</p>
-                  </div>
-                </div>
-              );
-            })}
           </div>
         )}
+
+        {/* Success toast */}
+        {withdrawSuccess && (
+          <div className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-gray-900 text-white text-sm px-5 py-3 rounded-full shadow-lg z-50 flex items-center gap-2">
+            <svg className="w-4 h-4 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+            </svg>
+            Withdrawal request submitted!
+            <button onClick={() => setWithdrawSuccess(false)} className="ml-2 text-gray-400 hover:text-white">✕</button>
+          </div>
+        )}
+
+        {/* Transactions table */}
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+          <div className="dash-table-header px-6 py-4 border-b border-gray-100">
+            <h2 className="text-base font-bold text-gray-900">Recent Purchases</h2>
+          </div>
+
+          {filteredPurchases.length === 0 ? (
+            <div className="divide-y divide-gray-50">
+              {[1, 2].map((i) => (
+                <div key={i} className="flex items-center gap-4 px-6 py-4">
+                  <div className="w-10 h-10 rounded-full bg-gray-100 flex-shrink-0" />
+                  <div className="flex-1 space-y-2">
+                    <div className="h-3 bg-gray-100 rounded w-1/3" />
+                    <div className="h-2.5 bg-gray-100 rounded w-1/2" />
+                  </div>
+                  <div className="text-right space-y-2">
+                    <div className="h-3 bg-gray-100 rounded w-16" />
+                    <div className="h-2.5 bg-gray-100 rounded w-10 ml-auto" />
+                  </div>
+                </div>
+              ))}
+              <div className="px-6 py-8 text-center">
+                <p className="text-sm font-semibold text-gray-400">No transactions yet</p>
+                <p className="text-xs text-gray-300 mt-1">Share your page with your audience to get started.</p>
+              </div>
+            </div>
+          ) : (
+            <div className="divide-y divide-gray-50">
+              {filteredPurchases.map((p) => {
+                const buyerInitial = p.buyer_name !== "—" ? p.buyer_name[0].toUpperCase() : "?";
+                const date = new Date(p.created_at).toLocaleDateString("en-IN", {
+                  day: "numeric", month: "short", year: "numeric",
+                });
+
+                return (
+                  <div key={p.id} className="dash-table-row flex items-center gap-4 px-6 py-4 hover:bg-gray-50 transition-colors">
+                    <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center flex-shrink-0 overflow-hidden">
+                      {p.buyer_avatar ? (
+                        <img src={p.buyer_avatar} alt={p.buyer_name} className="w-full h-full object-cover" />
+                      ) : (
+                        <span className="text-amber-700 font-bold text-sm">{buyerInitial}</span>
+                      )}
+                    </div>
+
+                    <div className="buyer-info flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-gray-900 truncate">{p.buyer_name}</p>
+                      <p className="text-xs text-gray-400 truncate">{p.video_title} · {date}</p>
+                    </div>
+
+                    <div className="earn-info text-right flex-shrink-0">
+                      <p className="text-sm font-bold text-green-600">+₹{p.creator_earnings.toFixed(2)}</p>
+                      <p className="text-xs text-gray-400">₹{p.amount} paid</p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
       </div>
-    </div>
+    </>
   );
 }
