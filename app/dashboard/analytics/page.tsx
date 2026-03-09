@@ -48,12 +48,15 @@ export default function AnalyticsPage() {
       if (!user) { setLoading(false); return; }
 
       // Fetch purchases
-      const { data: purchaseData } = await supabase
-        .from("purchases")
-        .select("id, price, creator_earnings, created_at, video_id, videos!purchases_video_id_fkey(title)")
-        .eq("creator_id", user.id)
-        .order("created_at", { ascending: true });
+     const { data: purchaseData, error } = await supabase
+  .from("purchases")
+  .select("id, price, creator_earnings, created_at, video_id, videos(title)")
+  .eq("creator_id", user.id)
+  .order("created_at", { ascending: true });
 
+console.log("user id:", user.id);
+console.log("purchases raw:", purchaseData);
+console.log("purchases error:", error);
       if (purchaseData) {
         setPurchases(purchaseData.map((p: any) => ({
           id: p.id,
