@@ -242,9 +242,7 @@ export default function SalesPage() {
               Sales Overview
             </h1>
           </div>
-          <div className="badge" style={{ background: '#f0fdf4', color: '#16a34a', border: '1px solid #bbf7d0' }}>
-            ● Live
-          </div>
+        
         </div>
 
         {/* Stat Cards */}
