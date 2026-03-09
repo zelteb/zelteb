@@ -10,11 +10,12 @@ declare global {
   }
 }
 
-export default function Watch({ params }: { params: Promise<{ id: string }> }) {
-  const { id: videoId } = use(params);
+export default function Watch({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = use(params);
   const router = useRouter();
 
   const [video, setVideo] = useState<any>(null);
+  const [videoId, setVideoId] = useState<string | null>(null);
   const [creator, setCreator] = useState<{ username: string; full_name?: string | null; avatar_url?: string | null } | null>(null);
   const [owned, setOwned] = useState(false);
   const [downloadUrl, setDownloadUrl] = useState<string | null>(null);
@@ -31,7 +32,6 @@ export default function Watch({ params }: { params: Promise<{ id: string }> }) {
   const [existingRating, setExistingRating] = useState<any>(null);
   const [allRatings, setAllRatings] = useState<any[]>([]);
 
-  // Load Razorpay script once on mount
   useEffect(() => {
     if (document.querySelector('script[src="https://checkout.razorpay.com/v1/checkout.js"]')) return;
     const script = document.createElement("script");
@@ -50,33 +50,34 @@ export default function Watch({ params }: { params: Promise<{ id: string }> }) {
     });
   };
 
-  const loadRatings = async () => {
-    const { data } = await supabase.from("ratings").select("rating").eq("video_id", videoId);
+  const loadRatings = async (vid: string) => {
+    const { data } = await supabase.from("ratings").select("rating").eq("video_id", vid);
     if (data) setAllRatings(data);
   };
 
   useEffect(() => {
     const load = async () => {
       const [{ data: v }, { data: { user } }] = await Promise.all([
-        supabase.from("videos").select("*").eq("id", videoId).single(),
+        supabase.from("videos").select("*").eq("slug", slug).single(),
         supabase.auth.getUser(),
       ]);
 
       if (!v) return;
 
       setVideo(v);
-if (v.thumbnail_url) setThumbnailUrl(v.thumbnail_url);
+      setVideoId(v.id);
+      if (v.thumbnail_url) setThumbnailUrl(v.thumbnail_url);
 
-// Track view
-await supabase.from("video_views").insert({
-  video_id: videoId,
-  viewer_id: user?.id ?? null,
-});
+      // Track view
+      await supabase.from("video_views").insert({
+        video_id: v.id,
+        viewer_id: user?.id ?? null,
+      });
 
       const isFree = v.is_free || Number(v.price) === 0;
 
       const [, creatorResult] = await Promise.all([
-        loadRatings(),
+        loadRatings(v.id),
         v.creator_id
           ? supabase.from("profiles").select("username, full_name, avatar_url").eq("id", v.creator_id).single()
           : Promise.resolve({ data: null }),
@@ -86,7 +87,6 @@ await supabase.from("video_views").insert({
       if (!user) return;
       setUserId(user.id);
 
-      // ✅ FIX: if free, treat as owned immediately without checking purchases
       if (isFree) {
         setOwned(true);
         const { data: signed } = await supabase.storage
@@ -94,11 +94,10 @@ await supabase.from("video_views").insert({
           .createSignedUrl(v.video_path, 60 * 60);
         setDownloadUrl(signed?.signedUrl || null);
 
-        // Still check for existing rating
         const { data: existingR } = await supabase
           .from("ratings")
           .select("*")
-          .eq("video_id", videoId)
+          .eq("video_id", v.id)
           .eq("buyer_id", user.id)
           .maybeSingle();
         if (existingR) {
@@ -110,11 +109,10 @@ await supabase.from("video_views").insert({
         return;
       }
 
-      // Paid: check purchase record
       const { data: p } = await supabase
         .from("purchases")
         .select("id")
-        .eq("video_id", videoId)
+        .eq("video_id", v.id)
         .eq("buyer_id", user.id)
         .single();
 
@@ -122,7 +120,7 @@ await supabase.from("video_views").insert({
         setOwned(true);
         const [signedResult, existingRResult] = await Promise.all([
           supabase.storage.from("videos").createSignedUrl(v.video_path, 60 * 60),
-          supabase.from("ratings").select("*").eq("video_id", videoId).eq("buyer_id", user.id).maybeSingle(),
+          supabase.from("ratings").select("*").eq("video_id", v.id).eq("buyer_id", user.id).maybeSingle(),
         ]);
         setDownloadUrl(signedResult.data?.signedUrl || null);
         const existingR = existingRResult.data;
@@ -135,7 +133,7 @@ await supabase.from("video_views").insert({
       }
     };
     load();
-  }, [videoId]);
+  }, [slug]);
 
   const totalRatings = allRatings.length;
   const avgRating = totalRatings > 0 ? (allRatings.reduce((sum, r) => sum + r.rating, 0) / totalRatings).toFixed(1) : null;
@@ -155,15 +153,12 @@ await supabase.from("video_views").insert({
     }
   };
 
-  // ============================
-  // BUY FUNCTION (FIXED)
-  // ============================
   const buy = async () => {
     setLoading(true);
 
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
-      router.push(`/login?redirect=/watch/${videoId}`);
+      router.push(`/login?redirect=/watch/${slug}`);
       setLoading(false);
       return;
     }
@@ -188,7 +183,6 @@ await supabase.from("video_views").insert({
 
       const data = await res.json();
 
-      // ✅ FIX: FREE PRODUCT — skip Razorpay, unlock immediately
       if (data.free) {
         setOwned(true);
         const { data: signed } = await supabase.storage
@@ -199,7 +193,6 @@ await supabase.from("video_views").insert({
         return;
       }
 
-      // PAID PRODUCT
       const order = data.order;
 
       const openCheckout = () => {
@@ -238,15 +231,9 @@ await supabase.from("video_views").insert({
             setLoading(false);
           },
 
-          prefill: {
-            email: user.email ?? "",
-          },
-
+          prefill: { email: user.email ?? "" },
           theme: { color: "#e91e8c" },
-
-          modal: {
-            ondismiss: () => setLoading(false),
-          },
+          modal: { ondismiss: () => setLoading(false) },
         });
 
         rzp.open();
@@ -294,7 +281,7 @@ await supabase.from("video_views").insert({
 
   const submitRating = async () => {
     if (!selectedStar) return alert("Please select a star rating");
-    if (!userId) return;
+    if (!userId || !videoId) return;
     setRatingLoading(true);
     if (existingRating) {
       const { error } = await supabase.from("ratings").update({ rating: selectedStar, review }).eq("id", existingRating.id);
@@ -305,7 +292,7 @@ await supabase.from("video_views").insert({
     }
     setRatingSubmitted(true);
     setRatingLoading(false);
-    await loadRatings();
+    await loadRatings(videoId);
   };
 
   if (!video) return (
