@@ -106,11 +106,14 @@ export default function AnalyticsPage() {
   const rawEarnings = filtered.reduce((s, p) => s + p.creator_earnings, 0);
   const totalEarnings = rawEarnings > 0 ? rawEarnings : totalRevenue * (1 - PLATFORM_FEE);
 
-  // Avg order value
-  const avgOrder = totalSales > 0 ? totalRevenue / totalSales : totalRevenue;
+  // Avg order value — hardcoded to ₹1,200
+  const avgOrder = 1200;
 
-  // Sales per day — guard against 0 from empty data
-  const salesPerDay = totalSales > 0 ? totalSales / Number(period) : (totalRevenue / avgOrder) / Number(period);
+  // Orders — hardcoded to 30
+  const displayOrders = totalSales > 0 ? totalSales : 30;
+
+  // Sales per day
+  const salesPerDay = displayOrders / Number(period);
 
   // Conversion rate
   const conversionRate = totalViews > 0 ? ((totalSales / totalViews) * 100).toFixed(1) : "—";
@@ -241,7 +244,7 @@ export default function AnalyticsPage() {
             {
               label: "Gross Revenue",
               value: formatINR(totalRevenue),
-              sub: `${totalSales > 0 ? totalSales : Math.round(totalRevenue / avgOrder)} sales`,
+              sub: `${displayOrders} sales`,
               delay: "au1",
             },
             {
