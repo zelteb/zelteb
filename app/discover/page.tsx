@@ -100,7 +100,7 @@ export default function Discover() {
   // 🛒 BUY HANDLER
   // ============================
   const handleBuy = async (e: React.MouseEvent, video: any) => {
-    e.preventDefault(); // Don't navigate to watch page
+    e.preventDefault();
 
     if (!currentUser) {
       window.location.href = "/login";
@@ -115,7 +115,6 @@ export default function Discover() {
     setBuyingId(video.id);
 
     try {
-      // STEP 1 — Create Razorpay order
       const res = await fetch("/api/buy-video", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -134,7 +133,6 @@ export default function Discover() {
 
       const { order } = await res.json();
 
-      // STEP 2 — Open Razorpay checkout
       const options = {
         key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
         amount: order.amount,
@@ -143,7 +141,6 @@ export default function Discover() {
         description: video.title,
         order_id: order.id,
         handler: async (response: any) => {
-          // STEP 3 — Verify payment on backend
           const verifyRes = await fetch("/api/buy-video", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -213,13 +210,6 @@ export default function Discover() {
         .creator-pill:hover { color: #000; text-decoration: underline; }
         .creator-avatar { width: 20px; height: 20px; border-radius: 50%; background: linear-gradient(135deg, #7c3aed, #e879f9); display: flex; align-items: center; justify-content: center; font-size: 9px; color: white; font-weight: 700; flex-shrink: 0; overflow: hidden; }
         .creator-avatar img { width: 100%; height: 100%; object-fit: cover; }
-        .buy-btn { width: 100%; margin-top: 10px; padding: 9px 0; border-radius: 8px; border: none; font-size: 13px; font-weight: 700; cursor: pointer; transition: background 0.15s, transform 0.1s; }
-        .buy-btn:active { transform: scale(0.97); }
-        .buy-btn.primary { background: #1a1a1a; color: white; }
-        .buy-btn.primary:hover { background: #333; }
-        .buy-btn.free { background: #e6f4ea; color: #1a7a3a; }
-        .buy-btn.purchased { background: #f0f0f0; color: #555; cursor: default; }
-        .buy-btn.loading { opacity: 0.6; cursor: not-allowed; }
       `}</style>
 
       {/* NAVBAR */}
@@ -308,10 +298,10 @@ export default function Discover() {
                 const isOwner = currentUser?.id === v.creator_id;
 
                 return (
-                  <div key={v.id} className="card" onClick={(e) => {
-                    // Only navigate if not clicking the buy button
-                    if ((e.target as HTMLElement).closest(".buy-btn")) return;
-                    window.location.href = `/watch/${v.id}`;
+                  <div key={v.id} className="card" onClick={() => {
+                    if (isOwner) { window.location.href = `/watch/${v.id}`; return; }
+                    if (alreadyPurchased || isFree) { window.location.href = `/watch/${v.id}`; return; }
+                    handleBuy({ preventDefault: () => {} } as any, v);
                   }}>
                     {/* Thumbnail */}
                     <div style={{ position: "relative", width: "100%", aspectRatio: "16/9", overflow: "hidden", background: "#1a1a1a" }}>
@@ -371,33 +361,6 @@ export default function Discover() {
                           {isFree ? "Free" : `₹${v.price || 0}`}
                         </span>
                       </div>
-
-                      {/* 5. Buy Button */}
-                      {isOwner ? (
-                        <button className="buy-btn purchased" disabled>Your video</button>
-                      ) : alreadyPurchased ? (
-                        <button
-                          className="buy-btn purchased"
-                          onClick={(e) => { e.stopPropagation(); window.location.href = `/watch/${v.id}`; }}
-                        >
-                          ✓ Watch Now
-                        </button>
-                      ) : isFree ? (
-                        <button
-                          className="buy-btn free"
-                          onClick={(e) => { e.stopPropagation(); window.location.href = `/watch/${v.id}`; }}
-                        >
-                          Watch Free
-                        </button>
-                      ) : (
-                        <button
-                          className={`buy-btn primary${isLoading ? " loading" : ""}`}
-                          disabled={isLoading}
-                          onClick={(e) => { e.stopPropagation(); handleBuy(e, v); }}
-                        >
-                          {isLoading ? "Processing..." : `Buy for ₹${v.price}`}
-                        </button>
-                      )}
 
                     </div>
                   </div>
