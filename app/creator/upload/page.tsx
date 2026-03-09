@@ -39,21 +39,17 @@ export default function Upload() {
     ],
     content: "",
     editorProps: { attributes: { class: "tiptap-editor" } },
-    onUpdate: ({ editor }) => {
-      setDescriptionHtml(editor.getHTML());
-    },
+    onUpdate: ({ editor }) => setDescriptionHtml(editor.getHTML()),
   });
 
-  // Auto-generate slug from title
+  // ── SLUG HELPERS ──
   const generateSlug = (value: string) =>
     value.toLowerCase().trim().replace(/[^a-z0-9\s-]/g, "").replace(/\s+/g, "-").replace(/-+/g, "-").slice(0, 60);
 
   const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value;
     setTitle(val);
-    if (!slugManuallyEdited) {
-      setSlug(generateSlug(val));
-    }
+    if (!slugManuallyEdited) setSlug(generateSlug(val));
   };
 
   const handleSlugChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -71,8 +67,7 @@ export default function Upload() {
   const handleEditorImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0] || null;
     if (!f) return;
-    const objectUrl = URL.createObjectURL(f);
-    editor?.chain().focus().setImage({ src: objectUrl }).run();
+    editor?.chain().focus().setImage({ src: URL.createObjectURL(f) }).run();
     if (editorImageInputRef.current) editorImageInputRef.current.value = "";
   };
 
@@ -123,12 +118,39 @@ export default function Upload() {
     setLinkUrl("");
   };
 
+  // ── UPLOAD FUNCTION ──
   const upload = async () => {
     if (!file) return alert("Select a file");
+    if (!title.trim()) return alert("Enter a product title");
+
+    // ✅ 3️⃣ Validate slug format
+    if (slug) {
+      const slugPattern = /^[a-z0-9-]+$/;
+      if (!slugPattern.test(slug)) {
+        alert("Slug can only contain lowercase letters, numbers, and hyphens.");
+        return;
+      }
+    }
+
     setLoading(true);
 
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) { alert("Login first"); setLoading(false); return; }
+
+    // ✅ 4️⃣ Check slug uniqueness before saving
+    if (slug) {
+      const { data: existing } = await supabase
+        .from("videos")
+        .select("id")
+        .eq("slug", slug)
+        .maybeSingle();
+
+      if (existing) {
+        alert("This slug is already taken. Please choose a different one.");
+        setLoading(false);
+        return;
+      }
+    }
 
     const { data, error } = await supabase.storage
       .from("videos")
@@ -148,12 +170,12 @@ export default function Upload() {
     }
 
     const description = editor?.getHTML() || "";
-    const finalSlug = slug || null; // if empty, leave null so DB uses id fallback
 
+    // ✅ 5️⃣ Save video with slug
     const { error: dbError } = await supabase.from("videos").insert({
       creator_id: user.id,
       title,
-      slug: finalSlug,
+      slug: slug || null,
       description,
       price: isFree ? 0 : Number(price),
       video_path: data.path,
@@ -182,34 +204,32 @@ export default function Upload() {
         .up-wrap { flex: 1; padding: 48px 32px 48px 48px; overflow-y: auto; max-width: 700px; }
         .up-inner { display: flex; flex-direction: column; gap: 12px; }
         .up-header { margin-bottom: 8px; }
-        .up-header h1 { font-family: 'Plus Jakarta Sans', system-ui, sans-serif; font-size: 1.75rem; font-weight: 800; color: #18181b; letter-spacing: -0.03em; line-height: 1.2; }
-        .up-header p { font-size: 0.875rem; color: #71717a; margin-top: 4px; font-weight: 400; }
+        .up-header h1 { font-size: 1.75rem; font-weight: 800; color: #18181b; letter-spacing: -0.03em; line-height: 1.2; }
+        .up-header p { font-size: 0.875rem; color: #71717a; margin-top: 4px; }
         .up-card { background: #fff; border: 1px solid #e4e4e7; border-radius: 14px; overflow: hidden; }
-        .up-card-header { display: flex; align-items: center; gap: 10px; padding: 18px 24px; border-bottom: 1px solid #f0f0f2; user-select: none; cursor: pointer; }
-        .up-card-header svg { color: #a1a1aa; }
-        .up-card-header h2 { font-size: 0.9375rem; font-weight: 600; color: #18181b; flex: 1; font-family: 'Plus Jakarta Sans', system-ui, sans-serif; }
+        .up-card-header { display: flex; align-items: center; gap: 10px; padding: 18px 24px; border-bottom: 1px solid #f0f0f2; }
+        .up-card-header svg { color: #a1a1aa; flex-shrink: 0; }
+        .up-card-header h2 { font-size: 0.9375rem; font-weight: 600; color: #18181b; flex: 1; }
         .up-card-header .required { color: #7c3aed; margin-left: 2px; }
-        .up-card-header-right { display: flex; align-items: center; gap: 8px; }
-        .up-card-header-badge { font-size: 0.72rem; font-weight: 500; color: #a1a1aa; background: #f4f4f6; padding: 3px 8px; border-radius: 20px; font-family: 'Plus Jakarta Sans', system-ui, sans-serif; }
-        .up-card-chevron { color: #a1a1aa; transition: transform 0.2s; }
-        .up-card-chevron.open { transform: rotate(180deg); }
+        .up-card-header-badge { font-size: 0.72rem; font-weight: 500; color: #a1a1aa; background: #f4f4f6; padding: 3px 8px; border-radius: 20px; }
         .up-card-body { padding: 20px 24px; }
-        .up-label { display: block; font-size: 0.8125rem; font-weight: 500; color: #3f3f46; margin-bottom: 6px; font-family: 'Plus Jakarta Sans', system-ui, sans-serif; }
+        .up-label { display: block; font-size: 0.8125rem; font-weight: 500; color: #3f3f46; margin-bottom: 6px; }
         .up-label .req { color: #7c3aed; }
         .up-input { width: 100%; background: #fafafa; border: 1px solid #e4e4e7; border-radius: 8px; padding: 10px 14px; font-size: 0.9rem; font-family: 'Plus Jakarta Sans', system-ui, sans-serif; color: #18181b; outline: none; transition: border-color 0.15s, box-shadow 0.15s; resize: vertical; }
         .up-input::placeholder { color: #a1a1aa; }
         .up-input:focus { border-color: #7c3aed; box-shadow: 0 0 0 3px rgba(124,58,237,0.08); }
-        .up-hint { font-size: 0.78rem; color: #a1a1aa; margin-top: 6px; font-weight: 400; font-family: 'Plus Jakarta Sans', system-ui, sans-serif; }
+        .up-hint { font-size: 0.78rem; color: #a1a1aa; margin-top: 6px; }
 
-        /* SLUG INPUT */
+        /* SLUG */
         .slug-input-wrap { position: relative; display: flex; align-items: center; }
-        .slug-prefix { position: absolute; left: 12px; font-size: 0.85rem; color: #a1a1aa; pointer-events: none; white-space: nowrap; font-family: 'Plus Jakarta Sans', system-ui, sans-serif; }
-        .slug-input { padding-left: 72px !important; font-family: 'Courier New', monospace !important; font-size: 0.875rem !important; }
+        .slug-prefix { position: absolute; left: 12px; font-size: 0.85rem; color: #a1a1aa; pointer-events: none; white-space: nowrap; user-select: none; }
+        .slug-input { padding-left: 80px !important; font-family: 'Courier New', monospace !important; font-size: 0.875rem !important; }
         .slug-input:not(:placeholder-shown) { color: #7c3aed !important; }
-        .slug-preview { display: flex; align-items: center; gap: 6px; margin-top: 8px; font-size: 0.78rem; color: #a1a1aa; font-family: 'Plus Jakarta Sans', system-ui, sans-serif; }
-        .slug-preview-url { color: #7c3aed; font-weight: 500; word-break: break-all; }
-        .slug-auto-badge { display: inline-flex; align-items: center; gap: 4px; font-size: 0.7rem; background: #f0fdf4; color: #16a34a; border: 1px solid #bbf7d0; padding: 2px 7px; border-radius: 20px; font-weight: 500; margin-left: 4px; }
+        .slug-preview { display: flex; align-items: center; gap: 5px; margin-top: 8px; font-size: 0.775rem; color: #a1a1aa; flex-wrap: wrap; }
+        .slug-preview-url { color: #7c3aed; font-weight: 600; font-family: 'Courier New', monospace; word-break: break-all; }
+        .slug-auto-badge { display: inline-flex; align-items: center; gap: 3px; font-size: 0.7rem; background: #f0fdf4; color: #16a34a; border: 1px solid #bbf7d0; padding: 2px 7px; border-radius: 20px; font-weight: 500; }
 
+        /* EDITOR */
         .up-editor-wrap { border: 1px solid #e4e4e7; border-radius: 8px; overflow: hidden; background: #fafafa; transition: border-color 0.15s, box-shadow 0.15s; }
         .up-editor-wrap:focus-within { border-color: #7c3aed; box-shadow: 0 0 0 3px rgba(124,58,237,0.08); }
         .up-toolbar { display: flex; align-items: center; gap: 2px; padding: 8px 10px; background: #18181b; flex-wrap: wrap; position: relative; }
@@ -221,24 +241,28 @@ export default function Upload() {
         .up-text-dropdown-btn { background: none; border: none; color: #d4d4d8; cursor: pointer; height: 30px; border-radius: 5px; display: flex; align-items: center; gap: 5px; padding: 0 8px; font-size: 0.82rem; font-weight: 600; font-family: 'Plus Jakarta Sans', system-ui, sans-serif; transition: background 0.12s, color 0.12s; white-space: nowrap; }
         .up-text-dropdown-btn:hover { background: #3f3f46; color: white; }
         .up-text-dropdown-menu { position: absolute; top: calc(100% + 6px); left: 0; background: white; border: 1px solid #e4e4e7; border-radius: 10px; box-shadow: 0 8px 24px rgba(0,0,0,0.12); z-index: 100; min-width: 170px; overflow: hidden; padding: 4px; }
-        .up-text-dropdown-item { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 6px; cursor: pointer; transition: background 0.1s; font-family: 'Plus Jakarta Sans', system-ui, sans-serif; }
+        .up-text-dropdown-item { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 6px; cursor: pointer; transition: background 0.1s; }
         .up-text-dropdown-item:hover { background: #f4f4f6; }
         .up-text-dropdown-item.active { background: #faf5ff; }
         .up-text-dropdown-item-icon { width: 28px; height: 28px; background: #f4f4f6; border-radius: 6px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
         .up-text-dropdown-item-label { font-size: 0.875rem; font-weight: 500; color: #18181b; }
+
+        /* MODAL */
         .up-modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 200; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(2px); }
         .up-modal { background: white; border-radius: 16px; padding: 28px; width: 100%; max-width: 420px; box-shadow: 0 20px 60px rgba(0,0,0,0.15); }
         .up-modal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
-        .up-modal-title { font-size: 1.1rem; font-weight: 700; color: #18181b; font-family: 'Plus Jakarta Sans', system-ui, sans-serif; }
+        .up-modal-title { font-size: 1.1rem; font-weight: 700; color: #18181b; }
         .up-modal-close { background: none; border: none; cursor: pointer; color: #71717a; width: 28px; height: 28px; border-radius: 6px; display: flex; align-items: center; justify-content: center; transition: background 0.12s; }
         .up-modal-close:hover { background: #f4f4f6; color: #18181b; }
         .up-modal-field { margin-bottom: 14px; }
-        .up-modal-label { display: block; font-size: 0.8125rem; font-weight: 500; color: #3f3f46; margin-bottom: 6px; font-family: 'Plus Jakarta Sans', system-ui, sans-serif; }
+        .up-modal-label { display: block; font-size: 0.8125rem; font-weight: 500; color: #3f3f46; margin-bottom: 6px; }
         .up-modal-input { width: 100%; background: white; border: 1.5px solid #e4e4e7; border-radius: 8px; padding: 10px 14px; font-size: 0.9rem; font-family: 'Plus Jakarta Sans', system-ui, sans-serif; color: #18181b; outline: none; transition: border-color 0.15s, box-shadow 0.15s; }
         .up-modal-input:focus { border-color: #7c3aed; box-shadow: 0 0 0 3px rgba(124,58,237,0.08); }
         .up-modal-input::placeholder { color: #a1a1aa; }
         .up-modal-submit { width: 100%; background: #18181b; color: white; border: none; border-radius: 9px; padding: 12px; font-size: 0.9rem; font-weight: 600; font-family: 'Plus Jakarta Sans', system-ui, sans-serif; cursor: pointer; transition: background 0.15s; margin-top: 4px; }
         .up-modal-submit:hover { background: #3f3f46; }
+
+        /* TIPTAP */
         .tiptap-editor { min-height: 140px; padding: 12px 14px; font-size: 0.9rem; font-family: 'Manrope', sans-serif; color: #18181b; outline: none; line-height: 1.6; }
         .tiptap-editor p { margin-bottom: 6px; }
         .tiptap-editor strong { font-weight: 700; }
@@ -256,36 +280,38 @@ export default function Upload() {
         .tiptap-editor pre { background: #18181b; color: #e4e4e7; border-radius: 8px; padding: 12px 14px; font-family: 'Courier New', monospace; font-size: 0.85rem; margin: 8px 0; overflow-x: auto; }
         .tiptap-editor code { background: #f4f4f6; padding: 2px 5px; border-radius: 4px; font-family: 'Courier New', monospace; font-size: 0.85rem; }
         .tiptap-editor pre code { background: none; padding: 0; }
+
+        /* CARDS */
         .up-select-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
         .up-select-card { border: 1.5px solid #e4e4e7; border-radius: 10px; padding: 14px 16px; cursor: pointer; transition: border-color 0.15s, background 0.15s; position: relative; background: #fafafa; }
         .up-select-card.active { border-color: #7c3aed; background: #faf5ff; }
-        .up-select-card-title { font-size: 0.9rem; font-weight: 600; color: #18181b; margin-bottom: 3px; font-family: 'Plus Jakarta Sans', system-ui, sans-serif; }
-        .up-select-card-desc { font-size: 0.78rem; color: #71717a; font-weight: 400; line-height: 1.4; font-family: 'Plus Jakarta Sans', system-ui, sans-serif; }
+        .up-select-card-title { font-size: 0.9rem; font-weight: 600; color: #18181b; margin-bottom: 3px; }
+        .up-select-card-desc { font-size: 0.78rem; color: #71717a; font-weight: 400; line-height: 1.4; }
         .up-check-icon { position: absolute; top: 12px; right: 12px; width: 20px; height: 20px; border-radius: 50%; background: #7c3aed; display: flex; align-items: center; justify-content: center; }
         .up-check-icon svg { width: 11px; height: 11px; stroke: white; stroke-width: 2.5; fill: none; }
         .up-dropzone { border: 1.5px dashed #d4d4d8; border-radius: 10px; padding: 28px 20px; text-align: center; cursor: pointer; transition: border-color 0.15s, background 0.15s; background: #fafafa; }
         .up-dropzone:hover { border-color: #7c3aed; background: #faf5ff; }
         .up-dropzone-icon { width: 40px; height: 40px; border-radius: 50%; background: #f0f0f2; display: flex; align-items: center; justify-content: center; margin: 0 auto 10px; }
-        .up-dropzone p { font-size: 0.85rem; color: #71717a; font-weight: 400; font-family: 'Plus Jakarta Sans', system-ui, sans-serif; }
+        .up-dropzone p { font-size: 0.85rem; color: #71717a; }
         .up-dropzone a { color: #7c3aed; font-weight: 500; text-decoration: none; }
-        .up-dropzone-sub { font-size: 0.75rem; color: #a1a1aa; margin-top: 4px; font-family: 'Plus Jakarta Sans', system-ui, sans-serif; }
-        .up-file-chosen { display: flex; align-items: center; gap: 10px; background: #f4f4f6; border-radius: 8px; padding: 10px 14px; margin-top: 10px; font-size: 0.83rem; color: #3f3f46; font-family: 'Plus Jakarta Sans', system-ui, sans-serif; }
+        .up-dropzone-sub { font-size: 0.75rem; color: #a1a1aa; margin-top: 4px; }
+        .up-file-chosen { display: flex; align-items: center; gap: 10px; background: #f4f4f6; border-radius: 8px; padding: 10px 14px; margin-top: 10px; font-size: 0.83rem; color: #3f3f46; }
         .up-file-chosen svg { color: #7c3aed; flex-shrink: 0; }
-        .up-price-input-wrap { margin-top: 14px; }
-        .up-price-symbol { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); font-size: 0.9rem; color: #71717a; pointer-events: none; font-family: 'Plus Jakarta Sans', system-ui, sans-serif; }
-        .up-price-input { padding-left: 24px; }
-        .up-thumb-preview { width: 100%; max-height: 200px; object-fit: cover; border-radius: 8px; margin-top: 12px; border: 1px solid #e4e4e7; }
+        .up-price-symbol { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); font-size: 0.9rem; color: #71717a; pointer-events: none; }
+        .up-price-input { padding-left: 24px !important; }
+        .up-thumb-preview { width: 100%; max-height: 200px; object-fit: cover; border-radius: 8px; border: 1px solid #e4e4e7; }
         .up-submit-row { display: flex; justify-content: flex-end; padding-top: 4px; }
-        .up-btn { background: #7c3aed; color: white; border: none; border-radius: 9px; padding: 11px 28px; font-size: 0.9rem; font-weight: 600; font-family: 'Plus Jakarta Sans', system-ui, sans-serif; cursor: pointer; transition: background 0.15s, transform 0.1s, box-shadow 0.15s; box-shadow: 0 2px 8px rgba(124,58,237,0.25); letter-spacing: 0.01em; }
+        .up-btn { background: #7c3aed; color: white; border: none; border-radius: 9px; padding: 11px 28px; font-size: 0.9rem; font-weight: 600; font-family: 'Plus Jakarta Sans', system-ui, sans-serif; cursor: pointer; transition: background 0.15s, transform 0.1s, box-shadow 0.15s; box-shadow: 0 2px 8px rgba(124,58,237,0.25); }
         .up-btn:hover:not(:disabled) { background: #6d28d9; box-shadow: 0 4px 16px rgba(124,58,237,0.35); transform: translateY(-1px); }
         .up-btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
         .up-spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid rgba(255,255,255,0.4); border-top-color: white; border-radius: 50%; animation: spin 0.7s linear infinite; margin-right: 8px; vertical-align: middle; }
         @keyframes spin { to { transform: rotate(360deg); } }
 
+        /* PREVIEW */
         .preview-panel { width: 360px; flex-shrink: 0; background: #fff; border-left: 1px solid #e4e4e7; position: sticky; top: 0; height: 100vh; overflow-y: auto; display: flex; flex-direction: column; }
         .preview-header { padding: 16px 20px; border-bottom: 1px solid #f0f0f2; display: flex; align-items: center; justify-content: space-between; background: #fafafa; flex-shrink: 0; }
-        .preview-header h3 { font-size: 0.8125rem; font-weight: 600; color: #71717a; text-transform: uppercase; letter-spacing: 0.06em; font-family: 'Plus Jakarta Sans', system-ui, sans-serif; }
-        .preview-live-dot { display: flex; align-items: center; gap: 5px; font-size: 0.75rem; color: #22c55e; font-weight: 500; font-family: 'Plus Jakarta Sans', system-ui, sans-serif; }
+        .preview-header h3 { font-size: 0.8125rem; font-weight: 600; color: #71717a; text-transform: uppercase; letter-spacing: 0.06em; }
+        .preview-live-dot { display: flex; align-items: center; gap: 5px; font-size: 0.75rem; color: #22c55e; font-weight: 500; }
         .preview-live-dot::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: #22c55e; animation: pulse 1.5s ease-in-out infinite; }
         @keyframes pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.5; transform: scale(0.8); } }
         .preview-body { flex: 1; padding: 24px 20px; }
@@ -293,27 +319,26 @@ export default function Upload() {
         .pv-thumb { width: 100%; height: 180px; background: linear-gradient(135deg, #f4f4f6 0%, #e4e4e7 100%); display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden; }
         .pv-thumb img { width: 100%; height: 100%; object-fit: cover; }
         .pv-thumb-placeholder { display: flex; flex-direction: column; align-items: center; gap: 8px; color: #a1a1aa; }
-        .pv-thumb-placeholder span { font-size: 0.75rem; font-weight: 400; font-family: 'Plus Jakarta Sans', system-ui, sans-serif; }
-        .pv-type-badge { position: absolute; top: 10px; left: 10px; background: rgba(0,0,0,0.6); color: white; font-size: 0.7rem; font-weight: 600; padding: 3px 8px; border-radius: 20px; text-transform: uppercase; letter-spacing: 0.05em; backdrop-filter: blur(4px); font-family: 'Plus Jakarta Sans', system-ui, sans-serif; }
+        .pv-thumb-placeholder span { font-size: 0.75rem; }
+        .pv-type-badge { position: absolute; top: 10px; left: 10px; background: rgba(0,0,0,0.6); color: white; font-size: 0.7rem; font-weight: 600; padding: 3px 8px; border-radius: 20px; text-transform: uppercase; letter-spacing: 0.05em; backdrop-filter: blur(4px); }
         .pv-content { padding: 18px; }
-        .pv-title { font-family: 'Plus Jakarta Sans', system-ui, sans-serif; font-size: 1.1rem; font-weight: 700; color: #18181b; line-height: 1.3; margin-bottom: 8px; min-height: 1.5em; letter-spacing: -0.02em; }
+        .pv-title { font-size: 1.1rem; font-weight: 700; color: #18181b; line-height: 1.3; margin-bottom: 8px; min-height: 1.5em; letter-spacing: -0.02em; }
         .pv-title-placeholder { color: #d4d4d8; font-style: italic; font-weight: 400; }
-        .pv-description { font-size: 0.82rem; color: #71717a; line-height: 1.6; margin-bottom: 16px; font-weight: 400; font-family: 'Manrope', system-ui, sans-serif; }
+        .pv-description { font-size: 0.82rem; color: #71717a; line-height: 1.6; margin-bottom: 16px; font-family: 'Manrope', sans-serif; }
         .pv-description p { margin-bottom: 4px; }
         .pv-description strong { font-weight: 600; color: #3f3f46; }
-        .pv-description blockquote { border-left: 2px solid #7c3aed; padding-left: 8px; color: #a1a1aa; font-style: italic; margin: 4px 0; }
         .pv-description a { color: #7c3aed; }
         .pv-desc-placeholder { font-style: italic; color: #d4d4d8; }
         .pv-divider { height: 1px; background: #f0f0f2; margin: 14px 0; }
         .pv-price-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
-        .pv-price { font-size: 1.4rem; font-weight: 700; color: #18181b; font-family: 'Plus Jakarta Sans', system-ui, sans-serif; }
+        .pv-price { font-size: 1.4rem; font-weight: 700; color: #18181b; }
         .pv-price.free { color: #16a34a; font-size: 1rem; font-weight: 600; background: #f0fdf4; padding: 4px 10px; border-radius: 20px; }
-        .pv-price-placeholder { color: #d4d4d8; font-size: 1rem; font-style: italic; font-family: 'Plus Jakarta Sans', system-ui, sans-serif; }
-        .pv-file-info { display: flex; align-items: center; gap: 6px; font-size: 0.75rem; color: #a1a1aa; margin-bottom: 14px; font-family: 'Plus Jakarta Sans', system-ui, sans-serif; }
+        .pv-price-placeholder { color: #d4d4d8; font-size: 1rem; font-style: italic; }
+        .pv-file-info { display: flex; align-items: center; gap: 6px; font-size: 0.75rem; color: #a1a1aa; margin-bottom: 14px; }
         .pv-buy-btn { width: 100%; padding: 12px; background: #18181b; color: white; border: none; border-radius: 10px; font-size: 0.9rem; font-weight: 600; font-family: 'Plus Jakarta Sans', system-ui, sans-serif; cursor: default; text-align: center; }
         .pv-buy-btn.free-btn { background: #16a34a; }
-        .pv-slug-row { display: flex; align-items: center; gap: 5px; margin-top: 10px; padding: 7px 10px; background: #f4f4f6; border-radius: 7px; }
-        .pv-slug-label { font-size: 0.7rem; color: #a1a1aa; font-family: 'Plus Jakarta Sans', system-ui, sans-serif; }
+        .pv-slug-row { display: flex; align-items: center; gap: 5px; margin-top: 10px; padding: 7px 10px; background: #f4f4f6; border-radius: 7px; overflow: hidden; }
+        .pv-slug-label { font-size: 0.7rem; color: #a1a1aa; white-space: nowrap; }
         .pv-slug-value { font-size: 0.7rem; color: #7c3aed; font-family: 'Courier New', monospace; font-weight: 600; word-break: break-all; }
       `}</style>
 
@@ -329,7 +354,7 @@ export default function Upload() {
             </div>
             <div className="up-modal-field">
               <label className="up-modal-label">Enter text</label>
-              <input className="up-modal-input" placeholder="Enter text" value={linkText} onChange={(e) => setLinkText(e.target.value)} autoFocus />
+              <input className="up-modal-input" placeholder="Link text" value={linkText} onChange={(e) => setLinkText(e.target.value)} autoFocus />
             </div>
             <div className="up-modal-field">
               <label className="up-modal-label">Enter URL</label>
@@ -349,9 +374,9 @@ export default function Upload() {
               <p>Add product info, pricing structure, thumbnail and images.</p>
             </div>
 
-            {/* Details */}
+            {/* ── DETAILS ── */}
             <div className="up-card">
-              <div className="up-card-header" style={{ cursor: "default" }}>
+              <div className="up-card-header">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                 <h2>Details</h2>
               </div>
@@ -419,20 +444,19 @@ export default function Upload() {
 
             {/* ── PRODUCT SLUG ── */}
             <div className="up-card">
-              <div className="up-card-header" style={{ cursor: "default" }}>
+              <div className="up-card-header">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
                 <h2>Product slug</h2>
-                <div className="up-card-header-right">
-                  {!slugManuallyEdited && slug && (
-                    <span className="up-card-header-badge">Auto-generated</span>
-                  )}
-                </div>
+                {!slugManuallyEdited && slug && (
+                  <span className="up-card-header-badge">Auto-generated</span>
+                )}
               </div>
               <div className="up-card-body">
                 <p className="up-hint" style={{ marginBottom: 14 }}>
                   A URL-friendly identifier for your product. If you leave it blank, we will use the product's ID.
                 </p>
                 <label className="up-label">Slug</label>
+                {/* ✅ 1️⃣ Slug input UI */}
                 <div className="slug-input-wrap">
                   <span className="slug-prefix">zelteb.com/</span>
                   <input
@@ -459,9 +483,9 @@ export default function Upload() {
               </div>
             </div>
 
-            {/* Product File */}
+            {/* ── PRODUCT FILE ── */}
             <div className="up-card">
-              <div className="up-card-header" style={{ cursor: "default" }}>
+              <div className="up-card-header">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
                 <h2>Product file <span className="required">*</span></h2>
               </div>
@@ -498,9 +522,9 @@ export default function Upload() {
               </div>
             </div>
 
-            {/* Pricing */}
+            {/* ── PRICING ── */}
             <div className="up-card">
-              <div className="up-card-header" style={{ cursor: "default" }}>
+              <div className="up-card-header">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
                 <h2>Pricing</h2>
               </div>
@@ -519,7 +543,7 @@ export default function Upload() {
                   </div>
                 </div>
                 {!isFree && (
-                  <div className="up-price-input-wrap">
+                  <div style={{ marginTop: 14 }}>
                     <label className="up-label" style={{ marginBottom: 8 }}>Price <span className="req">*</span></label>
                     <div style={{ position: "relative" }}>
                       <span className="up-price-symbol">₹</span>
@@ -530,9 +554,9 @@ export default function Upload() {
               </div>
             </div>
 
-            {/* Thumbnail */}
+            {/* ── THUMBNAIL ── */}
             <div className="up-card">
-              <div className="up-card-header" style={{ cursor: "default" }}>
+              <div className="up-card-header">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
                 <h2>Thumbnail</h2>
               </div>
@@ -548,7 +572,7 @@ export default function Upload() {
                 </div>
                 {thumbPreview && (
                   <div style={{ position: "relative", marginTop: 12 }}>
-                    <img src={thumbPreview} alt="Thumbnail preview" className="up-thumb-preview" style={{ marginTop: 0 }} />
+                    <img src={thumbPreview} alt="Thumbnail preview" className="up-thumb-preview" />
                     <button onClick={() => { setThumb(null); setThumbPreview(null); if (thumbInputRef.current) thumbInputRef.current.value = ""; }} style={{ position: "absolute", top: 8, right: 8, background: "rgba(0,0,0,0.6)", border: "none", borderRadius: "50%", width: 28, height: 28, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: "white", backdropFilter: "blur(4px)" }}>
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                     </button>
@@ -557,7 +581,7 @@ export default function Upload() {
               </div>
             </div>
 
-            {/* Submit */}
+            {/* ── SUBMIT ── */}
             <div className="up-submit-row">
               <button className="up-btn" onClick={upload} disabled={loading}>
                 {loading && <span className="up-spinner" />}
@@ -568,7 +592,7 @@ export default function Upload() {
           </div>
         </div>
 
-        {/* LIVE PREVIEW */}
+        {/* ── LIVE PREVIEW ── */}
         <div className="preview-panel">
           <div className="preview-header">
             <h3>Preview</h3>
