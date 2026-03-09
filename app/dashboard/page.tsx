@@ -31,6 +31,8 @@ export default function Dashboard() {
   const [withdrawing, setWithdrawing] = useState(false);
   const [withdrawSuccess, setWithdrawSuccess] = useState(false);
   const [withdrawError, setWithdrawError] = useState<string | null>(null);
+  const [alreadyWithdrawn, setAlreadyWithdrawn] = useState(0);
+  const [hasPendingRequest, setHasPendingRequest] = useState(false);
 
   const options = ["Last 7 days", "Last 30 days", "Last 90 days", "All time"];
 
@@ -53,6 +55,29 @@ export default function Dashboard() {
       if (profile) {
         setUsername(profile.username || "");
         setAvatarUrl(profile.avatar_url || null);
+      }
+
+      // Check for any pending withdrawal request
+      const { data: pendingRequests } = await supabase
+        .from("withdrawal_requests")
+        .select("id, amount, status")
+        .eq("creator_id", uid)
+        .eq("status", "pending");
+
+      if (pendingRequests && pendingRequests.length > 0) {
+        setHasPendingRequest(true);
+      }
+
+      // Sum up all approved/paid withdrawals
+      const { data: paidRequests } = await supabase
+        .from("withdrawal_requests")
+        .select("amount")
+        .eq("creator_id", uid)
+        .in("status", ["approved", "paid", "completed"]);
+
+      if (paidRequests) {
+        const totalWithdrawn = paidRequests.reduce((sum, r) => sum + Number(r.amount), 0);
+        setAlreadyWithdrawn(totalWithdrawn);
       }
 
       const { data: purchaseData, error } = await supabase
@@ -142,9 +167,11 @@ export default function Dashboard() {
     return new Date(p.created_at) >= cutoff;
   });
 
+  const totalEarnings = purchases.reduce((sum, p) => sum + p.creator_earnings, 0);
+  const availableBalance = Math.max(0, totalEarnings - alreadyWithdrawn);
   const filteredEarnings = filteredPurchases.reduce((sum, p) => sum + p.creator_earnings, 0);
 
-  const canWithdraw = filteredEarnings >= MINIMUM_WITHDRAWAL;
+  const canWithdraw = !hasPendingRequest && availableBalance >= MINIMUM_WITHDRAWAL;
 
   const withdraw = async () => {
     setWithdrawing(true);
@@ -157,19 +184,34 @@ export default function Dashboard() {
       return;
     }
 
+    // Double-check for pending request on server before submitting
+    const { data: existing } = await supabase
+      .from("withdrawal_requests")
+      .select("id")
+      .eq("creator_id", user.id)
+      .eq("status", "pending")
+      .single();
+
+    if (existing) {
+      setWithdrawError("You already have a pending withdrawal request.");
+      setWithdrawing(false);
+      return;
+    }
+
     try {
       const res = await fetch("/api/withdraw", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           creator_id: user.id,
-          amount: filteredEarnings,
+          amount: availableBalance,
         }),
       });
 
       if (res.ok) {
         setWithdrawSuccess(true);
         setWithdrawModalOpen(false);
+        setHasPendingRequest(true); // Lock the button immediately
       } else {
         const body = await res.json().catch(() => ({}));
         setWithdrawError(body?.error ?? "Something went wrong. Please try again.");
@@ -187,7 +229,7 @@ export default function Dashboard() {
 
   return (
     <div className="max-w-4xl mx-auto py-10 px-6">
-      {/* Header — share page button removed */}
+      {/* Header */}
       <div className="flex items-center gap-4 mb-10">
         <div className="w-16 h-16 rounded-full bg-gray-200 overflow-hidden flex items-center justify-center">
           {avatarUrl ? (
@@ -228,9 +270,12 @@ export default function Dashboard() {
           </div>
         </div>
 
-        <p className="text-5xl font-black mb-6">₹{filteredEarnings.toFixed(2)}</p>
+        <p className="text-5xl font-black mb-1">₹{filteredEarnings.toFixed(2)}</p>
+        <p className="text-sm text-gray-400 mb-6">
+          Available to withdraw: <span className="font-semibold text-gray-700">₹{availableBalance.toFixed(2)}</span>
+        </p>
 
-        {/* Withdraw button — replaces the "₹0.00 Products" text */}
+        {/* Withdraw button */}
         <div className="flex items-center gap-3">
           <div className="relative group">
             <button
@@ -244,17 +289,20 @@ export default function Dashboard() {
             >
               Withdraw
             </button>
-            {/* Tooltip when disabled */}
             {!canWithdraw && (
               <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-1.5 bg-gray-800 text-white text-xs rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
-                Minimum withdrawal is ₹{MINIMUM_WITHDRAWAL}
+                {hasPendingRequest
+                  ? "You have a pending withdrawal request"
+                  : `Minimum withdrawal is ₹${MINIMUM_WITHDRAWAL}`}
                 <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-800" />
               </div>
             )}
           </div>
           {!canWithdraw && (
             <p className="text-xs text-gray-400">
-              Minimum ₹{MINIMUM_WITHDRAWAL} required
+              {hasPendingRequest
+                ? "Pending request under review"
+                : `Minimum ₹${MINIMUM_WITHDRAWAL} required`}
             </p>
           )}
         </div>
@@ -267,7 +315,7 @@ export default function Dashboard() {
             <h3 className="text-lg font-bold mb-2">Withdraw Earnings</h3>
             <p className="text-sm text-gray-500 mb-4">
               You're about to request a withdrawal of{" "}
-              <span className="font-semibold text-gray-800">₹{filteredEarnings.toFixed(2)}</span>.
+              <span className="font-semibold text-gray-800">₹{availableBalance.toFixed(2)}</span>.
             </p>
             <p className="text-xs text-gray-400 mb-4">
               Withdrawals are processed within 3–5 business days to your registered bank account.
