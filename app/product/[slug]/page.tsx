@@ -1,8 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 
 declare global {
@@ -12,322 +11,538 @@ declare global {
 export default function ProductPage() {
   const params = useParams();
   const slug = params?.slug as string;
+  const router = useRouter();
 
   const [video, setVideo] = useState<any>(null);
-  const [creator, setCreator] = useState<any>(null);
-  const [avgRating, setAvgRating] = useState<string | null>(null);
-  const [ratingCount, setRatingCount] = useState(0);
-  const [loading, setLoading] = useState(true);
-  const [buying, setBuying] = useState(false);
-  const [currentUser, setCurrentUser] = useState<any>(null);
-  const [alreadyPurchased, setAlreadyPurchased] = useState(false);
+  const [creator, setCreator] = useState<{ username: string; full_name?: string | null; avatar_url?: string | null } | null>(null);
+  const [allRatings, setAllRatings] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [pageLoading, setPageLoading] = useState(true);
+  const [userId, setUserId] = useState<string | null>(null);
+  const [owned, setOwned] = useState(false);
+  const [downloadUrl, setDownloadUrl] = useState<string | null>(null);
+  const [showToast, setShowToast] = useState(false);
 
   useEffect(() => {
+    if (document.querySelector('script[src="https://checkout.razorpay.com/v1/checkout.js"]')) return;
     const script = document.createElement("script");
     script.src = "https://checkout.razorpay.com/v1/checkout.js";
     script.async = true;
     document.body.appendChild(script);
-    return () => { document.body.removeChild(script); };
   }, []);
 
-  useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => {
-      setCurrentUser(data?.user ?? null);
+  const loadRatings = async (vid: string) => {
+    const { data } = await supabase.from("ratings").select("rating").eq("video_id", vid);
+    if (data) setAllRatings(data);
+  };
+
+  const fixDescriptionLinks = (html: string): string => {
+    return html.replace(/href="([^"]+)"/g, (match, url) => {
+      const fixedUrl =
+        /^https?:\/\//i.test(url) || url.startsWith("mailto:") || url.startsWith("#")
+          ? url
+          : `https://${url}`;
+      return `href="${fixedUrl}" target="_blank" rel="noopener noreferrer"`;
     });
-  }, []);
+  };
 
   useEffect(() => {
     if (!slug) return;
-    const fetchData = async () => {
-      setLoading(true);
+    const load = async () => {
+      setPageLoading(true);
+      const [{ data: v }, { data: { user } }] = await Promise.all([
+        supabase.from("videos").select("*").eq("slug", slug).single(),
+        supabase.auth.getUser(),
+      ]);
 
-      const { data: vid } = await supabase
-        .from("videos")
-        .select("*")
-        .eq("slug", slug)
-        .single();
+      if (!v) { setPageLoading(false); return; }
+      setVideo(v);
 
-      if (!vid) { setLoading(false); return; }
-      setVideo(vid);
+      const [, creatorResult] = await Promise.all([
+        loadRatings(v.id),
+        v.creator_id
+          ? supabase.from("profiles").select("username, full_name, avatar_url").eq("id", v.creator_id).single()
+          : Promise.resolve({ data: null }),
+      ]);
+      if (creatorResult?.data) setCreator(creatorResult.data);
 
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("id, username, full_name, avatar_url")
-        .eq("id", vid.creator_id)
-        .single();
-      setCreator(profile);
+      if (!user) { setPageLoading(false); return; }
+      setUserId(user.id);
 
-      const { data: ratings } = await supabase
-        .from("ratings")
-        .select("rating")
-        .eq("video_id", vid.id);
+      const isFree = v.is_free || Number(v.price) === 0;
 
-      if (ratings && ratings.length > 0) {
-        const avg = (ratings.reduce((s: number, r: any) => s + r.rating, 0) / ratings.length).toFixed(1);
-        setAvgRating(avg);
-        setRatingCount(ratings.length);
+      if (isFree) {
+        setOwned(true);
+        const { data: signed } = await supabase.storage.from("videos").createSignedUrl(v.video_path, 60 * 60);
+        setDownloadUrl(signed?.signedUrl || null);
+        setPageLoading(false);
+        return;
       }
 
-      setLoading(false);
+      // Check if owner
+      if (user.id === v.creator_id) {
+        setOwned(true);
+        const { data: signed } = await supabase.storage.from("videos").createSignedUrl(v.video_path, 60 * 60);
+        setDownloadUrl(signed?.signedUrl || null);
+        setPageLoading(false);
+        return;
+      }
+
+      const { data: p } = await supabase
+        .from("purchases")
+        .select("id")
+        .eq("video_id", v.id)
+        .eq("buyer_id", user.id)
+        .single();
+
+      if (p) {
+        setOwned(true);
+        const { data: signed } = await supabase.storage.from("videos").createSignedUrl(v.video_path, 60 * 60);
+        setDownloadUrl(signed?.signedUrl || null);
+      }
+
+      setPageLoading(false);
     };
-    fetchData();
+    load();
   }, [slug]);
 
-  useEffect(() => {
-    if (!currentUser || !video) return;
-    supabase
-      .from("purchases")
-      .select("id")
-      .eq("buyer_id", currentUser.id)
-      .eq("video_id", video.id)
-      .eq("status", "completed")
-      .then(({ data }) => {
-        setAlreadyPurchased(!!(data && data.length > 0));
-      });
-  }, [currentUser, video]);
+  const totalRatings = allRatings.length;
+  const avgRating = totalRatings > 0
+    ? (allRatings.reduce((sum, r) => sum + r.rating, 0) / totalRatings).toFixed(1)
+    : null;
+  const countFor = (star: number) => allRatings.filter(r => r.rating === star).length;
+  const pctFor = (star: number) => totalRatings > 0 ? Math.round((countFor(star) / totalRatings) * 100) : 0;
 
-  const isFree = video?.is_free || Number(video?.price) === 0;
-  const isOwner = currentUser?.id === video?.creator_id;
+  const handleShare = async () => {
+    const url = window.location.href;
+    if (navigator.share) {
+      try { await navigator.share({ title: video?.title || "Check this out", url }); } catch {}
+    } else {
+      await navigator.clipboard.writeText(url);
+      setShowToast(true);
+      setTimeout(() => setShowToast(false), 2500);
+    }
+  };
 
-  const handleBuy = async () => {
-    if (!currentUser) {
-      window.location.href = "/login";
+  const download = async (path: string, title: string) => {
+    const { data, error } = await supabase.storage.from("videos").createSignedUrl(path, 60 * 60);
+    if (error) { alert(error.message); return; }
+    if (data?.signedUrl) {
+      try {
+        const response = await fetch(data.signedUrl);
+        const blob = await response.blob();
+        const blobUrl = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = blobUrl;
+        a.download = title || "download";
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setTimeout(() => URL.revokeObjectURL(blobUrl), 10000);
+      } catch {
+        window.open(data.signedUrl, "_blank");
+      }
+    }
+  };
+
+  const buy = async () => {
+    setLoading(true);
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      router.push(`/login?redirect=/product/${slug}`);
+      setLoading(false);
       return;
     }
-    if (alreadyPurchased || isOwner) {
-      window.location.href = `/watch/${video.slug}`;
+    if (owned) {
+      // Already owns — go to watch page
+      router.push(`/watch/${slug}`);
+      setLoading(false);
       return;
     }
 
-    setBuying(true);
     try {
       const res = await fetch("/api/buy-video", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          action: "create-order",
-          video_id: video.id,
-          buyer_id: currentUser.id,
-        }),
+        body: JSON.stringify({ action: "create-order", video_id: video.id, buyer_id: user.id }),
       });
 
-      if (!res.ok) {
-        alert("Failed to create order. Please try again.");
-        setBuying(false);
-        return;
-      }
+      if (!res.ok) { alert("Failed to create order. Please try again."); setLoading(false); return; }
 
       const data = await res.json();
 
       if (data.free) {
-        window.location.href = `/watch/${video.slug}`;
-        setBuying(false);
+        setOwned(true);
+        const { data: signed } = await supabase.storage.from("videos").createSignedUrl(video.video_path, 60 * 60);
+        setDownloadUrl(signed?.signedUrl || null);
+        setLoading(false);
         return;
       }
 
-      const { order } = data;
-      const options = {
-        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
-        amount: order.amount,
-        currency: order.currency,
-        name: "Zelteb",
-        description: video.title,
-        order_id: order.id,
-        handler: async (response: any) => {
-          const verifyRes = await fetch("/api/buy-video", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              action: "verify-payment",
-              payment_id: response.razorpay_payment_id,
-              order_id: response.razorpay_order_id,
-              signature: response.razorpay_signature,
-              video_id: video.id,
-              buyer_id: currentUser.id,
-            }),
-          });
-          if (verifyRes.ok) {
-            window.location.href = `/watch/${video.slug}`;
-          } else {
-            const msg = await verifyRes.text();
-            alert("Payment verification failed: " + msg);
-          }
-        },
-        prefill: { email: currentUser.email ?? "" },
-        theme: { color: "#e91e8c" },
-        modal: { ondismiss: () => setBuying(false) },
+      const order = data.order;
+      const openCheckout = () => {
+        const rzp = new window.Razorpay({
+          key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
+          amount: order.amount,
+          currency: "INR",
+          name: "Zelteb",
+          description: video.title,
+          order_id: order.id,
+          handler: async (response: any) => {
+            const verifyRes = await fetch("/api/buy-video", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                action: "verify-payment",
+                payment_id: response.razorpay_payment_id,
+                order_id: response.razorpay_order_id,
+                signature: response.razorpay_signature,
+                video_id: video.id,
+                buyer_id: user.id,
+              }),
+            });
+            if (verifyRes.ok) {
+              setOwned(true);
+              const { data: signed } = await supabase.storage.from("videos").createSignedUrl(video.video_path, 60 * 60);
+              setDownloadUrl(signed?.signedUrl || null);
+            } else {
+              const msg = await verifyRes.text();
+              alert("Payment verification failed: " + msg);
+            }
+            setLoading(false);
+          },
+          prefill: { email: user.email ?? "" },
+          theme: { color: "#e91e8c" },
+          modal: { ondismiss: () => setLoading(false) },
+        });
+        rzp.open();
       };
-      const rzp = new window.Razorpay(options);
-      rzp.open();
+
+      if (window.Razorpay) {
+        openCheckout();
+      } else {
+        const script = document.createElement("script");
+        script.src = "https://checkout.razorpay.com/v1/checkout.js";
+        script.onload = openCheckout;
+        document.body.appendChild(script);
+      }
     } catch (err: any) {
       alert("Something went wrong: " + err.message);
-      setBuying(false);
+      setLoading(false);
     }
   };
 
-  if (loading) {
-    return (
-      <div style={{ minHeight: "100vh", background: "#f4f3f0", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "system-ui, sans-serif" }}>
-        <p style={{ color: "#999", fontSize: 15 }}>Loading...</p>
+  if (pageLoading) return (
+    <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "100vh" }}>
+      <div style={{ textAlign: "center", color: "#a1a1aa" }}>
+        <div style={{ width: 40, height: 40, border: "3px solid #e4e4e7", borderTopColor: "#7c3aed", borderRadius: "50%", animation: "spin 0.7s linear infinite", margin: "0 auto 12px" }} />
+        <p>Loading...</p>
       </div>
-    );
-  }
+    </div>
+  );
 
-  if (!video) {
-    return (
-      <div style={{ minHeight: "100vh", background: "#f4f3f0", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "system-ui, sans-serif" }}>
-        <p style={{ color: "#999", fontSize: 15 }}>Product not found.</p>
-      </div>
-    );
-  }
+  if (!video) return (
+    <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "100vh", fontFamily: "DM Sans, sans-serif" }}>
+      <p style={{ color: "#a1a1aa" }}>Product not found.</p>
+    </div>
+  );
 
-  const btnLabel = isOwner
-    ? "Watch (Your Product)"
-    : alreadyPurchased
-    ? "Watch Now"
-    : isFree
-    ? "Get for Free"
-    : buying
-    ? "Processing..."
-    : `Buy Now — ₹${video.price}`;
+  const creatorDisplayName = creator?.full_name || creator?.username || "Creator";
+  const isFree = video.is_free || Number(video.price) === 0;
 
   return (
-    <div style={{ fontFamily: "system-ui, -apple-system, BlinkMacSystemFont, sans-serif", background: "#f4f3f0", minHeight: "100vh" }}>
+    <>
       <style>{`
-        * { box-sizing: border-box; }
-        .buy-btn { width: 100%; padding: 14px; border-radius: 10px; background: #e91e8c; color: white; font-size: 16px; font-weight: 700; border: none; cursor: pointer; transition: opacity 0.15s; }
-        .buy-btn:hover { opacity: 0.88; }
-        .buy-btn:disabled { opacity: 0.6; cursor: not-allowed; }
-        .creator-avatar { width: 36px; height: 36px; border-radius: 50%; background: linear-gradient(135deg, #7c3aed, #e879f9); display: flex; align-items: center; justify-content: center; font-size: 14px; color: white; font-weight: 700; overflow: hidden; flex-shrink: 0; }
-        .creator-avatar img { width: 100%; height: 100%; object-fit: cover; }
-        .price-tag { display: inline-flex; align-items: center; background: #e91e8c; color: white; font-weight: 700; font-size: 15px; padding: 6px 18px 6px 12px; clip-path: polygon(0 0, 90% 0, 100% 50%, 90% 100%, 0 100%); }
+        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap');
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        body { background: #fff; }
+        .watch-wrap { font-family: 'DM Sans', sans-serif; background: #fff; min-height: 100vh; color: #18181b; }
+
+        .watch-nav { background: white; border-bottom: 1px solid #e4e4e7; padding: 0 40px; height: 54px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 10; }
+        .watch-nav-logo { font-size: 1.2rem; color: #18181b; text-decoration: none; font-weight: 800; }
+        .watch-nav-share { display: inline-flex; align-items: center; gap: 6px; padding: 7px 16px; border-radius: 8px; border: 1px solid #e4e4e7; background: white; font-size: 13px; font-weight: 600; font-family: 'DM Sans', sans-serif; color: #18181b; cursor: pointer; transition: background 0.15s, border-color 0.15s; }
+        .watch-nav-share:hover { background: #f4f4f6; border-color: #d4d4d8; }
+
+        .watch-hero { width: 100%; max-height: 480px; overflow: hidden; background: #18181b; }
+        .watch-hero img { width: 100%; height: 480px; object-fit: cover; display: block; }
+        .watch-hero-placeholder { width: 100%; height: 380px; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #18181b, #3f3f46); font-size: 5rem; }
+
+        .watch-main { max-width: 1000px; margin: 0 auto; padding: 0 24px 60px; display: grid; grid-template-columns: 1fr 300px; gap: 40px; align-items: start; }
+        .watch-left { padding-top: 28px; }
+
+        .watch-meta-row { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; }
+        .watch-price-tag { display: inline-flex; align-items: center; background: #e91e8c; color: white; font-weight: 700; font-size: 14px; padding: 5px 16px 5px 12px; clip-path: polygon(0 0, 88% 0, 100% 50%, 88% 100%, 0 100%); flex-shrink: 0; }
+        .watch-price-tag.free-tag { background: #16a34a; }
+
+        .watch-creator-pill { display: flex; align-items: center; gap: 7px; background: #f4f4f6; border-radius: 999px; padding: 5px 12px 5px 5px; text-decoration: none; transition: background 0.15s; }
+        .watch-creator-pill:hover { background: #e8e8e8; }
+        .watch-creator-avatar { width: 24px; height: 24px; border-radius: 50%; background: linear-gradient(135deg, #7c3aed, #e879f9); display: flex; align-items: center; justify-content: center; font-size: 11px; color: white; font-weight: 700; flex-shrink: 0; overflow: hidden; }
+        .watch-creator-avatar img { width: 100%; height: 100%; object-fit: cover; }
+        .watch-creator-name { font-size: 13px; font-weight: 600; color: #18181b; }
+
+        .watch-inline-stars { display: flex; align-items: center; gap: 5px; }
+        .watch-inline-stars .stars { display: flex; gap: 2px; }
+        .watch-inline-stars .count { font-size: 13px; color: #71717a; }
+
+        .watch-title { font-size: 1.75rem; font-weight: 800; color: #18181b; line-height: 1.2; letter-spacing: -0.02em; margin-bottom: 20px; }
+        .watch-divider-line { height: 1px; background: #f0f0f2; margin: 24px 0; }
+        .watch-description { font-size: 0.9rem; color: #3f3f46; line-height: 1.8; }
+        .watch-description p { margin-bottom: 10px; }
+        .watch-description strong { font-weight: 700; color: #18181b; }
+        .watch-description blockquote { border-left: 3px solid #e879f9; padding-left: 14px; color: #71717a; font-style: italic; margin: 12px 0; }
+        .watch-description a { color: #e879f9; text-decoration: underline; cursor: pointer; }
+        .watch-description a:hover { color: #c2185b; }
+        .watch-description ul, .watch-description ol { padding-left: 20px; margin: 8px 0; }
+        .watch-description img { max-width: 100%; border-radius: 8px; }
+        .watch-description h1 { font-size: 1.5rem; font-weight: 800; margin-bottom: 8px; }
+        .watch-description h2 { font-size: 1.2rem; font-weight: 700; margin-bottom: 6px; }
+        .watch-description h3 { font-size: 1rem; font-weight: 600; margin-bottom: 5px; }
+        .watch-description pre { background: #18181b; color: #e4e4e7; border-radius: 8px; padding: 12px 14px; font-family: monospace; font-size: 0.85rem; margin: 8px 0; overflow-x: auto; }
+
+        .ratings-box { margin-top: 36px; border-top: 1px solid #f0f0f2; padding-top: 28px; }
+        .ratings-box-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; }
+        .ratings-box-title { font-size: 1rem; font-weight: 700; color: #18181b; }
+        .ratings-avg { display: flex; align-items: center; gap: 5px; font-size: 0.9rem; font-weight: 700; color: #18181b; }
+        .ratings-avg-count { font-size: 0.8rem; font-weight: 400; color: #71717a; }
+        .ratings-row { display: flex; align-items: center; gap: 10px; margin-bottom: 9px; }
+        .ratings-label { font-size: 0.8rem; color: #52525b; width: 48px; flex-shrink: 0; text-align: right; }
+        .ratings-bar-track { flex: 1; height: 9px; background: #f0f0f2; border-radius: 99px; overflow: hidden; }
+        .ratings-bar-fill { height: 100%; border-radius: 99px; background: #e879f9; transition: width 0.4s ease; }
+        .ratings-pct { font-size: 0.78rem; color: #71717a; width: 32px; flex-shrink: 0; text-align: right; }
+        .ratings-empty { font-size: 0.875rem; color: #a1a1aa; padding: 12px 0; }
+
+        .watch-card { background: white; border: 1px solid #e4e4e7; border-radius: 16px; overflow: hidden; box-shadow: 0 2px 20px rgba(0,0,0,0.06); position: sticky; top: 74px; margin-top: 28px; }
+        .watch-card-body { padding: 20px; }
+        .watch-card-title { font-size: 1rem; font-weight: 700; color: #18181b; line-height: 1.3; margin-bottom: 4px; }
+        .watch-card-type { font-size: 0.72rem; color: #a1a1aa; font-weight: 400; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.06em; }
+        .watch-card-creator { display: flex; align-items: center; gap: 9px; padding: 10px 11px; background: #f7f7f7; border-radius: 10px; margin-bottom: 14px; text-decoration: none; transition: background 0.15s; }
+        .watch-card-creator:hover { background: #efefef; }
+        .watch-card-creator-avatar { width: 32px; height: 32px; border-radius: 50%; background: linear-gradient(135deg, #7c3aed, #e879f9); display: flex; align-items: center; justify-content: center; font-size: 13px; color: white; font-weight: 700; flex-shrink: 0; overflow: hidden; }
+        .watch-card-creator-avatar img { width: 100%; height: 100%; object-fit: cover; }
+        .watch-card-creator-info { flex: 1; min-width: 0; }
+        .watch-card-creator-name { font-size: 13px; font-weight: 600; color: #18181b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .watch-card-creator-sub { font-size: 11px; color: #a1a1aa; }
+        .watch-card-divider { height: 1px; background: #f0f0f2; margin: 14px 0; }
+        .watch-card-price { font-size: 1.5rem; font-weight: 800; color: #18181b; margin-bottom: 14px; }
+        .watch-card-price .free { font-size: 1rem; font-weight: 600; color: #16a34a; background: #f0fdf4; padding: 5px 12px; border-radius: 20px; display: inline-block; }
+        .watch-buy-btn { width: 100%; padding: 13px; background: #e91e8c; color: white; border: none; border-radius: 10px; font-size: 0.95rem; font-weight: 700; font-family: 'DM Sans', sans-serif; cursor: pointer; transition: background 0.15s, transform 0.1s; margin-bottom: 10px; }
+        .watch-buy-btn:hover:not(:disabled) { background: #c2185b; transform: translateY(-1px); }
+        .watch-buy-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+        .watch-buy-btn.free-btn { background: #16a34a; }
+        .watch-buy-btn.free-btn:hover:not(:disabled) { background: #15803d; }
+        .watch-download-btn { width: 100%; padding: 13px; background: #7c3aed; color: white; border: none; border-radius: 10px; font-size: 0.95rem; font-weight: 700; font-family: 'DM Sans', sans-serif; cursor: pointer; display: block; text-align: center; margin-bottom: 10px; transition: background 0.15s; }
+        .watch-download-btn:hover { background: #6d28d9; }
+        .watch-share-card-btn { width: 100%; padding: 11px; background: white; color: #18181b; border: 1px solid #e4e4e7; border-radius: 10px; font-size: 0.875rem; font-weight: 600; font-family: 'DM Sans', sans-serif; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 7px; margin-bottom: 10px; transition: background 0.15s; }
+        .watch-share-card-btn:hover { background: #f4f4f6; }
+        .watch-owned-badge { display: flex; align-items: center; gap: 6px; font-size: 0.78rem; color: #16a34a; font-weight: 500; background: #f0fdf4; padding: 7px 12px; border-radius: 8px; margin-bottom: 12px; }
+        .watch-secure { display: flex; align-items: center; gap: 5px; font-size: 0.73rem; color: #a1a1aa; justify-content: center; }
+
+        .compact-footer { display: flex; align-items: center; justify-content: center; gap: 18px; padding: 16px 24px; border-top: 1px solid #f0f0f0; font-family: 'DM Sans', sans-serif; }
+        .compact-footer-sell { display: inline-flex; align-items: center; gap: 6px; font-size: 14px; font-weight: 600; color: #2563eb; text-decoration: none; letter-spacing: -0.01em; transition: opacity 0.15s; }
+        .compact-footer-sell:hover { opacity: 0.75; }
+        .compact-footer-dot { color: #d1d5db; font-size: 12px; }
+        .compact-footer-powered { font-size: 14px; color: #9ca3af; font-weight: 500; }
+        .compact-footer-powered a { color: #111; font-weight: 800; text-decoration: none; font-size: 15px; letter-spacing: -0.02em; transition: opacity 0.15s; }
+        .compact-footer-powered a:hover { opacity: 0.7; }
+
+        .share-toast { position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%); background: #18181b; color: white; padding: 11px 22px; border-radius: 10px; font-size: 13px; font-weight: 500; z-index: 9999; display: flex; align-items: center; gap: 8px; box-shadow: 0 4px 24px rgba(0,0,0,0.22); animation: toast-in 0.22s ease; white-space: nowrap; }
+        @keyframes toast-in { from { opacity: 0; transform: translateX(-50%) translateY(10px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
         @media (max-width: 768px) {
-          .product-layout { flex-direction: column !important; }
-          .product-sidebar { width: 100% !important; position: static !important; }
-          .nav-links { display: none !important; }
-          .navbar-inner { padding: 14px 16px !important; }
-          .page-padding { padding: 20px 16px 40px !important; }
+          .watch-nav { padding: 0 16px; }
+          .watch-hero img { height: 220px; }
+          .watch-hero-placeholder { height: 200px; }
+          .watch-main { grid-template-columns: 1fr; gap: 0; padding: 0 16px 40px; }
+          .watch-card { position: static; margin-top: 0; order: -1; border-radius: 0; border-left: none; border-right: none; box-shadow: none; border-top: none; }
+          .watch-title { font-size: 1.35rem; }
         }
       `}</style>
 
-      {/* NAVBAR */}
-      <header style={{ background: "white", borderBottom: "1px solid #f0f0f0" }}>
-        <div className="navbar-inner" style={{ maxWidth: 1200, margin: "0 auto", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "20px 32px" }}>
-          <Link href="/" style={{ fontSize: 28, fontWeight: 900, letterSpacing: "-0.04em", color: "#000", textDecoration: "none" }}>
-            Zelteb
-          </Link>
-          <nav className="nav-links" style={{ display: "flex", gap: 40, fontSize: 15, fontWeight: 500 }}>
-            <Link href="/" style={{ color: "#666", textDecoration: "none" }}>Home</Link>
-            <Link href="/discover" style={{ color: "#000", textDecoration: "none" }}>Discover</Link>
-            <Link href="/purchased" style={{ color: "#000", textDecoration: "none" }}>Purchased</Link>
-          </nav>
-          <Link href="/dashboard" style={{ padding: "10px 24px", borderRadius: 999, background: "#000", color: "white", fontSize: 14, fontWeight: 700, textDecoration: "none" }}>
-            Dashboard
-          </Link>
+      <div className="watch-wrap">
+
+        {/* NAVBAR */}
+        <nav className="watch-nav">
+          <a href="/" className="watch-nav-logo">Zelteb</a>
+          <button className="watch-nav-share" onClick={handleShare}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
+              <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
+            </svg>
+            Share
+          </button>
+        </nav>
+
+        {/* HERO */}
+        <div className="watch-hero">
+          {video.thumbnail_url
+            ? <img src={video.thumbnail_url} alt={video.title} />
+            : <div className="watch-hero-placeholder">{video.product_type === "video" ? "🎬" : "📁"}</div>
+          }
         </div>
-      </header>
 
-      <div className="page-padding" style={{ maxWidth: 1100, margin: "0 auto", padding: "36px 24px 60px" }}>
-
-        {/* Back */}
-        <Link href="/discover" style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 14, color: "#666", textDecoration: "none", marginBottom: 24, fontWeight: 500 }}>
-          ← Back to Discover
-        </Link>
-
-        <div className="product-layout" style={{ display: "flex", gap: 36, alignItems: "flex-start" }}>
-
-          {/* LEFT */}
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ width: "100%", aspectRatio: "16/9", borderRadius: 14, overflow: "hidden", background: "#1a1a1a", marginBottom: 28 }}>
-              {video.thumbnail_url
-                ? <img src={video.thumbnail_url} alt={video.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                : <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 64 }}>
-                    {video.product_type === "video" ? "🎬" : "📁"}
-                  </div>
-              }
-            </div>
-
-            <h1 style={{ fontSize: 26, fontWeight: 800, margin: "0 0 12px", lineHeight: 1.3, color: "#111" }}>
-              {video.title}
-            </h1>
-
-            {creator && (
-              <div
-                onClick={() => window.location.href = `/${creator.username}`}
-                style={{ display: "inline-flex", alignItems: "center", gap: 10, cursor: "pointer", marginBottom: 16 }}
-              >
-                <div className="creator-avatar">
-                  {creator.avatar_url
-                    ? <img src={creator.avatar_url} alt={creator.username} />
-                    : (creator.full_name || creator.username || "?")[0].toUpperCase()
-                  }
-                </div>
-                <div>
-                  <p style={{ margin: 0, fontWeight: 600, fontSize: 14, color: "#111" }}>{creator.full_name || creator.username}</p>
-                  <p style={{ margin: 0, fontSize: 12, color: "#888" }}>@{creator.username}</p>
-                </div>
-              </div>
-            )}
-
-            <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 24 }}>
-              {avgRating ? (
-                <>
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="#f59e0b" stroke="#f59e0b" strokeWidth="1.5">
-                    <polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26" />
-                  </svg>
-                  <span style={{ fontWeight: 700, fontSize: 14, color: "#111" }}>{avgRating}</span>
-                  <span style={{ fontSize: 13, color: "#999" }}>({ratingCount} reviews)</span>
-                </>
-              ) : (
-                <span style={{ fontSize: 13, color: "#bbb" }}>No reviews yet</span>
+        {/* MAIN GRID */}
+        <div className="watch-main">
+          <div className="watch-left">
+            <div className="watch-meta-row">
+              <span className={`watch-price-tag ${isFree ? "free-tag" : ""}`}>
+                {isFree ? "Free" : `₹${video.price}`}
+              </span>
+              {creator && (
+                <a href={`/${creator.username}`} className="watch-creator-pill">
+                  <span className="watch-creator-avatar">
+                    {creator.avatar_url
+                      ? <img src={creator.avatar_url} alt={creatorDisplayName} />
+                      : creatorDisplayName.charAt(0).toUpperCase()
+                    }
+                  </span>
+                  <span className="watch-creator-name">{creatorDisplayName}</span>
+                </a>
+              )}
+              {avgRating && (
+                <span className="watch-inline-stars">
+                  <span className="stars">
+                    {[1,2,3,4,5].map(s => (
+                      <svg key={s} width="14" height="14" viewBox="0 0 24 24" fill={s <= Math.round(Number(avgRating)) ? "#f59e0b" : "none"} stroke="#f59e0b" strokeWidth="1.5">
+                        <polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/>
+                      </svg>
+                    ))}
+                  </span>
+                  <span className="count">{avgRating} ({totalRatings} {totalRatings === 1 ? "rating" : "ratings"})</span>
+                </span>
               )}
             </div>
 
+            <h1 className="watch-title">{video.title}</h1>
+
             {video.description && (
-              <div style={{ background: "white", borderRadius: 12, padding: "20px 24px" }}>
-                <h2 style={{ fontSize: 16, fontWeight: 700, margin: "0 0 10px", color: "#111" }}>About this product</h2>
-                <p style={{ fontSize: 14, color: "#555", lineHeight: 1.7, margin: 0, whiteSpace: "pre-wrap" }}>
-                  {video.description}
-                </p>
-              </div>
-            )}
-          </div>
-
-          {/* RIGHT: Buy Card */}
-          <div className="product-sidebar" style={{ width: 320, background: "white", borderRadius: 16, padding: "24px", boxShadow: "0 4px 24px rgba(0,0,0,0.07)", position: "sticky", top: 24 }}>
-            <div style={{ marginBottom: 20 }}>
-              <span className="price-tag">
-                {isFree ? "Free" : `₹${video.price}`}
-              </span>
-            </div>
-
-            <button className="buy-btn" onClick={handleBuy} disabled={buying}>
-              {btnLabel}
-            </button>
-
-            {!currentUser && (
-              <p style={{ fontSize: 12, color: "#999", textAlign: "center", marginTop: 10 }}>
-                You need to <Link href="/login" style={{ color: "#e91e8c", fontWeight: 600 }}>log in</Link> to purchase
-              </p>
+              <>
+                <div className="watch-divider-line" />
+                <div
+                  className="watch-description"
+                  dangerouslySetInnerHTML={{ __html: fixDescriptionLinks(video.description) }}
+                />
+              </>
             )}
 
-            <hr style={{ border: "none", borderTop: "1px solid #f0f0f0", margin: "20px 0" }} />
-
-            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: "#555" }}>
-                <span>📦</span> {video.product_type === "video" ? "Video course" : "Digital file"}
+            {/* RATINGS BREAKDOWN */}
+            <div className="ratings-box">
+              <div className="ratings-box-header">
+                <span className="ratings-box-title">Ratings</span>
+                {avgRating && (
+                  <span className="ratings-avg">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="#f59e0b" stroke="#f59e0b" strokeWidth="1.5">
+                      <polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/>
+                    </svg>
+                    {avgRating}
+                    <span className="ratings-avg-count">({totalRatings} {totalRatings === 1 ? "rating" : "ratings"})</span>
+                  </span>
+                )}
               </div>
-              <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: "#555" }}>
-                <span>♾️</span> Lifetime access
-              </div>
-              <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: "#555" }}>
-                <span>📱</span> Access on any device
-              </div>
+              {totalRatings === 0 ? (
+                <p className="ratings-empty">No ratings yet. Be the first to rate!</p>
+              ) : (
+                [5, 4, 3, 2, 1].map(star => (
+                  <div className="ratings-row" key={star}>
+                    <span className="ratings-label">{star} {star === 1 ? "star" : "stars"}</span>
+                    <div className="ratings-bar-track">
+                      <div className="ratings-bar-fill" style={{ width: `${pctFor(star)}%` }} />
+                    </div>
+                    <span className="ratings-pct">{pctFor(star)}%</span>
+                  </div>
+                ))
+              )}
             </div>
           </div>
 
+          {/* STICKY BUY CARD */}
+          <div className="watch-card">
+            <div className="watch-card-body">
+              <div className="watch-card-title">{video.title}</div>
+              <div className="watch-card-type">{video.product_type === "video" ? "Video" : "Digital Product"}</div>
+              {creator && (
+                <a href={`/${creator.username}`} className="watch-card-creator">
+                  <div className="watch-card-creator-avatar">
+                    {creator.avatar_url
+                      ? <img src={creator.avatar_url} alt={creatorDisplayName} />
+                      : creatorDisplayName.charAt(0).toUpperCase()
+                    }
+                  </div>
+                  <div className="watch-card-creator-info">
+                    <div className="watch-card-creator-name">{creatorDisplayName}</div>
+                    <div className="watch-card-creator-sub">View profile</div>
+                  </div>
+                </a>
+              )}
+              <div className="watch-card-divider" />
+              {owned && (
+                <div className="watch-owned-badge">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                  You own this product
+                </div>
+              )}
+              <div className="watch-card-price">
+                {isFree ? <span className="free">Free</span> : `₹${video.price}`}
+              </div>
+
+              {owned ? (
+                downloadUrl ? (
+                  <button className="watch-download-btn" onClick={() => download(video.video_path, video.title)}>
+                    {video.product_type === "video" ? "▶ Watch / Download" : "⬇ Download"}
+                  </button>
+                ) : (
+                  <div style={{ textAlign: "center", fontSize: "0.85rem", color: "#a1a1aa", padding: "12px 0" }}>Preparing download...</div>
+                )
+              ) : (
+                <button
+                  className={`watch-buy-btn ${isFree ? "free-btn" : ""}`}
+                  onClick={buy}
+                  disabled={loading}
+                >
+                  {loading ? "Processing..." : isFree ? "Get for Free" : "Buy Now"}
+                </button>
+              )}
+
+              <button className="watch-share-card-btn" onClick={handleShare}>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
+                  <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
+                </svg>
+                Share this product
+              </button>
+              <div className="watch-secure">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                Secure checkout
+              </div>
+            </div>
+          </div>
         </div>
+
+        {/* FOOTER */}
+        <div className="compact-footer">
+          <a href={userId ? "https://www.zelteb.com/dashboard/product" : "/login"} className="compact-footer-sell" target={userId ? "_blank" : "_self"} rel="noopener noreferrer">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/>
+              <line x1="3" y1="6" x2="21" y2="6"/>
+              <path d="M16 10a4 4 0 0 1-8 0"/>
+            </svg>
+            Sell your own product
+          </a>
+          <span className="compact-footer-dot">·</span>
+          <span className="compact-footer-powered">
+            Powered by{" "}
+            <a href="https://zelteb.com" target="_blank" rel="noopener noreferrer">Zelteb</a>
+          </span>
+        </div>
+
       </div>
-    </div>
+
+      {showToast && (
+        <div className="share-toast">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+          Link copied to clipboard!
+        </div>
+      )}
+    </>
   );
 }
