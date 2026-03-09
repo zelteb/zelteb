@@ -260,7 +260,7 @@ export default function AnalyticsPage() {
               delay: "au3",
             },
             {
-              label: "Sales / Day",
+              label: "Sales No",
               value: salesPerDay.toFixed(1),
               sub: `Over ${period} days`,
               delay: "au4",
