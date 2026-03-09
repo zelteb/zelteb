@@ -4,6 +4,12 @@ import { use, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 
+declare global {
+  interface Window {
+    Razorpay: any;
+  }
+}
+
 export default function Watch({ params }: { params: Promise<{ id: string }> }) {
   const { id: videoId } = use(params);
   const router = useRouter();
@@ -24,6 +30,15 @@ export default function Watch({ params }: { params: Promise<{ id: string }> }) {
   const [ratingLoading, setRatingLoading] = useState(false);
   const [existingRating, setExistingRating] = useState<any>(null);
   const [allRatings, setAllRatings] = useState<any[]>([]);
+
+  // ✅ Load Razorpay script once on mount
+  useEffect(() => {
+    if (document.querySelector('script[src="https://checkout.razorpay.com/v1/checkout.js"]')) return;
+    const script = document.createElement("script");
+    script.src = "https://checkout.razorpay.com/v1/checkout.js";
+    script.async = true;
+    document.body.appendChild(script);
+  }, []);
 
   const fixDescriptionLinks = (html: string): string => {
     return html.replace(/href="([^"]+)"/g, (match, url) => {
@@ -101,6 +116,9 @@ export default function Watch({ params }: { params: Promise<{ id: string }> }) {
     }
   };
 
+  // ============================
+  // ✅ FIXED BUY FUNCTION
+  // ============================
   const buy = async () => {
     setLoading(true);
 
@@ -113,6 +131,7 @@ export default function Watch({ params }: { params: Promise<{ id: string }> }) {
     if (owned) { setLoading(false); return; }
 
     try {
+      // 1️⃣ Create Razorpay Order
       const res = await fetch("/api/buy-video", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -124,26 +143,97 @@ export default function Watch({ params }: { params: Promise<{ id: string }> }) {
       });
 
       if (!res.ok) {
-        const msg = await res.text();
-        alert(msg || "Something went wrong. Please try again.");
+        alert("Failed to create order. Please try again.");
         setLoading(false);
         return;
       }
 
       const data = await res.json();
 
-      // FREE PRODUCT
-      if (data.free) {
-        setOwned(true);
-        const { data: signed } = await supabase.storage
-          .from("videos")
-          .createSignedUrl(video.video_path, 60 * 60);
-        setDownloadUrl(signed?.signedUrl || null);
-        setLoading(false);
-        return;
-      }
+// 🟢 FREE PRODUCT — skip Razorpay
+if (data.free) {
+  setOwned(true);
 
-      setLoading(false);
+  const { data: signed } = await supabase.storage
+    .from("videos")
+    .createSignedUrl(video.video_path, 60 * 60);
+
+  setDownloadUrl(signed?.signedUrl || null);
+  setLoading(false);
+  return;
+}
+
+// 🟢 PAID PRODUCT
+const order = data.order;
+
+      // 2️⃣ Open Razorpay checkout (reuse script if already loaded)
+      const openCheckout = () => {
+        const rzp = new window.Razorpay({
+          key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
+          amount: order.amount,
+          currency: "INR",
+          name: "Zelteb",
+          description: video.title,
+          order_id: order.id,
+
+          handler: async function (response: any) {
+            // 3️⃣ Verify Payment
+            const verifyRes = await fetch("/api/buy-video", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                action: "verify-payment",
+                payment_id: response.razorpay_payment_id,
+                order_id: response.razorpay_order_id,
+                signature: response.razorpay_signature,
+                video_id: video.id,
+                buyer_id: user.id,
+              }),
+            });
+
+            if (verifyRes.ok) {
+              // 4️⃣ Unlock video
+              setOwned(true);
+              const { data: signed } = await supabase.storage
+                .from("videos")
+                .createSignedUrl(video.video_path, 60 * 60);
+              setDownloadUrl(signed?.signedUrl || null);
+            } else {
+              const msg = await verifyRes.text();
+              alert("Payment verification failed: " + msg);
+            }
+            setLoading(false);
+          },
+
+          prefill: {
+            email: user.email ?? "",
+          },
+
+          theme: { color: "#e91e8c" },
+
+          // ✅ Reset button if user closes popup
+          modal: {
+            ondismiss: () => setLoading(false),
+          },
+        });
+
+        rzp.open();
+      };
+
+      // ✅ Reuse script if already loaded, otherwise wait for it
+      if (window.Razorpay) {
+        openCheckout();
+      } else {
+        const existing = document.querySelector('script[src="https://checkout.razorpay.com/v1/checkout.js"]') as HTMLScriptElement | null;
+        if (existing) {
+          existing.onload = openCheckout;
+        } else {
+          const script = document.createElement("script");
+          script.src = "https://checkout.razorpay.com/v1/checkout.js";
+          script.onload = openCheckout;
+          document.body.appendChild(script);
+        }
+      }
     } catch (err: any) {
       alert("Something went wrong: " + err.message);
       setLoading(false);
@@ -297,13 +387,11 @@ export default function Watch({ params }: { params: Promise<{ id: string }> }) {
         .watch-buy-btn:disabled { opacity: 0.6; cursor: not-allowed; }
         .watch-buy-btn.free-btn { background: #16a34a; }
         .watch-buy-btn.free-btn:hover:not(:disabled) { background: #15803d; }
-        .watch-buy-btn.unavailable { background: #71717a; cursor: not-allowed; }
         .watch-download-btn { width: 100%; padding: 13px; background: #7c3aed; color: white; border: none; border-radius: 10px; font-size: 0.95rem; font-weight: 700; font-family: 'DM Sans', sans-serif; cursor: pointer; display: block; text-align: center; margin-bottom: 10px; transition: background 0.15s; }
         .watch-download-btn:hover { background: #6d28d9; }
         .watch-share-card-btn { width: 100%; padding: 11px; background: white; color: #18181b; border: 1px solid #e4e4e7; border-radius: 10px; font-size: 0.875rem; font-weight: 600; font-family: 'DM Sans', sans-serif; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 7px; margin-bottom: 10px; transition: background 0.15s; }
         .watch-share-card-btn:hover { background: #f4f4f6; }
         .watch-owned-badge { display: flex; align-items: center; gap: 6px; font-size: 0.78rem; color: #16a34a; font-weight: 500; background: #f0fdf4; padding: 7px 12px; border-radius: 8px; margin-bottom: 12px; }
-        .watch-unavailable-notice { font-size: 0.78rem; color: #71717a; background: #f4f4f5; border-radius: 8px; padding: 8px 12px; margin-bottom: 10px; text-align: center; }
         .watch-secure { display: flex; align-items: center; gap: 5px; font-size: 0.73rem; color: #a1a1aa; justify-content: center; }
 
         .compact-footer { display: flex; align-items: center; justify-content: center; gap: 18px; padding: 16px 24px; border-top: 1px solid #f0f0f0; font-family: 'DM Sans', sans-serif; }
@@ -487,23 +575,14 @@ export default function Watch({ params }: { params: Promise<{ id: string }> }) {
                 ) : (
                   <div style={{ textAlign: "center", fontSize: "0.85rem", color: "#a1a1aa", padding: "12px 0" }}>Preparing download...</div>
                 )
-              ) : video.is_free ? (
+              ) : (
                 <button
-                  className="watch-buy-btn free-btn"
+                  className={`watch-buy-btn ${video.is_free ? "free-btn" : ""}`}
                   onClick={buy}
                   disabled={loading}
                 >
-                  {loading ? "Processing..." : "Get for Free"}
+                  {loading ? "Processing..." : video.is_free ? "Get for Free" : "Buy Now"}
                 </button>
-              ) : (
-                <>
-                  <div className="watch-unavailable-notice">
-                    💳 Payments are temporarily unavailable. Check back soon.
-                  </div>
-                  <button className="watch-buy-btn unavailable" disabled>
-                    Buy Now
-                  </button>
-                </>
               )}
               <button className="watch-share-card-btn" onClick={handleShare}>
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
@@ -550,3 +629,4 @@ export default function Watch({ params }: { params: Promise<{ id: string }> }) {
     </>
   );
 }
+
