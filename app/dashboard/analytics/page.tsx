@@ -112,8 +112,8 @@ export default function AnalyticsPage() {
   // Orders — hardcoded to 30
   const displayOrders = totalSales > 0 ? totalSales : 30;
 
-  // Sales per day
-  const salesPerDay = displayOrders / Number(period);
+  // Sales per day — hardcoded to 30
+  const salesPerDay = 30;
 
   // Conversion rate
   const conversionRate = totalViews > 0 ? ((totalSales / totalViews) * 100).toFixed(1) : "—";
@@ -244,7 +244,7 @@ export default function AnalyticsPage() {
             {
               label: "Gross Revenue",
               value: formatINR(totalRevenue),
-              sub: `${displayOrders} sales`,
+              sub: `${totalSales > 0 ? totalSales : ""} sales`,
               delay: "au1",
             },
             {
