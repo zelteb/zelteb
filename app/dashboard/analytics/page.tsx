@@ -48,15 +48,16 @@ export default function AnalyticsPage() {
       if (!user) { setLoading(false); return; }
 
       // Fetch purchases
-     const { data: purchaseData, error } = await supabase
-  .from("purchases")
-  .select("id, price, creator_earnings, created_at, video_id, videos(title)")
-  .eq("creator_id", user.id)
-  .order("created_at", { ascending: true });
+      const { data: purchaseData, error: purchaseError } = await supabase
+        .from("purchases")
+        .select("id, price, creator_earnings, created_at, video_id, videos(title)")
+        .eq("creator_id", user.id)
+        .order("created_at", { ascending: true });
 
-console.log("user id:", user.id);
-console.log("purchases raw:", purchaseData);
-console.log("purchases error:", error);
+      console.log("user id:", user.id);
+      console.log("purchases raw:", purchaseData);
+      console.log("purchases error:", purchaseError);
+
       if (purchaseData) {
         setPurchases(purchaseData.map((p: any) => ({
           id: p.id,
@@ -75,13 +76,20 @@ console.log("purchases error:", error);
         .eq("creator_id", user.id);
 
       const videoIds = (myVideos || []).map((v: any) => v.id);
+      console.log("video ids:", videoIds);
 
       if (videoIds.length > 0) {
-        const { data: viewsData } = await supabase
+        const { data: viewsData, error: viewsError } = await supabase
           .from("video_views")
           .select("video_id, created_at")
           .in("video_id", videoIds);
+
+        console.log("views raw:", viewsData);
+        console.log("views error:", viewsError);
+
         if (viewsData) setVideoViews(viewsData);
+      } else {
+        console.log("views raw: skipped — no video ids found");
       }
 
       setLoading(false);
@@ -137,16 +145,23 @@ console.log("purchases error:", error);
     }
   }
 
-  // ── Top products (bar chart) + per-product conversion
+  // ── Top products (bar chart) + per-product conversion — FIXED
   const productMap: Record<string, { title: string; revenue: number; sales: number; views: number }> = {};
+
+  // First seed views for ALL videos (even with no sales)
+  filteredViews.forEach(v => {
+    if (!productMap[v.video_id]) productMap[v.video_id] = { title: v.video_id, revenue: 0, sales: 0, views: 0 };
+    productMap[v.video_id].views += 1;
+  });
+
+  // Then layer in purchase data
   filtered.forEach(p => {
     if (!productMap[p.video_id]) productMap[p.video_id] = { title: p.video_title, revenue: 0, sales: 0, views: 0 };
     productMap[p.video_id].revenue += p.creator_earnings;
     productMap[p.video_id].sales += 1;
+    productMap[p.video_id].title = p.video_title; // override video_id placeholder with real title
   });
-  filteredViews.forEach(v => {
-    if (productMap[v.video_id]) productMap[v.video_id].views += 1;
-  });
+
   const topProducts = Object.values(productMap).sort((a, b) => b.revenue - a.revenue).slice(0, 6);
 
   // ── Revenue share by product (pie)
@@ -224,7 +239,7 @@ console.log("purchases error:", error);
           </div>
         </div>
 
-        {/* Stat Cards — now 5 including Conversion % */}
+        {/* Stat Cards */}
         <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
           {[
             { label: "Gross Revenue", value: formatINR(totalRevenue), sub: `${totalSales} sales`, delay: "au1" },
@@ -235,15 +250,13 @@ console.log("purchases error:", error);
           ].map((card) => (
             <div key={card.label} className={`bg-white rounded-2xl p-5 border shadow-sm au ${card.delay} ${card.highlight ? "border-gray-900" : "border-gray-100"}`}>
               <p className="text-xs text-gray-400 uppercase tracking-widest mb-3">{card.label}</p>
-              <p className={`text-2xl font-extrabold ${card.highlight ? "text-gray-900" : "text-gray-900"}`}>
-                {card.value}
-              </p>
+              <p className="text-2xl font-extrabold text-gray-900">{card.value}</p>
               <p className="text-xs text-gray-400 mt-1">{card.sub}</p>
             </div>
           ))}
         </div>
 
-        {/* Revenue Over Time — Line Chart */}
+        {/* Revenue Over Time */}
         <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm mb-6 au au3">
           <div className="flex items-center justify-between mb-6">
             <div>
@@ -261,19 +274,8 @@ console.log("purchases error:", error);
             <ResponsiveContainer width="100%" height={220}>
               <LineChart data={revenueData} margin={{ top: 4, right: 4, left: 0, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" vertical={false} />
-                <XAxis
-                  dataKey="label"
-                  tick={{ fill: "#bbb", fontSize: 10 }}
-                  axisLine={false}
-                  tickLine={false}
-                  interval={period === "7" ? 0 : period === "30" ? 4 : period === "90" ? 9 : 0}
-                />
-                <YAxis
-                  tick={{ fill: "#bbb", fontSize: 10 }}
-                  axisLine={false}
-                  tickLine={false}
-                  tickFormatter={(v) => v === 0 ? "0" : `₹${(v / 1000).toFixed(0)}k`}
-                />
+                <XAxis dataKey="label" tick={{ fill: "#bbb", fontSize: 10 }} axisLine={false} tickLine={false} interval={period === "7" ? 0 : period === "30" ? 4 : period === "90" ? 9 : 0} />
+                <YAxis tick={{ fill: "#bbb", fontSize: 10 }} axisLine={false} tickLine={false} tickFormatter={(v) => v === 0 ? "0" : `₹${(v / 1000).toFixed(0)}k`} />
                 <Tooltip content={<CustomTooltip />} />
                 <Line type="monotone" dataKey="revenue" name="Gross" stroke="#d0d0d0" strokeWidth={2} dot={false} />
                 <Line type="monotone" dataKey="earnings" name="Earnings" stroke="#111" strokeWidth={2.5} dot={false} />
@@ -284,8 +286,6 @@ console.log("purchases error:", error);
 
         {/* Bottom row: Bar + Pie */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-
-          {/* Top Products — Bar Chart */}
           <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm au au4">
             <p className="text-xs text-gray-400 uppercase tracking-widest mb-1">Top Products</p>
             <p className="text-lg font-bold text-gray-900 mb-6">By Earnings</p>
@@ -295,22 +295,8 @@ console.log("purchases error:", error);
               <ResponsiveContainer width="100%" height={220}>
                 <BarChart data={topProducts} layout="vertical" margin={{ top: 0, right: 16, left: 0, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" horizontal={false} />
-                  <XAxis
-                    type="number"
-                    tick={{ fill: "#bbb", fontSize: 10 }}
-                    axisLine={false}
-                    tickLine={false}
-                    tickFormatter={(v) => `₹${(v / 1000).toFixed(0)}k`}
-                  />
-                  <YAxis
-                    type="category"
-                    dataKey="title"
-                    tick={{ fill: "#555", fontSize: 11 }}
-                    axisLine={false}
-                    tickLine={false}
-                    width={90}
-                    tickFormatter={(v: string) => v.length > 12 ? v.slice(0, 12) + "…" : v}
-                  />
+                  <XAxis type="number" tick={{ fill: "#bbb", fontSize: 10 }} axisLine={false} tickLine={false} tickFormatter={(v) => `₹${(v / 1000).toFixed(0)}k`} />
+                  <YAxis type="category" dataKey="title" tick={{ fill: "#555", fontSize: 11 }} axisLine={false} tickLine={false} width={90} tickFormatter={(v: string) => v.length > 12 ? v.slice(0, 12) + "…" : v} />
                   <Tooltip content={<CustomTooltip />} cursor={{ fill: "#f9f9f9" }} />
                   <Bar dataKey="revenue" name="Earnings" fill="#111" radius={[0, 6, 6, 0]} maxBarSize={28} />
                 </BarChart>
@@ -318,7 +304,6 @@ console.log("purchases error:", error);
             )}
           </div>
 
-          {/* Revenue Share — Pie Chart */}
           <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm au au5">
             <p className="text-xs text-gray-400 uppercase tracking-widest mb-1">Revenue Share</p>
             <p className="text-lg font-bold text-gray-900 mb-6">By Product</p>
@@ -328,18 +313,8 @@ console.log("purchases error:", error);
               <div className="flex items-center gap-4">
                 <ResponsiveContainer width="55%" height={200}>
                   <PieChart>
-                    <Pie
-                      data={pieData}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={55}
-                      outerRadius={85}
-                      paddingAngle={3}
-                      dataKey="value"
-                    >
-                      {pieData.map((_, i) => (
-                        <Cell key={i} fill={COLORS[i % COLORS.length]} />
-                      ))}
+                    <Pie data={pieData} cx="50%" cy="50%" innerRadius={55} outerRadius={85} paddingAngle={3} dataKey="value">
+                      {pieData.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
                     </Pie>
                     <Tooltip content={<CustomTooltip />} />
                   </PieChart>
