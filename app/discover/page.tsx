@@ -391,21 +391,25 @@ export default function Discover() {
 
                 return (
                   <div
-                    key={v.id}
-                    className="card"
-                   onClick={() => {
-  window.location.href = `/product/${v.slug}`;
-}}
-                  >
-                    <div style={{ position: "relative", width: "100%", aspectRatio: "16/9", overflow: "hidden", background: "#1a1a1a" }}>
-                      {v.thumbnail_url
-                        ? <img src={v.thumbnail_url} alt={v.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                        : <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 32 }}>
-                            {v.product_type === "video" ? "🎬" : "📁"}
-                          </div>
-                      }
-                    </div>
-
+  key={v.id}
+  className="card"
+  onClick={() => {
+    window.location.href = `/product/${v.slug}`;
+  }}
+>
+  <div style={{ position: "relative", width: "100%", aspectRatio: "16/9", overflow: "hidden", background: "#1a1a1a" }}>
+    {v.thumbnail_url && v.thumbnail_url.trim() !== ""
+      ? <img 
+          src={v.thumbnail_url} 
+          alt={v.title} 
+          style={{ width: "100%", height: "100%", objectFit: "cover" }}
+          onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+        />
+      : <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 32 }}>
+          {v.product_type === "video" ? "🎬" : "📁"}
+        </div>
+    }
+  </div>
                     <div style={{ padding: "12px 14px 14px", display: "flex", flexDirection: "column", gap: 0 }}>
                       <p style={{ fontWeight: 600, fontSize: 14, margin: "0 0 8px", lineHeight: 1.4 }}>
                         {v.title}
