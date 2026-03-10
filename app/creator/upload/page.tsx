@@ -565,7 +565,9 @@ export default function Upload() {
                 <h2>Thumbnail</h2>
               </div>
               <div className="up-card-body">
-                <p className="up-hint" style={{ marginBottom: 14 }}>Upload a thumbnail of your product.</p>
+                <p className="up-hint" style={{ marginBottom: 14 }}>
+  Upload a thumbnail of your product. Recommended size: <strong>1280×720px</strong> (16:9 ratio), JPG or PNG.
+</p>
                 <div className="up-dropzone" onClick={() => thumbInputRef.current?.click()}>
                   <div className="up-dropzone-icon">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/></svg>
