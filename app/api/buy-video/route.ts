@@ -58,13 +58,17 @@ export async function POST(req: Request) {
         return Response.json({ free: true });
       }
 
-      // PAID VIDEO
+      // PAID VIDEO — notes added so webhook can identify the purchase
       const amount = Number(video.price) * 100;
 
       const order = await razorpay.orders.create({
         amount,
         currency: "INR",
         receipt: `vzb_${Date.now()}`,
+        notes: {
+          video_id,
+          buyer_id,
+        },
       });
 
       return Response.json({ order });
