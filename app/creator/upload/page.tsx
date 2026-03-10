@@ -60,6 +60,10 @@ export default function Upload() {
 
   const handleThumbChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0] || null;
+    if (f && (f.type === 'image/heic' || f.type === 'image/heif' || f.name.toLowerCase().endsWith('.heic') || f.name.toLowerCase().endsWith('.heif'))) {
+      alert("HEIC/HEIF images are not supported. Please convert to JPG or PNG first.");
+      return;
+    }
     setThumb(f);
     if (f) setThumbPreview(URL.createObjectURL(f));
   };
@@ -568,7 +572,7 @@ export default function Upload() {
                   </div>
                   <p>Drag it here, or <a onClick={(e) => e.stopPropagation()}>click to browse</a></p>
                   <p className="up-dropzone-sub">Supports JPEG, PNG, GIF, WEBP</p>
-                  <input ref={thumbInputRef} type="file" accept="image/*" style={{ display: "none" }} onChange={handleThumbChange} />
+                  <input ref={thumbInputRef} type="file" accept="image/jpeg,image/png,image/gif,image/webp" style={{ display: "none" }} onChange={handleThumbChange} />
                 </div>
                 {thumbPreview && (
                   <div style={{ position: "relative", marginTop: 12 }}>
