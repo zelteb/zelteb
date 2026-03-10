@@ -55,15 +55,21 @@ export default function ProductPage() {
         supabase.auth.getUser(),
       ]);
 
-      if (!v) { setPageLoading(false); return; }
-      setVideo(v);
+     if (!v) { setPageLoading(false); return; }
+setVideo(v);
 
-      const [, creatorResult] = await Promise.all([
-        loadRatings(v.id),
-        v.creator_id
-          ? supabase.from("profiles").select("username, full_name, avatar_url").eq("id", v.creator_id).single()
-          : Promise.resolve({ data: null }),
-      ]);
+// ✅ Track view
+await supabase.from("video_views").insert({
+  video_id: v.id,
+  viewer_id: user?.id ?? null,
+});
+
+const [, creatorResult] = await Promise.all([
+  loadRatings(v.id),
+  v.creator_id
+    ? supabase.from("profiles").select("username, full_name, avatar_url").eq("id", v.creator_id).single()
+    : Promise.resolve({ data: null }),
+]);
       if (creatorResult?.data) setCreator(creatorResult.data);
 
       if (!user) { setPageLoading(false); return; }
