@@ -76,13 +76,10 @@ export default function EditProduct() {
         setDescriptionHtml(data.description);
       }
 
-      if (data.thumbnail_url) {
-        const { data: urlData } = supabase.storage
-          .from("videos")
-          .getPublicUrl(data.thumbnail_url);
-        setExistingThumb(urlData.publicUrl);
-      }
-
+   // ✅ FIXED - just use it directly since it's already a full URL
+if (data.thumbnail_url) {
+  setExistingThumb(data.thumbnail_url);
+}
       setFetching(false);
     };
 
@@ -96,10 +93,14 @@ export default function EditProduct() {
   };
 
   const handleThumbChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const f = e.target.files?.[0] || null;
-    setThumb(f);
-    if (f) setThumbPreview(URL.createObjectURL(f));
-  };
+  const f = e.target.files?.[0] || null;
+  if (f && (f.type === 'image/heic' || f.type === 'image/heif' || f.name.toLowerCase().endsWith('.heic') || f.name.toLowerCase().endsWith('.heif'))) {
+    alert("HEIC/HEIF images are not supported. Please convert to JPG or PNG first.");
+    return;
+  }
+  setThumb(f);
+  if (f) setThumbPreview(URL.createObjectURL(f));
+};
 
   const handleEditorImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0] || null;
@@ -203,12 +204,16 @@ export default function EditProduct() {
       updateData.video_path = fileData.path;
     }
 
-    if (thumb) {
-      const { data: tData, error: tError } = await supabase.storage
-        .from("videos")
-        .upload(`thumbs/${user.id}-${Date.now()}-${thumb.name}`, thumb);
-      if (!tError && tData) updateData.thumbnail_url = tData.path;
-    }
+    // ✅ FIXED - saving full public URL
+if (thumb) {
+  const { data: tData, error: tError } = await supabase.storage
+    .from("videos")
+    .upload(`thumbs/${user.id}-${Date.now()}-${thumb.name}`, thumb);
+  if (!tError && tData) {
+    const { data: urlData } = supabase.storage.from("videos").getPublicUrl(tData.path);
+    updateData.thumbnail_url = urlData.publicUrl;
+  }
+}
 
     const { error } = await supabase.from("videos").update(updateData).eq("id", id);
     if (error) { alert(error.message); setLoading(false); return; }
