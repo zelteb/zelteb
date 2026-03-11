@@ -20,7 +20,6 @@ export const metadata: Metadata = {
   description:
     "Zelteb is the best platform to sell digital products, video courses, and digital downloads online. The #1 creator marketplace for Indian creators to monetize digital content — free to start, no coding needed.",
   keywords: [
-    // Core keywords
     "sell digital products online",
     "sell video courses online",
     "digital product marketplace",
@@ -31,7 +30,6 @@ export const metadata: Metadata = {
     "online platform for creators",
     "marketplace for video creators",
     "monetize digital content",
-    // Long-tail keywords
     "best platform to sell digital products in India",
     "how to sell video courses online",
     "where to sell digital downloads",
@@ -42,7 +40,6 @@ export const metadata: Metadata = {
     "upload and sell videos online",
     "sell online courses independently",
     "platform to sell digital goods globally",
-    // India-specific brand keywords
     "Zelteb",
     "sell digital products India",
     "Indian creator marketplace",
@@ -61,9 +58,6 @@ export const metadata: Metadata = {
   },
   verification: {
     google: "8RuTExUv0kI2ShmEt6mvO-TxTlpWQfF5buxCWcbgWzs",
-  },
-  icons: {
-    icon: "/favicon.png",
   },
   openGraph: {
     title: "Zelteb – Sell Digital Products & Video Courses Online in India",
@@ -103,6 +97,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
+        <link rel="icon" href="/favicon.png" type="image/png" />
         <script async src="https://www.googletagmanager.com/gtag/js?id=G-3DWEE70CWM" />
         <script
           dangerouslySetInnerHTML={{
@@ -115,9 +110,7 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
+      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         {children}
       </body>
     </html>
