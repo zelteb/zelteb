@@ -35,6 +35,10 @@ export default function Dashboard() {
   const [alreadyWithdrawn, setAlreadyWithdrawn] = useState(0);
   const [hasPendingRequest, setHasPendingRequest] = useState(false);
 
+  // Payout method state
+  const [hasPayoutMethod, setHasPayoutMethod] = useState(false);
+  const [payoutMethodType, setPayoutMethodType] = useState<"upi" | "bank" | null>(null);
+
   const options = ["Last 7 days", "Last 30 days", "Last 90 days", "All time"];
 
   useEffect(() => {
@@ -56,6 +60,35 @@ export default function Dashboard() {
       if (profile) {
         setUsername(profile.username || "");
         setAvatarUrl(profile.avatar_url || null);
+      }
+
+      // Check payout method (UPI or bank account)
+      const { data: payoutData } = await supabase
+        .from("payout_accounts")
+        .select("upi_id, account_number_encrypted, ifsc, account_holder")
+        .eq("user_id", uid)
+        .single();
+
+      if (payoutData) {
+        const hasUpi = !!payoutData.upi_id?.trim();
+        const hasBank =
+          !!payoutData.account_number_encrypted &&
+          !!payoutData.ifsc?.trim() &&
+          !!payoutData.account_holder?.trim();
+
+        if (hasUpi) {
+          setHasPayoutMethod(true);
+          setPayoutMethodType("upi");
+        } else if (hasBank) {
+          setHasPayoutMethod(true);
+          setPayoutMethodType("bank");
+        } else {
+          setHasPayoutMethod(false);
+          setPayoutMethodType(null);
+        }
+      } else {
+        setHasPayoutMethod(false);
+        setPayoutMethodType(null);
       }
 
       const { data: pendingRequests } = await supabase
@@ -168,7 +201,15 @@ export default function Dashboard() {
   const availableBalance = Math.max(0, totalEarnings - alreadyWithdrawn);
   const filteredEarnings = filteredPurchases.reduce((sum, p) => sum + p.creator_earnings, 0);
 
-  const canWithdraw = !hasPendingRequest && availableBalance >= MINIMUM_WITHDRAWAL;
+  // All three conditions must be met to withdraw
+  const canWithdraw = !hasPendingRequest && availableBalance >= MINIMUM_WITHDRAWAL && hasPayoutMethod;
+
+  // Tooltip message for disabled withdraw button
+  const withdrawBlockReason = hasPendingRequest
+    ? "You have a pending withdrawal request"
+    : !hasPayoutMethod
+    ? "Add a payout method (UPI or bank account) first"
+    : `Minimum withdrawal is ₹${MINIMUM_WITHDRAWAL}`;
 
   const withdraw = async () => {
     setWithdrawing(true);
@@ -177,6 +218,25 @@ export default function Dashboard() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
       setWithdrawError("Login required.");
+      setWithdrawing(false);
+      return;
+    }
+
+    // Double-check payout method before submitting
+    const { data: payoutCheck } = await supabase
+      .from("payout_accounts")
+      .select("upi_id, account_number_encrypted, ifsc, account_holder")
+      .eq("user_id", user.id)
+      .single();
+
+    const hasUpi = !!payoutCheck?.upi_id?.trim();
+    const hasBank =
+      !!payoutCheck?.account_number_encrypted &&
+      !!payoutCheck?.ifsc?.trim() &&
+      !!payoutCheck?.account_holder?.trim();
+
+    if (!hasUpi && !hasBank) {
+      setWithdrawError("Please add a UPI ID or bank account in Payout Settings before withdrawing.");
       setWithdrawing(false);
       return;
     }
@@ -262,7 +322,6 @@ export default function Dashboard() {
             <p className="text-gray-400 text-sm" style={{ wordBreak: "break-all" }}>zelteb.com/{username || "username"}</p>
           </div>
 
-          {/* Help button — top right */}
           <Link
             href="/help"
             className="help-btn flex items-center gap-1.5 border border-gray-200 rounded-full px-4 py-1.5 text-sm font-medium text-gray-600 hover:bg-gray-50 hover:border-gray-300 transition-all flex-shrink-0"
@@ -273,6 +332,24 @@ export default function Dashboard() {
             <span>Help</span>
           </Link>
         </div>
+
+        {/* No payout method banner */}
+        {!hasPayoutMethod && (
+          <div className="mb-6 flex items-start gap-3 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3">
+            <svg className="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+            </svg>
+            <div className="flex-1">
+              <p className="text-sm font-semibold text-amber-800">Payout method required</p>
+              <p className="text-xs text-amber-600 mt-0.5">
+                Add your UPI ID or bank account details to enable withdrawals.{" "}
+                <Link href="/dashboard/payouts" className="underline font-medium hover:text-amber-800">
+                  Set up now →
+                </Link>
+              </p>
+            </div>
+          </div>
+        )}
 
         {/* Earnings */}
         <div className="dash-earnings-card bg-white rounded-2xl p-6 mb-6 border border-gray-100 shadow-sm">
@@ -302,6 +379,11 @@ export default function Dashboard() {
           <p className="text-sm text-gray-400 mb-6">
             Available to withdraw:{" "}
             <span className="font-semibold text-gray-700">₹{availableBalance.toFixed(2)}</span>
+            {hasPayoutMethod && (
+              <span className="ml-2 text-xs text-green-600 font-medium">
+                · via {payoutMethodType === "upi" ? "UPI" : "Bank Account"}
+              </span>
+            )}
           </p>
 
           <div className="flex items-center gap-3 flex-wrap">
@@ -319,20 +401,26 @@ export default function Dashboard() {
               </button>
               {!canWithdraw && (
                 <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-1.5 bg-gray-800 text-white text-xs rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
-                  {hasPendingRequest
-                    ? "You have a pending withdrawal request"
-                    : `Minimum withdrawal is ₹${MINIMUM_WITHDRAWAL}`}
+                  {withdrawBlockReason}
                   <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-800" />
                 </div>
               )}
             </div>
-            {!canWithdraw && (
+
+            {!hasPayoutMethod ? (
+              <Link
+                href="/dashboard/payouts"
+                className="text-xs text-amber-600 font-medium underline hover:text-amber-800"
+              >
+                Add payout method to withdraw
+              </Link>
+            ) : !canWithdraw ? (
               <p className="text-xs text-gray-400">
                 {hasPendingRequest
                   ? "Pending request under review"
                   : `Minimum ₹${MINIMUM_WITHDRAWAL} required`}
               </p>
-            )}
+            ) : null}
           </div>
         </div>
 
@@ -341,12 +429,18 @@ export default function Dashboard() {
           <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 px-4">
             <div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-xl">
               <h3 className="text-lg font-bold mb-2">Withdraw Earnings</h3>
-              <p className="text-sm text-gray-500 mb-4">
+              <p className="text-sm text-gray-500 mb-2">
                 You're about to request a withdrawal of{" "}
                 <span className="font-semibold text-gray-800">₹{availableBalance.toFixed(2)}</span>.
               </p>
+              <p className="text-xs text-gray-400 mb-1">
+                Payout method:{" "}
+                <span className="font-medium text-gray-600">
+                  {payoutMethodType === "upi" ? "UPI" : "Bank Account"}
+                </span>
+              </p>
               <p className="text-xs text-gray-400 mb-4">
-                Withdrawals are processed within 3–5 business days to your registered bank account.
+                Withdrawals are processed within 3–5 business days.
               </p>
               {withdrawError && (
                 <p className="text-xs text-red-500 mb-4 bg-red-50 px-3 py-2 rounded-lg">{withdrawError}</p>
