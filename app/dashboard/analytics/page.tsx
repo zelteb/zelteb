@@ -25,6 +25,8 @@ type Period = "7" | "30" | "90" | "365";
 
 const COLORS = ["#111", "#555", "#999", "#bbb", "#ddd"];
 
+const PLATFORM_FEE = 0.06; // 6%
+
 const formatINR = (n: number) =>
   new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 }).format(n);
 
@@ -47,7 +49,6 @@ export default function AnalyticsPage() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { setLoading(false); return; }
 
-      // Fetch purchases
       const { data: purchaseData, error: purchaseError } = await supabase
         .from("purchases")
         .select("id, price, creator_earnings, created_at, video_id, videos(title)")
@@ -59,17 +60,20 @@ export default function AnalyticsPage() {
       console.log("purchases error:", purchaseError);
 
       if (purchaseData) {
-        setPurchases(purchaseData.map((p: any) => ({
-          id: p.id,
-          price: Number(p.price),
-          creator_earnings: Number(p.creator_earnings),
-          created_at: p.created_at,
-          video_title: p.videos?.title ?? "Untitled",
-          video_id: p.video_id,
-        })));
+        setPurchases(purchaseData.map((p: any) => {
+          const price = Number(p.price);
+          return {
+            id: p.id,
+            price,
+            // Apply 6% platform fee to calculate creator earnings
+            creator_earnings: price * (1 - PLATFORM_FEE),
+            created_at: p.created_at,
+            video_title: p.videos?.title ?? "Untitled",
+            video_id: p.video_id,
+          };
+        }));
       }
 
-      // Fetch video views for creator's videos
       const { data: myVideos } = await supabase
         .from("videos")
         .select("id")
@@ -97,18 +101,15 @@ export default function AnalyticsPage() {
     load();
   }, []);
 
-  // Filter by period
   const cutoff = new Date();
   cutoff.setDate(cutoff.getDate() - Number(period));
   const filtered = purchases.filter(p => new Date(p.created_at) >= cutoff);
   const filteredViews = videoViews.filter(v => new Date(v.created_at) >= cutoff);
 
-  // ── Conversion rate
   const totalViews = filteredViews.length;
   const totalSales = filtered.length;
   const conversionRate = totalViews > 0 ? ((totalSales / totalViews) * 100).toFixed(1) : "0.0";
 
-  // ── Revenue over time (line chart)
   const revenueMap: Record<string, { revenue: number; earnings: number }> = {};
   filtered.forEach(p => {
     const d = new Date(p.created_at);
@@ -145,29 +146,23 @@ export default function AnalyticsPage() {
     }
   }
 
-  // ── Top products (bar chart) + per-product conversion — FIXED
   const productMap: Record<string, { title: string; revenue: number; sales: number; views: number }> = {};
 
-  // First seed views for ALL videos (even with no sales)
   filteredViews.forEach(v => {
     if (!productMap[v.video_id]) productMap[v.video_id] = { title: v.video_id, revenue: 0, sales: 0, views: 0 };
     productMap[v.video_id].views += 1;
   });
 
-  // Then layer in purchase data
   filtered.forEach(p => {
     if (!productMap[p.video_id]) productMap[p.video_id] = { title: p.video_title, revenue: 0, sales: 0, views: 0 };
     productMap[p.video_id].revenue += p.creator_earnings;
     productMap[p.video_id].sales += 1;
-    productMap[p.video_id].title = p.video_title; // override video_id placeholder with real title
+    productMap[p.video_id].title = p.video_title;
   });
 
   const topProducts = Object.values(productMap).sort((a, b) => b.revenue - a.revenue).slice(0, 6);
-
-  // ── Revenue share by product (pie)
   const pieData = topProducts.map(p => ({ name: p.title, value: p.revenue }));
 
-  // ── Summary stats
   const totalRevenue = filtered.reduce((s, p) => s + p.price, 0);
   const totalEarnings = filtered.reduce((s, p) => s + p.creator_earnings, 0);
   const avgOrder = totalSales > 0 ? totalRevenue / totalSales : 0;
@@ -222,8 +217,6 @@ export default function AnalyticsPage() {
             <p className="text-xs text-gray-400 uppercase tracking-widest mb-1">Creator Analytics</p>
             <h1 className="text-3xl font-extrabold text-gray-900">Analytics</h1>
           </div>
-
-          {/* Period toggle */}
           <div className="flex items-center bg-white border border-gray-200 rounded-xl p-1 gap-1">
             {periods.map(p => (
               <button
@@ -243,7 +236,7 @@ export default function AnalyticsPage() {
         <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
           {[
             { label: "Gross Revenue", value: formatINR(totalRevenue), sub: `${totalSales} sales`, delay: "au1" },
-            { label: "Your Earnings", value: formatINR(totalEarnings), sub: "After platform fee", delay: "au2" },
+            { label: "Your Earnings", value: formatINR(totalEarnings), sub: "After 6% platform fee", delay: "au2" },
             { label: "Avg Order Value", value: formatINR(avgOrder), sub: "Per transaction", delay: "au3" },
             { label: "Sales / Day", value: salesPerDay.toFixed(1), sub: `Over ${period} days`, delay: "au4" },
             { label: "Conversion Rate", value: `${conversionRate}%`, sub: `${totalViews} views → ${totalSales} sales`, delay: "au5", highlight: true },

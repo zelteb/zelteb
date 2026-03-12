@@ -493,8 +493,8 @@ export default function Upload() {
               </div>
               <div className="up-card-body">
 
-                {/* ── COMPRESS TIP — only shows when Digital Product is selected ── */}
-                {type === "digital" && (
+                {/* ── COMPRESS TIP — always visible for both types ── */}
+                {true && (
                   <a
                     href="https://www.compress2go.com/"
                     target="_blank"
