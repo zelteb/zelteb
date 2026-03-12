@@ -32,6 +32,8 @@ interface ProductStat {
   earnings: number;
 }
 
+const PLATFORM_FEE_RATE = 0.06; // 6%
+
 const formatINR = (amount: number) =>
   new Intl.NumberFormat("en-IN", {
     style: "currency",
@@ -106,18 +108,23 @@ export default function SalesPage() {
       // fallback silently
     }
 
-    const enriched: SaleRow[] = purchases.map((p: any) => ({
-      id: p.id,
-      price: Number(p.price),
-      platform_fee: Number(p.platform_fee),
-      creator_earnings: Number(p.creator_earnings),
-      created_at: p.created_at,
-      video_id: p.video_id,
-      buyer_id: p.buyer_id,
-      video_title: (p.videos as any)?.title ?? "Untitled",
-      buyer_email: buyerMap[p.buyer_id]?.email ?? "—",
-      buyer_name: buyerMap[p.buyer_id]?.name ?? "—",
-    }));
+    const enriched: SaleRow[] = purchases.map((p: any) => {
+      const price = Number(p.price);
+      const fee = price * PLATFORM_FEE_RATE;
+      const earnings = price - fee;
+      return {
+        id: p.id,
+        price,
+        platform_fee: fee,
+        creator_earnings: earnings,
+        created_at: p.created_at,
+        video_id: p.video_id,
+        buyer_id: p.buyer_id,
+        video_title: (p.videos as any)?.title ?? "Untitled",
+        buyer_email: buyerMap[p.buyer_id]?.email ?? "—",
+        buyer_name: buyerMap[p.buyer_id]?.name ?? "—",
+      };
+    });
 
     const revenue = enriched.reduce((s, p) => s + p.price, 0);
     const earnings = enriched.reduce((s, p) => s + p.creator_earnings, 0);
@@ -242,7 +249,6 @@ export default function SalesPage() {
               Sales Overview
             </h1>
           </div>
-        
         </div>
 
         {/* Stat Cards */}
@@ -279,7 +285,7 @@ export default function SalesPage() {
                 <p style={{ fontSize: 12, fontWeight: 600, color: '#999', letterSpacing: '0.06em', textTransform: 'uppercase' }}>Your Earnings</p>
               </div>
               <p style={{ fontSize: 28, fontWeight: 700, color: '#16a34a', letterSpacing: '-0.03em' }}>{formatINR(totalEarnings)}</p>
-              <p style={{ fontSize: 12, color: '#bbb', marginTop: 6 }}>After 7% platform fee</p>
+              <p style={{ fontSize: 12, color: '#bbb', marginTop: 6 }}>After 6% platform fee</p>
             </div>
 
             {/* Platform Fee */}
@@ -290,7 +296,7 @@ export default function SalesPage() {
                     <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
                   </svg>
                 </div>
-                <p style={{ fontSize: 12, fontWeight: 600, color: '#999', letterSpacing: '0.06em', textTransform: 'uppercase' }}>Platform Fee (7%)</p>
+                <p style={{ fontSize: 12, fontWeight: 600, color: '#999', letterSpacing: '0.06em', textTransform: 'uppercase' }}>Platform Fee (6%)</p>
               </div>
               <p style={{ fontSize: 28, fontWeight: 700, color: '#dc2626', letterSpacing: '-0.03em' }}>{formatINR(totalFees)}</p>
               <p style={{ fontSize: 12, color: '#bbb', marginTop: 6 }}>
@@ -344,9 +350,7 @@ export default function SalesPage() {
                   }}
                 >
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                    <div style={{
-                      width: 6, height: 6, borderRadius: '50%', background: '#111', flexShrink: 0
-                    }} />
+                    <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#111', flexShrink: 0 }} />
                     <div>
                       <p style={{ fontSize: 13, fontWeight: 500, color: '#222' }}>{p.title}</p>
                       <p style={{ fontSize: 11, color: '#bbb', marginTop: 2 }}>{p.sales} sale{p.sales !== 1 ? 's' : ''}</p>
@@ -401,7 +405,7 @@ export default function SalesPage() {
                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
                   <thead>
                     <tr style={{ background: '#fafafa', borderBottom: '1px solid #ececec' }}>
-                      {['Product', 'Price', 'Fee', 'Earnings', 'Date'].map((h) => (
+                      {['Product', 'Price', 'Fee (6%)', 'Earnings', 'Date'].map((h) => (
                         <th key={h} style={{
                           padding: '12px 16px', textAlign: 'left', fontSize: 11,
                           fontWeight: 600, color: '#aaa', letterSpacing: '0.07em',
