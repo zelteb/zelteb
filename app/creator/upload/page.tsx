@@ -42,7 +42,6 @@ export default function Upload() {
     onUpdate: ({ editor }) => setDescriptionHtml(editor.getHTML()),
   });
 
-  // ── SLUG HELPERS ──
   const generateSlug = (value: string) =>
     value.toLowerCase().trim().replace(/[^a-z0-9\s-]/g, "").replace(/\s+/g, "-").replace(/-+/g, "-").slice(0, 60);
 
@@ -122,12 +121,10 @@ export default function Upload() {
     setLinkUrl("");
   };
 
-  // ── UPLOAD FUNCTION ──
   const upload = async () => {
     if (!file) return alert("Select a file");
     if (!title.trim()) return alert("Enter a product title");
 
-    // ✅ 3️⃣ Validate slug format
     if (slug) {
       const slugPattern = /^[a-z0-9-]+$/;
       if (!slugPattern.test(slug)) {
@@ -141,7 +138,6 @@ export default function Upload() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) { alert("Login first"); setLoading(false); return; }
 
-    // ✅ 4️⃣ Check slug uniqueness before saving
     if (slug) {
       const { data: existing } = await supabase
         .from("videos")
@@ -175,7 +171,6 @@ export default function Upload() {
 
     const description = editor?.getHTML() || "";
 
-    // ✅ 5️⃣ Save video with slug
     const { error: dbError } = await supabase.from("videos").insert({
       creator_id: user.id,
       title,
@@ -224,7 +219,6 @@ export default function Upload() {
         .up-input:focus { border-color: #7c3aed; box-shadow: 0 0 0 3px rgba(124,58,237,0.08); }
         .up-hint { font-size: 0.78rem; color: #a1a1aa; margin-top: 6px; }
 
-        /* SLUG */
         .slug-input-wrap { position: relative; display: flex; align-items: center; }
         .slug-prefix { position: absolute; left: 12px; font-size: 0.85rem; color: #a1a1aa; pointer-events: none; white-space: nowrap; user-select: none; }
         .slug-input { padding-left: 80px !important; font-family: 'Courier New', monospace !important; font-size: 0.875rem !important; }
@@ -233,7 +227,6 @@ export default function Upload() {
         .slug-preview-url { color: #7c3aed; font-weight: 600; font-family: 'Courier New', monospace; word-break: break-all; }
         .slug-auto-badge { display: inline-flex; align-items: center; gap: 3px; font-size: 0.7rem; background: #f0fdf4; color: #16a34a; border: 1px solid #bbf7d0; padding: 2px 7px; border-radius: 20px; font-weight: 500; }
 
-        /* EDITOR */
         .up-editor-wrap { border: 1px solid #e4e4e7; border-radius: 8px; overflow: hidden; background: #fafafa; transition: border-color 0.15s, box-shadow 0.15s; }
         .up-editor-wrap:focus-within { border-color: #7c3aed; box-shadow: 0 0 0 3px rgba(124,58,237,0.08); }
         .up-toolbar { display: flex; align-items: center; gap: 2px; padding: 8px 10px; background: #18181b; flex-wrap: wrap; position: relative; }
@@ -251,7 +244,6 @@ export default function Upload() {
         .up-text-dropdown-item-icon { width: 28px; height: 28px; background: #f4f4f6; border-radius: 6px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
         .up-text-dropdown-item-label { font-size: 0.875rem; font-weight: 500; color: #18181b; }
 
-        /* MODAL */
         .up-modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 200; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(2px); }
         .up-modal { background: white; border-radius: 16px; padding: 28px; width: 100%; max-width: 420px; box-shadow: 0 20px 60px rgba(0,0,0,0.15); }
         .up-modal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
@@ -266,7 +258,6 @@ export default function Upload() {
         .up-modal-submit { width: 100%; background: #18181b; color: white; border: none; border-radius: 9px; padding: 12px; font-size: 0.9rem; font-weight: 600; font-family: 'Plus Jakarta Sans', system-ui, sans-serif; cursor: pointer; transition: background 0.15s; margin-top: 4px; }
         .up-modal-submit:hover { background: #3f3f46; }
 
-        /* TIPTAP */
         .tiptap-editor { min-height: 140px; padding: 12px 14px; font-size: 0.9rem; font-family: 'Manrope', sans-serif; color: #18181b; outline: none; line-height: 1.6; }
         .tiptap-editor p { margin-bottom: 6px; }
         .tiptap-editor strong { font-weight: 700; }
@@ -285,7 +276,6 @@ export default function Upload() {
         .tiptap-editor code { background: #f4f4f6; padding: 2px 5px; border-radius: 4px; font-family: 'Courier New', monospace; font-size: 0.85rem; }
         .tiptap-editor pre code { background: none; padding: 0; }
 
-        /* CARDS */
         .up-select-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
         .up-select-card { border: 1.5px solid #e4e4e7; border-radius: 10px; padding: 14px 16px; cursor: pointer; transition: border-color 0.15s, background 0.15s; position: relative; background: #fafafa; }
         .up-select-card.active { border-color: #7c3aed; background: #faf5ff; }
@@ -293,6 +283,16 @@ export default function Upload() {
         .up-select-card-desc { font-size: 0.78rem; color: #71717a; font-weight: 400; line-height: 1.4; }
         .up-check-icon { position: absolute; top: 12px; right: 12px; width: 20px; height: 20px; border-radius: 50%; background: #7c3aed; display: flex; align-items: center; justify-content: center; }
         .up-check-icon svg { width: 11px; height: 11px; stroke: white; stroke-width: 2.5; fill: none; }
+
+        /* ── COMPRESS TIP BOX ── */
+        .compress-tip { display: flex; align-items: center; gap: 10px; background: #faf5ff; border: 1px solid #e9d5ff; border-radius: 9px; padding: 10px 14px; margin-bottom: 12px; text-decoration: none; transition: background 0.15s, border-color 0.15s; cursor: pointer; }
+        .compress-tip:hover { background: #f3e8ff; border-color: #c084fc; }
+        .compress-tip-icon { width: 30px; height: 30px; background: #7c3aed; border-radius: 7px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+        .compress-tip-text { flex: 1; }
+        .compress-tip-text strong { display: block; font-size: 0.8rem; font-weight: 700; color: #18181b; margin-bottom: 1px; }
+        .compress-tip-text span { font-size: 0.74rem; color: #71717a; }
+        .compress-tip-arrow { color: #7c3aed; flex-shrink: 0; }
+
         .up-dropzone { border: 1.5px dashed #d4d4d8; border-radius: 10px; padding: 28px 20px; text-align: center; cursor: pointer; transition: border-color 0.15s, background 0.15s; background: #fafafa; }
         .up-dropzone:hover { border-color: #7c3aed; background: #faf5ff; }
         .up-dropzone-icon { width: 40px; height: 40px; border-radius: 50%; background: #f0f0f2; display: flex; align-items: center; justify-content: center; margin: 0 auto 10px; }
@@ -311,7 +311,6 @@ export default function Upload() {
         .up-spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid rgba(255,255,255,0.4); border-top-color: white; border-radius: 50%; animation: spin 0.7s linear infinite; margin-right: 8px; vertical-align: middle; }
         @keyframes spin { to { transform: rotate(360deg); } }
 
-        /* PREVIEW */
         .preview-panel { width: 360px; flex-shrink: 0; background: #fff; border-left: 1px solid #e4e4e7; position: sticky; top: 0; height: 100vh; overflow-y: auto; display: flex; flex-direction: column; }
         .preview-header { padding: 16px 20px; border-bottom: 1px solid #f0f0f2; display: flex; align-items: center; justify-content: space-between; background: #fafafa; flex-shrink: 0; }
         .preview-header h3 { font-size: 0.8125rem; font-weight: 600; color: #71717a; text-transform: uppercase; letter-spacing: 0.06em; }
@@ -460,7 +459,6 @@ export default function Upload() {
                   A URL-friendly identifier for your product. If you leave it blank, we will use the product's ID.
                 </p>
                 <label className="up-label">Slug</label>
-                {/* ✅ 1️⃣ Slug input UI */}
                 <div className="slug-input-wrap">
                   <span className="slug-prefix">zelteb.com/</span>
                   <input
@@ -494,6 +492,32 @@ export default function Upload() {
                 <h2>Product file <span className="required">*</span></h2>
               </div>
               <div className="up-card-body">
+
+                {/* ── COMPRESS TIP — only shows when Digital Product is selected ── */}
+                {type === "digital" && (
+                  <a
+                    href="https://www.compress2go.com/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="compress-tip"
+                  >
+                    <div className="compress-tip-icon">
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                        <polyline points="7 10 12 15 17 10"/>
+                        <line x1="12" y1="15" x2="12" y2="3"/>
+                      </svg>
+                    </div>
+                    <div className="compress-tip-text">
+                      <strong>Want to reduce file size?</strong>
+                      <span>Compress your file before uploading → compress2go.com</span>
+                    </div>
+                    <div className="compress-tip-arrow">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+                    </div>
+                  </a>
+                )}
+
                 <div className="up-select-grid" style={{ marginBottom: 16 }}>
                   <div className={`up-select-card ${type === "video" ? "active" : ""}`} onClick={() => { setType("video"); setFile(null); }}>
                     {type === "video" && <span className="up-check-icon"><svg viewBox="0 0 12 12"><polyline points="2 6 5 9 10 3"/></svg></span>}
@@ -566,8 +590,8 @@ export default function Upload() {
               </div>
               <div className="up-card-body">
                 <p className="up-hint" style={{ marginBottom: 14 }}>
-  Upload a thumbnail of your product. Recommended size: <strong>1280×720px</strong> (16:9 ratio), JPG or PNG.
-</p>
+                  Upload a thumbnail of your product. Recommended size: <strong>1280×720px</strong> (16:9 ratio), JPG or PNG.
+                </p>
                 <div className="up-dropzone" onClick={() => thumbInputRef.current?.click()}>
                   <div className="up-dropzone-icon">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/></svg>
