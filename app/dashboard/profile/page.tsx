@@ -21,29 +21,19 @@ export default function Profile() {
   const [avatarUploading, setAvatarUploading] = useState(false);
   const [coverUrl, setCoverUrl] = useState<string | null>(null);
   const [coverUploading, setCoverUploading] = useState(false);
-
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
-
   const [usernameError, setUsernameError] = useState("");
 
-  // Load profile
   useEffect(() => {
     const load = async () => {
       const { data: auth } = await supabase.auth.getUser();
-      if (!auth.user) {
-        router.push("/");
-        return;
-      }
-
+      if (!auth.user) { router.push("/"); return; }
       setUser(auth.user);
 
       const { data: profile } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("id", auth.user.id)
-        .single();
+        .from("profiles").select("*").eq("id", auth.user.id).single();
 
       if (!profile) {
         await supabase.from("profiles").insert({ id: auth.user.id });
@@ -54,65 +44,40 @@ export default function Profile() {
         setAvatarUrl(profile.avatar_url || null);
         setCoverUrl(profile.cover_url || null);
       }
-
       setLoading(false);
     };
-
     load();
   }, [router]);
 
-  // Live username check
   useEffect(() => {
     const checkUsername = async () => {
-      if (!username.trim()) {
-        setUsernameError("");
-        return;
-      }
-
+      if (!username.trim()) { setUsernameError(""); return; }
       const clean = username.trim().toLowerCase();
       const { data } = await supabase
-        .from("profiles")
-        .select("id")
-        .eq("username", clean)
-        .neq("id", user?.id)
-        .maybeSingle();
-
-      setUsernameError(data ? "the username is taken" : "");
+        .from("profiles").select("id").eq("username", clean)
+        .neq("id", user?.id).maybeSingle();
+      setUsernameError(data ? "This username is already taken" : "");
     };
-
     const timeout = setTimeout(checkUsername, 500);
     return () => clearTimeout(timeout);
   }, [username, user]);
 
-  // ── Avatar: pick file → instant preview, then upload immediately ──────────
   const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     e.target.value = "";
-
-    const preview = URL.createObjectURL(file);
-    setAvatarPreview(preview);
+    setAvatarPreview(URL.createObjectURL(file));
     setAvatarFile(file);
-
     setAvatarUploading(true);
     try {
       const ext = file.name.split(".").pop();
       const path = `${user.id}/avatar.${ext}`;
-
       const { error: uploadError } = await supabase.storage
-        .from("avatars")
-        .upload(path, file, { upsert: true, contentType: file.type });
-
+        .from("avatars").upload(path, file, { upsert: true, contentType: file.type });
       if (uploadError) throw uploadError;
-
       const { data } = supabase.storage.from("avatars").getPublicUrl(path);
       const url = `${data.publicUrl}?t=${Date.now()}`;
-
-      await supabase
-        .from("profiles")
-        .update({ avatar_url: url })
-        .eq("id", user.id);
-
+      await supabase.from("profiles").update({ avatar_url: url }).eq("id", user.id);
       setAvatarUrl(url);
       setAvatarPreview(null);
     } catch (err: any) {
@@ -123,31 +88,20 @@ export default function Profile() {
     }
   };
 
-  // ── Cover: pick file → upload immediately ────────────────────────────────
   const handleCoverChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     e.target.value = "";
-
     setCoverUploading(true);
     try {
       const ext = file.name.split(".").pop();
       const path = `${user.id}/cover.${ext}`;
-
       const { error: uploadError } = await supabase.storage
-        .from("covers")
-        .upload(path, file, { upsert: true, contentType: file.type });
-
+        .from("covers").upload(path, file, { upsert: true, contentType: file.type });
       if (uploadError) throw uploadError;
-
       const { data } = supabase.storage.from("covers").getPublicUrl(path);
       const url = `${data.publicUrl}?t=${Date.now()}`;
-
-      await supabase
-        .from("profiles")
-        .update({ cover_url: url })
-        .eq("id", user.id);
-
+      await supabase.from("profiles").update({ cover_url: url }).eq("id", user.id);
       setCoverUrl(url);
     } catch (err: any) {
       alert("Cover upload failed: " + err.message);
@@ -156,240 +110,221 @@ export default function Profile() {
     }
   };
 
-  // ── Save the rest of the form ─────────────────────────────────────────────
   const save = async () => {
-    if (!username.trim()) {
-      setUsernameError("username is required");
-      return;
-    }
+    if (!username.trim()) { setUsernameError("Username is required"); return; }
     if (usernameError) return;
-
     setSaving(true);
     setSaved(false);
-
     try {
-      const { error } = await supabase
-        .from("profiles")
-        .update({
-          username: username.trim().toLowerCase(),
-          full_name: fullName.trim(),
-          bio,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", user.id);
+      const { error } = await supabase.from("profiles").update({
+        username: username.trim().toLowerCase(),
+        full_name: fullName.trim(),
+        bio,
+        updated_at: new Date().toISOString(),
+      }).eq("id", user.id);
 
       if (error) {
         if (error.code === "23505" || error.message.includes("profiles_username_key")) {
-          setUsernameError("the username is taken");
+          setUsernameError("This username is already taken");
           setSaving(false);
           return;
         }
         throw error;
       }
-
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
     } catch (err: any) {
       alert("Failed to save: " + err.message);
     }
-
     setSaving(false);
   };
 
-  if (loading) return <div className="p-10">Loading...</div>;
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#f9f9f8] flex items-center justify-center">
+        <p className="text-gray-400 text-sm">Loading...</p>
+      </div>
+    );
+  }
 
   const displayAvatar = avatarPreview || avatarUrl;
 
   return (
-    <div className="min-h-screen bg-[#f9f9f8] p-10">
-      <h1 className="text-3xl font-bold mb-8">Profile</h1>
+    <div className="min-h-screen bg-[#f9f9f8]">
+      <div className="max-w-2xl mx-auto px-4 sm:px-6 py-8 sm:py-12 space-y-4">
 
-      <div className="bg-white border border-gray-200 rounded-2xl p-8 max-w-3xl">
+        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Profile</h1>
 
-        {/* ── Cover photo upload ──────────────────────────────────────────── */}
-        <div className="mb-8">
-          <label className="block text-sm font-semibold mb-2">Cover Photo</label>
-
+        {/* ── Cover Photo ── */}
+        <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden">
+          {/* Cover image — clickable */}
           <div
-            className="relative w-full h-36 rounded-2xl overflow-hidden border border-gray-200 bg-stone-200 group cursor-pointer"
+            className="relative w-full h-36 sm:h-44 bg-gray-200 group cursor-pointer"
             onClick={() => coverInputRef.current?.click()}
           >
-            {/* Cover preview */}
             {coverUrl ? (
               <Image
-                src={coverUrl}
-                alt="Cover photo"
-                fill
-                className="object-cover"
-                unoptimized
+                src={coverUrl} alt="Cover" fill
+                className="object-cover" unoptimized
               />
             ) : (
-              <div className="absolute inset-0 bg-gray-800" />
+              <div className="absolute inset-0 bg-gray-300 flex items-center justify-center">
+                <ImagePlus size={28} className="text-gray-400" />
+              </div>
             )}
 
             {/* Hover overlay */}
-            <div className="absolute inset-0 bg-black/0 hover:bg-black/35 transition-colors flex flex-col items-center justify-center gap-2">
+            <div className="absolute inset-0 bg-black/0 hover:bg-black/30 active:bg-black/40 transition-colors flex flex-col items-center justify-center gap-2">
               {coverUploading ? (
-                <Loader2 size={22} className="text-white animate-spin" />
+                <Loader2 size={24} className="text-white animate-spin" />
               ) : (
                 <>
-                  <ImagePlus
-                    size={22}
-                    className="text-white opacity-0 group-hover:opacity-100 transition-opacity"
-                  />
-                  <span className="text-[11px] font-mono tracking-wide text-white/90 bg-black/40 backdrop-blur-sm px-2 py-0.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity select-none">
-                    16 : 5 · 1600 × 500 px
+                  <ImagePlus size={22} className="text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                  <span className="text-xs text-white bg-black/50 px-2 py-0.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
+                    1600 × 500 px recommended
                   </span>
                 </>
               )}
             </div>
           </div>
 
-          <p className="text-gray-400 text-xs mt-1">
-            Recommended: 1600 × 500 px (16:5 ratio)
-          </p>
-          <button
-            onClick={() => coverInputRef.current?.click()}
-            disabled={coverUploading}
-            className="mt-2 text-xs font-medium text-gray-600 hover:text-black underline underline-offset-2 transition-colors disabled:opacity-50"
-          >
-            {coverUploading ? "Uploading…" : "Change cover photo"}
-          </button>
+          {/* Cover meta */}
+          <div className="px-5 py-3 flex items-center justify-between border-t border-gray-100">
+            <p className="text-xs text-gray-400">Cover Photo · 16:5 ratio</p>
+            <button
+              onClick={() => coverInputRef.current?.click()}
+              disabled={coverUploading}
+              className="text-xs font-medium text-gray-600 hover:text-black underline underline-offset-2 disabled:opacity-50"
+            >
+              {coverUploading ? "Uploading…" : "Change"}
+            </button>
+          </div>
 
-          <input
-            ref={coverInputRef}
-            type="file"
-            accept="image/*"
-            className="hidden"
-            onChange={handleCoverChange}
-          />
+          <input ref={coverInputRef} type="file" accept="image/*" className="hidden" onChange={handleCoverChange} />
         </div>
 
-        <hr className="border-gray-100 mb-8" />
+        {/* ── Profile Photo ── */}
+        <div className="bg-white border border-gray-200 rounded-2xl p-5">
+          <p className="text-sm font-bold text-gray-900 mb-4">Profile Photo</p>
 
-        {/* ── Avatar upload ───────────────────────────────────────────────── */}
-        <div className="mb-8 flex items-center gap-5">
-          <div className="relative group shrink-0">
-            {/* Avatar preview */}
-            <div className="w-20 h-20 rounded-2xl bg-stone-800 overflow-hidden border border-gray-200 shadow-sm">
-              {displayAvatar ? (
-                <Image
-                  src={displayAvatar}
-                  alt="Profile photo"
-                  width={80}
-                  height={80}
-                  className="object-cover w-full h-full"
-                  unoptimized
-                />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center">
-                  <span className="text-2xl font-bold text-amber-400 uppercase">
-                    {username?.charAt(0) || fullName?.charAt(0) || "?"}
-                  </span>
-                </div>
-              )}
+          <div className="flex items-center gap-4">
+            {/* Avatar */}
+            <div className="relative group shrink-0">
+              <div className="w-20 h-20 rounded-2xl bg-gray-200 overflow-hidden border border-gray-200">
+                {displayAvatar ? (
+                  <Image
+                    src={displayAvatar} alt="Avatar"
+                    width={80} height={80}
+                    className="object-cover w-full h-full" unoptimized
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center bg-gray-800">
+                    <span className="text-2xl font-bold text-amber-400 uppercase">
+                      {username?.charAt(0) || fullName?.charAt(0) || "?"}
+                    </span>
+                  </div>
+                )}
+              </div>
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                disabled={avatarUploading}
+                className="absolute inset-0 rounded-2xl bg-black/0 hover:bg-black/40 active:bg-black/50 transition-colors flex items-center justify-center disabled:cursor-not-allowed"
+              >
+                {avatarUploading
+                  ? <Loader2 size={18} className="text-white animate-spin" />
+                  : <Camera size={18} className="text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                }
+              </button>
             </div>
 
-            {/* Camera overlay */}
-            <button
-              onClick={() => fileInputRef.current?.click()}
-              disabled={avatarUploading}
-              className="absolute inset-0 rounded-2xl bg-black/0 hover:bg-black/40 transition-colors flex items-center justify-center group cursor-pointer disabled:cursor-not-allowed"
-              title="Change profile photo"
-            >
-              {avatarUploading ? (
-                <Loader2 size={20} className="text-white animate-spin" />
-              ) : (
-                <Camera
-                  size={20}
-                  className="text-white opacity-0 group-hover:opacity-100 transition-opacity"
-                />
-              )}
-            </button>
+            <div>
+              <p className="text-sm font-medium text-gray-800">
+                {avatarUploading ? "Uploading..." : "Profile picture"}
+              </p>
+              <p className="text-xs text-gray-400 mt-0.5">Square image, at least 400 × 400 px</p>
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                disabled={avatarUploading}
+                className="mt-2 text-xs font-medium text-gray-600 hover:text-black underline underline-offset-2 disabled:opacity-50"
+              >
+                {avatarUploading ? "Please wait…" : "Change photo"}
+              </button>
+            </div>
           </div>
 
-          {/* Text + hint */}
+          <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarChange} />
+        </div>
+
+        {/* ── Form fields ── */}
+        <div className="bg-white border border-gray-200 rounded-2xl p-5 space-y-5">
+          <p className="text-sm font-bold text-gray-900">Account Details</p>
+
+          {/* Full Name */}
           <div>
-            <p className="font-semibold text-sm text-gray-800">Profile photo</p>
-            <p className="text-gray-400 text-xs mt-0.5">
-              Recommended: square image, at least 400 × 400 px
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">Full Name</label>
+            <input
+              value={fullName}
+              onChange={(e) => setFullName(e.target.value)}
+              placeholder="Eg: Basil Biju"
+              className="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-black"
+            />
+            <p className="text-xs text-gray-400 mt-1.5">
+              This is the name shown on your public profile page.
             </p>
-            <button
-              onClick={() => fileInputRef.current?.click()}
-              disabled={avatarUploading}
-              className="mt-2 text-xs font-medium text-gray-600 hover:text-black underline underline-offset-2 transition-colors disabled:opacity-50"
-            >
-              {avatarUploading ? "Uploading…" : "Change photo"}
-            </button>
           </div>
 
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/*"
-            className="hidden"
-            onChange={handleAvatarChange}
-          />
+          {/* Username */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">Username</label>
+            <input
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              placeholder="your-username"
+              className={`w-full border rounded-xl px-4 py-3 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 ${
+                usernameError
+                  ? "border-red-400 focus:ring-red-200"
+                  : "border-gray-300 focus:ring-black"
+              }`}
+            />
+            {usernameError && (
+              <p className="text-red-500 text-xs mt-1.5">{usernameError}</p>
+            )}
+            <p className="text-xs text-gray-400 mt-1.5">
+              Your public URL: zelteb.com/{username || "username"}
+            </p>
+          </div>
+
+          {/* Bio */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">Bio</label>
+            <textarea
+              value={bio}
+              onChange={(e) => setBio(e.target.value)}
+              placeholder="Tell your audience about yourself..."
+              className="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm text-gray-900 placeholder-gray-400 h-28 resize-none focus:outline-none focus:ring-2 focus:ring-black"
+            />
+          </div>
         </div>
 
-        <hr className="border-gray-100 mb-8" />
+        {/* ── Save feedback ── */}
+        {saved && (
+          <div className="flex items-center gap-2 text-green-600 text-sm font-medium px-1">
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+            </svg>
+            Saved successfully
+          </div>
+        )}
 
-        {/* Full Name */}
-        <div className="mb-6">
-          <label className="block text-sm font-semibold mb-2">Full Name</label>
-          <input
-            value={fullName}
-            onChange={(e) => setFullName(e.target.value)}
-            className="w-full border rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-gray-200"
-            placeholder="Eg: Basil Biju"
-          />
-          <p className="text-gray-400 text-xs mt-1">
-            This is the name shown on your public profile page.
-          </p>
-        </div>
-
-        {/* Username */}
-        <div className="mb-6">
-          <label className="block text-sm font-semibold mb-2">Username</label>
-          <input
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-            className={`w-full border rounded-xl px-4 py-3 focus:outline-none ${
-              usernameError
-                ? "border-red-500 focus:ring-2 focus:ring-red-200"
-                : "focus:ring-2 focus:ring-gray-200"
-            }`}
-            placeholder="your-username"
-          />
-          {usernameError && (
-            <p className="text-red-500 text-sm mt-2">{usernameError}</p>
-          )}
-          <p className="text-gray-400 text-xs mt-1">
-            Your public URL: yoursite.com/{username || "username"}
-          </p>
-        </div>
-
-        {/* Bio */}
-        <div className="mb-6">
-          <label className="block text-sm font-semibold mb-2">Bio</label>
-          <textarea
-            value={bio}
-            onChange={(e) => setBio(e.target.value)}
-            className="w-full border rounded-xl px-4 py-3 h-32 resize-none"
-          />
-        </div>
-
+        {/* ── Save button — full width mobile ── */}
         <button
           onClick={save}
           disabled={saving || !!usernameError}
-          className="bg-black text-white px-8 py-3 rounded-xl disabled:opacity-50"
+          className="w-full sm:w-auto sm:px-10 bg-black text-white py-3.5 rounded-xl text-sm font-semibold disabled:opacity-50 hover:bg-gray-900 active:scale-95 transition-all"
         >
-          {saving ? "Saving..." : "Save"}
+          {saving ? "Saving..." : "Save profile"}
         </button>
 
-        {saved && (
-          <p className="text-green-600 mt-4">✓ Saved successfully</p>
-        )}
       </div>
     </div>
   );
