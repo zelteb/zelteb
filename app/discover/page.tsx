@@ -238,8 +238,52 @@ export default function Discover() {
     <div style={{ fontFamily: "system-ui, -apple-system, BlinkMacSystemFont, sans-serif", background: "#f4f3f0", minHeight: "100vh" }}>
       <style>{`
         * { box-sizing: border-box; }
-        .card { background: white; border-radius: 12px; overflow: hidden; cursor: pointer; transition: transform 0.18s, box-shadow 0.18s; text-decoration: none; color: inherit; display: block; }
+
+        .card {
+          background: white;
+          border-radius: 12px;
+          overflow: hidden;
+          cursor: pointer;
+          transition: transform 0.18s, box-shadow 0.18s;
+          text-decoration: none;
+          color: inherit;
+          display: block;
+        }
         .card:hover { transform: translateY(-3px); box-shadow: 0 12px 32px rgba(0,0,0,0.1); }
+
+        .card-title {
+          font-weight: 600;
+          font-size: 14px;
+          margin: 0 0 8px;
+          line-height: 1.4;
+          color: #111;
+        }
+
+        .card-thumbnail {
+          position: relative;
+          width: 100%;
+          aspect-ratio: 16/9;
+          overflow: hidden;
+          background: #f0eee9;
+        }
+
+        .card-thumbnail img {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+          display: block;
+        }
+
+        .card-thumbnail-fallback {
+          width: 100%;
+          height: 100%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 36px;
+          background: #f0eee9;
+        }
+
         .filter-section { border-top: 1px solid #e5e5e5; padding: 14px 0; }
         .filter-header { display: flex; justify-content: space-between; align-items: center; cursor: pointer; padding: 0 4px; font-size: 15px; font-weight: 500; }
         .price-input { display: flex; align-items: center; border: 1px solid #ddd; border-radius: 8px; padding: 8px 12px; gap: 8px; font-size: 14px; }
@@ -300,11 +344,17 @@ export default function Discover() {
             width: 40px; height: 4px; background: #ddd; border-radius: 99px;
             margin: 0 auto 16px;
           }
-          .cards-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 12px !important; }
+          .cards-grid {
+            grid-template-columns: repeat(2, 1fr) !important;
+            gap: 12px !important;
+          }
+          .card-title { font-size: 13px !important; }
+          .card-thumbnail { aspect-ratio: 4/3; }
         }
 
         @media (max-width: 380px) {
           .cards-grid { grid-template-columns: 1fr !important; }
+          .card-thumbnail { aspect-ratio: 16/9; }
         }
       `}</style>
 
@@ -391,29 +441,39 @@ export default function Discover() {
 
                 return (
                   <div
-  key={v.id}
-  className="card"
-  onClick={() => {
-    window.location.href = `/product/${v.slug}`;
-  }}
->
-  <div style={{ position: "relative", width: "100%", aspectRatio: "16/9", overflow: "hidden", background: "#1a1a1a" }}>
-    {v.thumbnail_url && v.thumbnail_url.trim() !== ""
-      ? <img 
-          src={v.thumbnail_url} 
-          alt={v.title} 
-          style={{ width: "100%", height: "100%", objectFit: "cover" }}
-          onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
-        />
-      : <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 32 }}>
-          {v.product_type === "video" ? "🎬" : "📁"}
-        </div>
-    }
-  </div>
+                    key={v.id}
+                    className="card"
+                    onClick={() => { window.location.href = `/product/${v.slug}`; }}
+                  >
+                    {/* ── Thumbnail ── */}
+                    <div className="card-thumbnail">
+                      {v.thumbnail_url && v.thumbnail_url.trim() !== "" ? (
+                        <img
+                          src={v.thumbnail_url}
+                          alt={v.title}
+                          onError={(e) => {
+                            const target = e.target as HTMLImageElement;
+                            target.style.display = "none";
+                            const parent = target.parentElement;
+                            if (parent) {
+                              parent.style.background = "#f0eee9";
+                              const fallback = document.createElement("div");
+                              fallback.className = "card-thumbnail-fallback";
+                              fallback.textContent = v.product_type === "video" ? "🎬" : "📁";
+                              parent.appendChild(fallback);
+                            }
+                          }}
+                        />
+                      ) : (
+                        <div className="card-thumbnail-fallback">
+                          {v.product_type === "video" ? "🎬" : "📁"}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* ── Card body ── */}
                     <div style={{ padding: "12px 14px 14px", display: "flex", flexDirection: "column", gap: 0 }}>
-                      <p style={{ fontWeight: 600, fontSize: 14, margin: "0 0 8px", lineHeight: 1.4 }}>
-                        {v.title}
-                      </p>
+                      <p className="card-title">{v.title}</p>
 
                       <div style={{ marginBottom: 8, minHeight: 24, display: "flex", alignItems: "center" }}>
                         {v.creator && (
