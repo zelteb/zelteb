@@ -156,6 +156,17 @@ export default function Dashboard() {
     return () => { supabase.removeChannel(channel); };
   }, [userId]);
 
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    if (!open) return;
+    const handle = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (!target.closest(".period-dropdown")) setOpen(false);
+    };
+    document.addEventListener("mousedown", handle);
+    return () => document.removeEventListener("mousedown", handle);
+  }, [open]);
+
   const filteredPurchases = purchases.filter((p) => {
     if (period === "All time") return true;
     const days = period === "Last 7 days" ? 7 : period === "Last 30 days" ? 30 : 90;
@@ -170,7 +181,7 @@ export default function Dashboard() {
   const canWithdraw = !hasPendingRequest && availableBalance >= MINIMUM_WITHDRAWAL && hasPayoutMethod;
 
   const withdrawBlockReason = hasPendingRequest
-    ? "Pending withdrawal request"
+    ? "You have a pending withdrawal request"
     : !hasPayoutMethod
     ? "Add a payout method first"
     : `Minimum ₹${MINIMUM_WITHDRAWAL} required`;
@@ -241,7 +252,8 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-[#f9f9f8]">
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6 sm:py-10 space-y-4 sm:space-y-6">
+      {/* Extra bottom padding so content clears mobile nav bars */}
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6 sm:py-10 space-y-4 sm:space-y-6 pb-24 sm:pb-10">
 
         {/* ── Header ── */}
         <div className="flex items-center gap-3">
@@ -254,7 +266,7 @@ export default function Dashboard() {
 
           <div className="flex-1 min-w-0">
             <h1 className="text-lg sm:text-2xl font-bold text-gray-900 truncate">
-              Hi, {username || "there"}
+              Hi, {username || "there"} 👋
             </h1>
             <p className="text-gray-400 text-xs sm:text-sm truncate">
               zelteb.com/{username || "username"}
@@ -295,18 +307,44 @@ export default function Dashboard() {
 
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-base sm:text-xl font-bold text-gray-900">Earnings</h2>
-            <div className="relative">
+
+            {/* Period picker — right-anchored dropdown, won't overflow on mobile */}
+            <div className="relative period-dropdown">
               <button
                 onClick={() => setOpen(!open)}
-                className="border border-gray-200 rounded-full px-3 sm:px-4 py-1.5 text-xs sm:text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition"
+                className="border border-gray-200 rounded-full px-3 sm:px-4 py-1.5 text-xs sm:text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition flex items-center gap-1.5"
               >
-                {period}
+                {/* On very small screens show a short label */}
+                <span className="hidden xs:inline sm:hidden">
+                  {period === "Last 7 days" ? "7d"
+                    : period === "Last 30 days" ? "30d"
+                    : period === "Last 90 days" ? "90d"
+                    : "All"}
+                </span>
+                <span className="hidden sm:inline">{period}</span>
+                <span className="xs:hidden">{
+                  period === "Last 7 days" ? "7d"
+                  : period === "Last 30 days" ? "30d"
+                  : period === "Last 90 days" ? "90d"
+                  : "All"
+                }</span>
+                <svg className="w-3 h-3 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                </svg>
               </button>
+
               {open && (
-                <div className="absolute right-0 mt-2 w-44 bg-white border border-gray-100 rounded-xl shadow-lg z-10">
+                <div className="absolute right-0 mt-2 w-40 bg-white border border-gray-100 rounded-xl shadow-lg z-20 overflow-hidden">
                   {options.map((o) => (
-                    <button key={o} onClick={() => { setPeriod(o); setOpen(false); }}
-                      className="block w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50">
+                    <button
+                      key={o}
+                      onClick={() => { setPeriod(o); setOpen(false); }}
+                      className={`block w-full text-left px-4 py-2.5 text-sm transition-colors ${
+                        period === o
+                          ? "bg-gray-50 text-gray-900 font-semibold"
+                          : "text-gray-700 hover:bg-gray-50"
+                      }`}
+                    >
                       {o}
                     </button>
                   ))}
@@ -315,33 +353,43 @@ export default function Dashboard() {
             </div>
           </div>
 
-          {/* Big number */}
+          {/* Big earnings number */}
           <p className="text-4xl sm:text-5xl font-black tracking-tight text-gray-900">
             ₹{filteredEarnings.toFixed(2)}
           </p>
 
-          {/* Available balance — no "via" text */}
-          <p className="text-sm text-gray-400 mt-2 mb-5">
-            Available to withdraw:{" "}
-            <span className="font-semibold text-gray-700">₹{availableBalance.toFixed(2)}</span>
-          </p>
+          {/* Available balance + withdraw CTA in a row on mobile */}
+          <div className="mt-3 mb-0 flex flex-col sm:block gap-3">
+            <p className="text-sm text-gray-400">
+              Available to withdraw:{" "}
+              <span className="font-semibold text-gray-700">₹{availableBalance.toFixed(2)}</span>
+            </p>
 
-          {/* Withdraw button — full width on mobile */}
-          <div className="space-y-2">
-            <button
-              onClick={() => canWithdraw && setWithdrawModalOpen(true)}
-              disabled={!canWithdraw}
-              className={`w-full sm:w-auto sm:px-6 py-3 sm:py-2 rounded-xl sm:rounded-full text-sm font-semibold transition-all
-                ${canWithdraw
-                  ? "bg-black text-white hover:bg-gray-800 active:scale-95"
-                  : "bg-gray-100 text-gray-400 cursor-not-allowed"
-                }`}
-            >
-              Withdraw
-            </button>
+            <div className="flex items-center gap-3 mt-4 sm:mt-5">
+              <button
+                onClick={() => canWithdraw && setWithdrawModalOpen(true)}
+                disabled={!canWithdraw}
+                className={`flex-1 sm:flex-none sm:px-6 py-3 sm:py-2 rounded-xl sm:rounded-full text-sm font-semibold transition-all
+                  ${canWithdraw
+                    ? "bg-black text-white hover:bg-gray-800 active:scale-95"
+                    : "bg-gray-100 text-gray-400 cursor-not-allowed"
+                  }`}
+                style={{ WebkitTapHighlightColor: "transparent" }}
+              >
+                Withdraw
+              </button>
 
-            {!canWithdraw && (
-              <p className="text-xs text-gray-400 text-center sm:text-left">
+              {/* Pending badge — shows inline next to button */}
+              {hasPendingRequest && (
+                <span className="inline-flex items-center gap-1.5 text-xs font-medium text-amber-700 bg-amber-50 border border-amber-200 px-3 py-1.5 rounded-full">
+                  <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse inline-block" />
+                  Pending
+                </span>
+              )}
+            </div>
+
+            {!canWithdraw && !hasPendingRequest && (
+              <p className="text-xs text-gray-400 mt-2">
                 {!hasPayoutMethod
                   ? <Link href="/dashboard/payouts" className="text-amber-600 underline font-medium">Add payout method to withdraw →</Link>
                   : withdrawBlockReason
@@ -353,8 +401,13 @@ export default function Dashboard() {
 
         {/* ── Transactions ── */}
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-          <div className="px-4 sm:px-6 py-4 border-b border-gray-100">
+          <div className="px-4 sm:px-6 py-4 border-b border-gray-100 flex items-center justify-between">
             <h2 className="text-sm sm:text-base font-bold text-gray-900">Recent Purchases</h2>
+            {filteredPurchases.length > 0 && (
+              <span className="text-xs text-gray-400 font-medium">
+                {filteredPurchases.length} transaction{filteredPurchases.length !== 1 ? "s" : ""}
+              </span>
+            )}
           </div>
 
           {filteredPurchases.length === 0 ? (
@@ -381,12 +434,16 @@ export default function Dashboard() {
             <div className="divide-y divide-gray-50">
               {filteredPurchases.map((p) => {
                 const buyerInitial = p.buyer_name !== "—" ? p.buyer_name[0].toUpperCase() : "?";
-                const date = new Date(p.created_at).toLocaleDateString("en-IN", {
+                const dateShort = new Date(p.created_at).toLocaleDateString("en-IN", {
+                  day: "numeric", month: "short",
+                });
+                const dateFull = new Date(p.created_at).toLocaleDateString("en-IN", {
                   day: "numeric", month: "short", year: "numeric",
                 });
 
                 return (
-                  <div key={p.id} className="flex items-center gap-3 px-4 sm:px-6 py-4 hover:bg-gray-50 transition-colors">
+                  <div key={p.id} className="flex items-center gap-3 px-4 sm:px-6 py-3.5 hover:bg-gray-50 transition-colors">
+                    {/* Avatar */}
                     <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-amber-100 flex items-center justify-center flex-shrink-0 overflow-hidden">
                       {p.buyer_avatar
                         ? <img src={p.buyer_avatar} alt={p.buyer_name} className="w-full h-full object-cover" />
@@ -394,17 +451,19 @@ export default function Dashboard() {
                       }
                     </div>
 
+                    {/* Name + product */}
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold text-gray-900 truncate">{p.buyer_name}</p>
-                      <p className="text-xs text-gray-400 truncate">{p.video_title}</p>
-                      {/* Date shown below title on mobile */}
-                      <p className="text-xs text-gray-300 sm:hidden">{date}</p>
+                      <p className="text-sm font-semibold text-gray-900 truncate leading-snug">{p.buyer_name}</p>
+                      <p className="text-xs text-gray-400 truncate leading-snug">{p.video_title}</p>
                     </div>
 
-                    <div className="text-right flex-shrink-0">
-                      <p className="text-sm font-bold text-green-600">+₹{p.creator_earnings.toFixed(2)}</p>
-                      <p className="text-xs text-gray-400 hidden sm:block">{date}</p>
-                      <p className="text-xs text-gray-400">₹{p.amount} paid</p>
+                    {/* Amount + date — stacked on right */}
+                    <div className="text-right flex-shrink-0 flex flex-col items-end gap-0.5">
+                      <p className="text-sm font-bold text-green-600 leading-snug">+₹{p.creator_earnings.toFixed(2)}</p>
+                      {/* Short date on mobile, full on desktop */}
+                      <p className="text-xs text-gray-400 leading-snug sm:hidden">{dateShort}</p>
+                      <p className="text-xs text-gray-400 leading-snug hidden sm:block">{dateFull}</p>
+                      <p className="text-xs text-gray-300 leading-snug">₹{p.amount} paid</p>
                     </div>
                   </div>
                 );
@@ -412,30 +471,43 @@ export default function Dashboard() {
             </div>
           )}
         </div>
+
       </div>
 
-      {/* ── Withdraw Modal — bottom sheet on mobile ── */}
+      {/* ── Withdraw Modal — bottom sheet on mobile, centered on desktop ── */}
       {withdrawModalOpen && (
-        <div className="fixed inset-0 bg-black/40 flex items-end sm:items-center justify-center z-50">
-          <div className="bg-white w-full sm:max-w-sm rounded-t-3xl sm:rounded-2xl p-6 shadow-xl">
-            {/* Drag handle — mobile only */}
+        <div
+          className="fixed inset-0 bg-black/40 flex items-end sm:items-center justify-center z-50"
+          onClick={(e) => { if (e.target === e.currentTarget) { setWithdrawModalOpen(false); setWithdrawError(null); } }}
+        >
+          <div className="bg-white w-full sm:max-w-sm sm:rounded-2xl rounded-t-3xl p-6 shadow-xl">
+            {/* Drag handle — mobile only visual cue */}
             <div className="w-10 h-1 bg-gray-200 rounded-full mx-auto mb-5 sm:hidden" />
-            <h3 className="text-lg font-bold mb-2 text-gray-900">Withdraw Earnings</h3>
-            <p className="text-sm text-gray-500 mb-2">
+
+            <h3 className="text-lg font-bold mb-1 text-gray-900">Withdraw Earnings</h3>
+            <p className="text-sm text-gray-500 mb-1">
               Requesting withdrawal of{" "}
               <span className="font-semibold text-gray-800">₹{availableBalance.toFixed(2)}</span>.
             </p>
             <p className="text-xs text-gray-400 mb-4">
               Processed within 3–5 business days to your registered payout account.
             </p>
+
             {withdrawError && (
-              <p className="text-xs text-red-500 mb-4 bg-red-50 px-3 py-2 rounded-lg">{withdrawError}</p>
+              <div className="flex items-start gap-2 text-xs text-red-600 mb-4 bg-red-50 border border-red-100 px-3 py-2.5 rounded-xl">
+                <svg className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+                </svg>
+                {withdrawError}
+              </div>
             )}
+
             <div className="flex gap-3">
               <button
                 onClick={() => { setWithdrawModalOpen(false); setWithdrawError(null); }}
                 disabled={withdrawing}
                 className="flex-1 border border-gray-200 rounded-xl py-3 text-sm font-medium text-gray-600 hover:bg-gray-50 transition disabled:opacity-50"
+                style={{ WebkitTapHighlightColor: "transparent" }}
               >
                 Cancel
               </button>
@@ -443,6 +515,7 @@ export default function Dashboard() {
                 onClick={withdraw}
                 disabled={withdrawing}
                 className="flex-1 bg-black text-white rounded-xl py-3 text-sm font-semibold hover:bg-gray-800 transition disabled:opacity-60 flex items-center justify-center gap-2"
+                style={{ WebkitTapHighlightColor: "transparent" }}
               >
                 {withdrawing ? (
                   <>
@@ -461,12 +534,16 @@ export default function Dashboard() {
 
       {/* ── Success toast ── */}
       {withdrawSuccess && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-gray-900 text-white text-sm px-5 py-3 rounded-full shadow-lg z-50 flex items-center gap-2 whitespace-nowrap">
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-gray-900 text-white text-sm px-5 py-3 rounded-full shadow-lg z-50 flex items-center gap-2 max-w-[calc(100vw-32px)]">
           <svg className="w-4 h-4 text-green-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
           </svg>
-          Withdrawal request submitted!
-          <button onClick={() => setWithdrawSuccess(false)} className="ml-1 text-gray-400 hover:text-white">✕</button>
+          <span className="whitespace-nowrap">Withdrawal request submitted!</span>
+          <button
+            onClick={() => setWithdrawSuccess(false)}
+            className="ml-1 text-gray-400 hover:text-white flex-shrink-0"
+            style={{ WebkitTapHighlightColor: "transparent" }}
+          >✕</button>
         </div>
       )}
     </div>

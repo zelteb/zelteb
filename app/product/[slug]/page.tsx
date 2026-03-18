@@ -55,21 +55,20 @@ export default function ProductPage() {
         supabase.auth.getUser(),
       ]);
 
-     if (!v) { setPageLoading(false); return; }
-setVideo(v);
+      if (!v) { setPageLoading(false); return; }
+      setVideo(v);
 
-// ✅ Track view
-await supabase.from("video_views").insert({
-  video_id: v.id,
-  viewer_id: user?.id ?? null,
-});
+      await supabase.from("video_views").insert({
+        video_id: v.id,
+        viewer_id: user?.id ?? null,
+      });
 
-const [, creatorResult] = await Promise.all([
-  loadRatings(v.id),
-  v.creator_id
-    ? supabase.from("profiles").select("username, full_name, avatar_url").eq("id", v.creator_id).single()
-    : Promise.resolve({ data: null }),
-]);
+      const [, creatorResult] = await Promise.all([
+        loadRatings(v.id),
+        v.creator_id
+          ? supabase.from("profiles").select("username, full_name, avatar_url").eq("id", v.creator_id).single()
+          : Promise.resolve({ data: null }),
+      ]);
       if (creatorResult?.data) setCreator(creatorResult.data);
 
       if (!user) { setPageLoading(false); return; }
@@ -85,7 +84,6 @@ const [, creatorResult] = await Promise.all([
         return;
       }
 
-      // Check if owner
       if (user.id === v.creator_id) {
         setOwned(true);
         const { data: signed } = await supabase.storage.from("videos").createSignedUrl(v.video_path, 60 * 60);
@@ -160,7 +158,6 @@ const [, creatorResult] = await Promise.all([
       return;
     }
     if (owned) {
-      // Already owns — go to watch page
       router.push(`/watch/${slug}`);
       setLoading(false);
       return;
@@ -264,34 +261,111 @@ const [, creatorResult] = await Promise.all([
         body { background: #fff; }
         .watch-wrap { font-family: 'DM Sans', sans-serif; background: #fff; min-height: 100vh; color: #18181b; }
 
-        .watch-nav { background: white; border-bottom: 1px solid #e4e4e7; padding: 0 40px; height: 54px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 10; }
-        .watch-nav-logo { font-size: 1.2rem; color: #18181b; text-decoration: none; font-weight: 800; }
-        .watch-nav-share { display: inline-flex; align-items: center; gap: 6px; padding: 7px 16px; border-radius: 8px; border: 1px solid #e4e4e7; background: white; font-size: 13px; font-weight: 600; font-family: 'DM Sans', sans-serif; color: #18181b; cursor: pointer; transition: background 0.15s, border-color 0.15s; }
+        /* ── NAV ── */
+        .watch-nav {
+          background: white;
+          border-bottom: 1px solid #e4e4e7;
+          padding: 0 16px;
+          height: 50px;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          position: sticky;
+          top: 0;
+          z-index: 10;
+        }
+        @media (min-width: 640px) { .watch-nav { padding: 0 40px; height: 54px; } }
+        .watch-nav-logo { font-size: 1.15rem; color: #18181b; text-decoration: none; font-weight: 800; }
+        .watch-nav-share {
+          display: inline-flex; align-items: center; gap: 6px;
+          padding: 6px 14px; border-radius: 8px; border: 1px solid #e4e4e7;
+          background: white; font-size: 13px; font-weight: 600;
+          font-family: 'DM Sans', sans-serif; color: #18181b;
+          cursor: pointer; transition: background 0.15s, border-color 0.15s;
+          -webkit-tap-highlight-color: transparent;
+        }
         .watch-nav-share:hover { background: #f4f4f6; border-color: #d4d4d8; }
 
-        .watch-hero { width: 100%; max-height: 480px; overflow: hidden; background: #18181b; }
-        .watch-hero img { width: 100%; height: 480px; object-fit: cover; display: block; }
-        .watch-hero-placeholder { width: 100%; height: 380px; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #18181b, #3f3f46); font-size: 5rem; }
+        /* ── HERO ── */
+        .watch-hero {
+          width: 100%;
+          overflow: hidden;
+          background: #18181b;
+          /* Fluid height: 56vw on mobile (natural 16:9), capped at 460px on desktop */
+          height: clamp(200px, 56vw, 460px);
+        }
+        .watch-hero img { width: 100%; height: 100%; object-fit: cover; display: block; }
+        .watch-hero-placeholder {
+          width: 100%; height: 100%;
+          display: flex; align-items: center; justify-content: center;
+          background: linear-gradient(135deg, #18181b, #3f3f46);
+          font-size: clamp(3rem, 10vw, 5rem);
+        }
 
-        .watch-main { max-width: 1000px; margin: 0 auto; padding: 0 24px 60px; display: grid; grid-template-columns: 1fr 300px; gap: 40px; align-items: start; }
-        .watch-left { padding-top: 28px; }
+        /* ── MAIN GRID ── */
+        .watch-main {
+          max-width: 1000px;
+          margin: 0 auto;
+          padding: 0 16px 48px;
+          display: flex;
+          flex-direction: column;
+          gap: 0;
+        }
+        @media (min-width: 768px) {
+          .watch-main {
+            display: grid;
+            grid-template-columns: 1fr 300px;
+            gap: 40px;
+            padding: 0 24px 60px;
+            align-items: start;
+          }
+        }
 
-        .watch-meta-row { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; }
-        .watch-price-tag { display: inline-flex; align-items: center; background: #e91e8c; color: white; font-weight: 700; font-size: 14px; padding: 5px 16px 5px 12px; clip-path: polygon(0 0, 88% 0, 100% 50%, 88% 100%, 0 100%); flex-shrink: 0; }
+        /* ── LEFT COLUMN ── */
+        .watch-left { padding-top: 20px; }
+        @media (min-width: 768px) { .watch-left { padding-top: 28px; } }
+
+        .watch-meta-row {
+          display: flex; align-items: center; gap: 10px;
+          margin-bottom: 14px; flex-wrap: wrap;
+        }
+        .watch-price-tag {
+          display: inline-flex; align-items: center;
+          background: #e91e8c; color: white; font-weight: 700; font-size: 13px;
+          padding: 5px 16px 5px 12px;
+          clip-path: polygon(0 0, 88% 0, 100% 50%, 88% 100%, 0 100%);
+          flex-shrink: 0;
+        }
         .watch-price-tag.free-tag { background: #16a34a; }
 
-        .watch-creator-pill { display: flex; align-items: center; gap: 7px; background: #f4f4f6; border-radius: 999px; padding: 5px 12px 5px 5px; text-decoration: none; transition: background 0.15s; }
+        .watch-creator-pill {
+          display: flex; align-items: center; gap: 7px;
+          background: #f4f4f6; border-radius: 999px;
+          padding: 5px 12px 5px 5px;
+          text-decoration: none; transition: background 0.15s;
+          -webkit-tap-highlight-color: transparent;
+        }
         .watch-creator-pill:hover { background: #e8e8e8; }
-        .watch-creator-avatar { width: 24px; height: 24px; border-radius: 50%; background: linear-gradient(135deg, #7c3aed, #e879f9); display: flex; align-items: center; justify-content: center; font-size: 11px; color: white; font-weight: 700; flex-shrink: 0; overflow: hidden; }
+        .watch-creator-avatar {
+          width: 24px; height: 24px; border-radius: 50%;
+          background: linear-gradient(135deg, #7c3aed, #e879f9);
+          display: flex; align-items: center; justify-content: center;
+          font-size: 11px; color: white; font-weight: 700; flex-shrink: 0; overflow: hidden;
+        }
         .watch-creator-avatar img { width: 100%; height: 100%; object-fit: cover; }
         .watch-creator-name { font-size: 13px; font-weight: 600; color: #18181b; }
 
         .watch-inline-stars { display: flex; align-items: center; gap: 5px; }
         .watch-inline-stars .stars { display: flex; gap: 2px; }
-        .watch-inline-stars .count { font-size: 13px; color: #71717a; }
+        .watch-inline-stars .count { font-size: 12px; color: #71717a; }
 
-        .watch-title { font-size: 1.75rem; font-weight: 800; color: #18181b; line-height: 1.2; letter-spacing: -0.02em; margin-bottom: 20px; }
-        .watch-divider-line { height: 1px; background: #f0f0f2; margin: 24px 0; }
+        .watch-title {
+          font-size: clamp(1.2rem, 5vw, 1.75rem);
+          font-weight: 800; color: #18181b;
+          line-height: 1.2; letter-spacing: -0.02em; margin-bottom: 18px;
+        }
+        .watch-divider-line { height: 1px; background: #f0f0f2; margin: 20px 0; }
+
         .watch-description { font-size: 0.9rem; color: #3f3f46; line-height: 1.8; }
         .watch-description p { margin-bottom: 10px; }
         .watch-description strong { font-weight: 700; color: #18181b; }
@@ -305,69 +379,196 @@ const [, creatorResult] = await Promise.all([
         .watch-description h3 { font-size: 1rem; font-weight: 600; margin-bottom: 5px; }
         .watch-description pre { background: #18181b; color: #e4e4e7; border-radius: 8px; padding: 12px 14px; font-family: monospace; font-size: 0.85rem; margin: 8px 0; overflow-x: auto; }
 
-        .ratings-box { margin-top: 36px; border-top: 1px solid #f0f0f2; padding-top: 28px; }
-        .ratings-box-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; }
+        /* ── RATINGS ── */
+        .ratings-box { margin-top: 32px; border-top: 1px solid #f0f0f2; padding-top: 24px; }
+        .ratings-box-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
         .ratings-box-title { font-size: 1rem; font-weight: 700; color: #18181b; }
         .ratings-avg { display: flex; align-items: center; gap: 5px; font-size: 0.9rem; font-weight: 700; color: #18181b; }
         .ratings-avg-count { font-size: 0.8rem; font-weight: 400; color: #71717a; }
         .ratings-row { display: flex; align-items: center; gap: 10px; margin-bottom: 9px; }
-        .ratings-label { font-size: 0.8rem; color: #52525b; width: 48px; flex-shrink: 0; text-align: right; }
-        .ratings-bar-track { flex: 1; height: 9px; background: #f0f0f2; border-radius: 99px; overflow: hidden; }
+        .ratings-label { font-size: 0.78rem; color: #52525b; width: 46px; flex-shrink: 0; text-align: right; }
+        .ratings-bar-track { flex: 1; height: 8px; background: #f0f0f2; border-radius: 99px; overflow: hidden; }
         .ratings-bar-fill { height: 100%; border-radius: 99px; background: #e879f9; transition: width 0.4s ease; }
-        .ratings-pct { font-size: 0.78rem; color: #71717a; width: 32px; flex-shrink: 0; text-align: right; }
-        .ratings-empty { font-size: 0.875rem; color: #a1a1aa; padding: 12px 0; }
+        .ratings-pct { font-size: 0.75rem; color: #71717a; width: 30px; flex-shrink: 0; text-align: right; }
+        .ratings-empty { font-size: 0.875rem; color: #a1a1aa; padding: 10px 0; }
 
-        .watch-card { background: white; border: 1px solid #e4e4e7; border-radius: 16px; overflow: hidden; box-shadow: 0 2px 20px rgba(0,0,0,0.06); position: sticky; top: 74px; margin-top: 28px; }
-        .watch-card-body { padding: 20px; }
+        /* ── BUY CARD ── */
+        /*
+          On mobile: card renders BELOW the title/meta row but ABOVE description.
+          We use order to achieve this without duplicating JSX.
+          watch-left is order:2, watch-card is order:1 on mobile.
+        */
+        .watch-left { order: 2; }
+        .watch-card { order: 1; }
+
+        @media (min-width: 768px) {
+          .watch-left { order: unset; }
+          .watch-card { order: unset; }
+        }
+
+        .watch-card {
+          background: white;
+          border: 1px solid #e4e4e7;
+          border-radius: 0;
+          overflow: hidden;
+          /* On mobile: flush card under the title block */
+          border-left: none; border-right: none;
+          box-shadow: none;
+          margin-top: 0;
+        }
+        @media (min-width: 768px) {
+          .watch-card {
+            border-radius: 16px;
+            border: 1px solid #e4e4e7;
+            box-shadow: 0 2px 20px rgba(0,0,0,0.06);
+            position: sticky;
+            top: 74px;
+            margin-top: 28px;
+          }
+        }
+
+        .watch-card-body { padding: 16px; }
+        @media (min-width: 768px) { .watch-card-body { padding: 20px; } }
+
+        /* On mobile, hide the card title/type/creator — already shown in the left col */
+        .watch-card-desktop-only { display: none; }
+        @media (min-width: 768px) { .watch-card-desktop-only { display: block; } }
+
         .watch-card-title { font-size: 1rem; font-weight: 700; color: #18181b; line-height: 1.3; margin-bottom: 4px; }
         .watch-card-type { font-size: 0.72rem; color: #a1a1aa; font-weight: 400; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.06em; }
-        .watch-card-creator { display: flex; align-items: center; gap: 9px; padding: 10px 11px; background: #f7f7f7; border-radius: 10px; margin-bottom: 14px; text-decoration: none; transition: background 0.15s; }
+        .watch-card-creator {
+          display: flex; align-items: center; gap: 9px;
+          padding: 10px 11px; background: #f7f7f7; border-radius: 10px;
+          margin-bottom: 14px; text-decoration: none; transition: background 0.15s;
+          -webkit-tap-highlight-color: transparent;
+        }
         .watch-card-creator:hover { background: #efefef; }
-        .watch-card-creator-avatar { width: 32px; height: 32px; border-radius: 50%; background: linear-gradient(135deg, #7c3aed, #e879f9); display: flex; align-items: center; justify-content: center; font-size: 13px; color: white; font-weight: 700; flex-shrink: 0; overflow: hidden; }
+        .watch-card-creator-avatar {
+          width: 32px; height: 32px; border-radius: 50%;
+          background: linear-gradient(135deg, #7c3aed, #e879f9);
+          display: flex; align-items: center; justify-content: center;
+          font-size: 13px; color: white; font-weight: 700; flex-shrink: 0; overflow: hidden;
+        }
         .watch-card-creator-avatar img { width: 100%; height: 100%; object-fit: cover; }
         .watch-card-creator-info { flex: 1; min-width: 0; }
         .watch-card-creator-name { font-size: 13px; font-weight: 600; color: #18181b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .watch-card-creator-sub { font-size: 11px; color: #a1a1aa; }
-        .watch-card-divider { height: 1px; background: #f0f0f2; margin: 14px 0; }
-        .watch-card-price { font-size: 1.5rem; font-weight: 800; color: #18181b; margin-bottom: 14px; }
+        .watch-card-divider { height: 1px; background: #f0f0f2; margin: 12px 0; }
+
+        /* Mobile: show price inline next to button */
+        .watch-card-price-row {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          margin-bottom: 12px;
+          gap: 12px;
+        }
+        @media (min-width: 768px) {
+          .watch-card-price-row { display: block; margin-bottom: 14px; }
+        }
+        .watch-card-price { font-size: 1.5rem; font-weight: 800; color: #18181b; }
+        @media (max-width: 767px) { .watch-card-price { font-size: 1.25rem; } }
         .watch-card-price .free { font-size: 1rem; font-weight: 600; color: #16a34a; background: #f0fdf4; padding: 5px 12px; border-radius: 20px; display: inline-block; }
-        .watch-buy-btn { width: 100%; padding: 13px; background: #e91e8c; color: white; border: none; border-radius: 10px; font-size: 0.95rem; font-weight: 700; font-family: 'DM Sans', sans-serif; cursor: pointer; transition: background 0.15s, transform 0.1s; margin-bottom: 10px; }
+
+        /* On mobile: price + button side by side */
+        .watch-card-actions-mobile {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+        }
+        @media (min-width: 768px) { .watch-card-actions-mobile { display: block; } }
+
+        .watch-buy-btn {
+          flex: 1;
+          padding: 13px;
+          background: #e91e8c; color: white; border: none; border-radius: 10px;
+          font-size: 0.95rem; font-weight: 700; font-family: 'DM Sans', sans-serif;
+          cursor: pointer; transition: background 0.15s, transform 0.1s;
+          margin-bottom: 0;
+          -webkit-tap-highlight-color: transparent;
+        }
+        @media (min-width: 768px) { .watch-buy-btn { width: 100%; margin-bottom: 10px; } }
         .watch-buy-btn:hover:not(:disabled) { background: #c2185b; transform: translateY(-1px); }
+        .watch-buy-btn:active:not(:disabled) { transform: scale(0.98); }
         .watch-buy-btn:disabled { opacity: 0.6; cursor: not-allowed; }
         .watch-buy-btn.free-btn { background: #16a34a; }
         .watch-buy-btn.free-btn:hover:not(:disabled) { background: #15803d; }
-        .watch-download-btn { width: 100%; padding: 13px; background: #7c3aed; color: white; border: none; border-radius: 10px; font-size: 0.95rem; font-weight: 700; font-family: 'DM Sans', sans-serif; cursor: pointer; display: block; text-align: center; margin-bottom: 10px; transition: background 0.15s; }
-        .watch-download-btn:hover { background: #6d28d9; }
-        .watch-share-card-btn { width: 100%; padding: 11px; background: white; color: #18181b; border: 1px solid #e4e4e7; border-radius: 10px; font-size: 0.875rem; font-weight: 600; font-family: 'DM Sans', sans-serif; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 7px; margin-bottom: 10px; transition: background 0.15s; }
-        .watch-share-card-btn:hover { background: #f4f4f6; }
-        .watch-owned-badge { display: flex; align-items: center; gap: 6px; font-size: 0.78rem; color: #16a34a; font-weight: 500; background: #f0fdf4; padding: 7px 12px; border-radius: 8px; margin-bottom: 12px; }
-        .watch-secure { display: flex; align-items: center; gap: 5px; font-size: 0.73rem; color: #a1a1aa; justify-content: center; }
 
-        .compact-footer { display: flex; align-items: center; justify-content: center; gap: 18px; padding: 16px 24px; border-top: 1px solid #f0f0f0; font-family: 'DM Sans', sans-serif; }
-        .compact-footer-sell { display: inline-flex; align-items: center; gap: 6px; font-size: 14px; font-weight: 600; color: #2563eb; text-decoration: none; letter-spacing: -0.01em; transition: opacity 0.15s; }
+        .watch-download-btn {
+          flex: 1;
+          padding: 13px; background: #7c3aed; color: white; border: none;
+          border-radius: 10px; font-size: 0.95rem; font-weight: 700;
+          font-family: 'DM Sans', sans-serif; cursor: pointer;
+          display: block; text-align: center; margin-bottom: 0;
+          transition: background 0.15s;
+          -webkit-tap-highlight-color: transparent;
+        }
+        @media (min-width: 768px) { .watch-download-btn { width: 100%; margin-bottom: 10px; } }
+        .watch-download-btn:hover { background: #6d28d9; }
+
+        .watch-share-card-btn {
+          width: 100%; padding: 11px;
+          background: white; color: #18181b; border: 1px solid #e4e4e7;
+          border-radius: 10px; font-size: 0.875rem; font-weight: 600;
+          font-family: 'DM Sans', sans-serif; cursor: pointer;
+          display: flex; align-items: center; justify-content: center; gap: 7px;
+          margin-top: 10px;
+          transition: background 0.15s;
+          -webkit-tap-highlight-color: transparent;
+        }
+        .watch-share-card-btn:hover { background: #f4f4f6; }
+
+        .watch-owned-badge {
+          display: flex; align-items: center; gap: 6px;
+          font-size: 0.78rem; color: #16a34a; font-weight: 500;
+          background: #f0fdf4; padding: 7px 12px; border-radius: 8px;
+          margin-bottom: 10px;
+        }
+        .watch-secure {
+          display: flex; align-items: center; gap: 5px;
+          font-size: 0.73rem; color: #a1a1aa; justify-content: center;
+          margin-top: 10px;
+        }
+
+        /* ── FOOTER ── */
+        .compact-footer {
+          display: flex; align-items: center; justify-content: center;
+          gap: 14px; padding: 14px 16px;
+          border-top: 1px solid #f0f0f0;
+          font-family: 'DM Sans', sans-serif;
+          flex-wrap: wrap;
+        }
+        .compact-footer-sell {
+          display: inline-flex; align-items: center; gap: 6px;
+          font-size: 13px; font-weight: 600; color: #2563eb;
+          text-decoration: none; letter-spacing: -0.01em; transition: opacity 0.15s;
+        }
         .compact-footer-sell:hover { opacity: 0.75; }
         .compact-footer-dot { color: #d1d5db; font-size: 12px; }
-        .compact-footer-powered { font-size: 14px; color: #9ca3af; font-weight: 500; }
-        .compact-footer-powered a { color: #111; font-weight: 800; text-decoration: none; font-size: 15px; letter-spacing: -0.02em; transition: opacity 0.15s; }
+        .compact-footer-powered { font-size: 13px; color: #9ca3af; font-weight: 500; }
+        .compact-footer-powered a { color: #111; font-weight: 800; text-decoration: none; font-size: 14px; letter-spacing: -0.02em; transition: opacity 0.15s; }
         .compact-footer-powered a:hover { opacity: 0.7; }
 
-        .share-toast { position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%); background: #18181b; color: white; padding: 11px 22px; border-radius: 10px; font-size: 13px; font-weight: 500; z-index: 9999; display: flex; align-items: center; gap: 8px; box-shadow: 0 4px 24px rgba(0,0,0,0.22); animation: toast-in 0.22s ease; white-space: nowrap; }
+        /* ── TOAST ── */
+        .share-toast {
+          position: fixed; bottom: 24px; left: 50%;
+          transform: translateX(-50%);
+          background: #18181b; color: white;
+          padding: 11px 22px; border-radius: 10px;
+          font-size: 13px; font-weight: 500;
+          z-index: 9999; display: flex; align-items: center; gap: 8px;
+          box-shadow: 0 4px 24px rgba(0,0,0,0.22);
+          animation: toast-in 0.22s ease;
+          white-space: nowrap;
+          max-width: calc(100vw - 32px);
+        }
         @keyframes toast-in { from { opacity: 0; transform: translateX(-50%) translateY(10px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
         @keyframes spin { to { transform: rotate(360deg); } }
-
-        @media (max-width: 768px) {
-          .watch-nav { padding: 0 16px; }
-          .watch-hero img { height: 220px; }
-          .watch-hero-placeholder { height: 200px; }
-          .watch-main { grid-template-columns: 1fr; gap: 0; padding: 0 16px 40px; }
-          .watch-card { position: static; margin-top: 0; order: -1; border-radius: 0; border-left: none; border-right: none; box-shadow: none; border-top: none; }
-          .watch-title { font-size: 1.35rem; }
-        }
       `}</style>
 
       <div className="watch-wrap">
 
-        {/* NAVBAR */}
+        {/* ── NAVBAR ── */}
         <nav className="watch-nav">
           <a href="/" className="watch-nav-logo">Zelteb</a>
           <button className="watch-nav-share" onClick={handleShare}>
@@ -379,7 +580,7 @@ const [, creatorResult] = await Promise.all([
           </button>
         </nav>
 
-        {/* HERO */}
+        {/* ── HERO ── */}
         <div className="watch-hero">
           {video.thumbnail_url
             ? <img src={video.thumbnail_url} alt={video.title} />
@@ -387,8 +588,10 @@ const [, creatorResult] = await Promise.all([
           }
         </div>
 
-        {/* MAIN GRID */}
+        {/* ── MAIN ── */}
         <div className="watch-main">
+
+          {/* LEFT — title/meta/description */}
           <div className="watch-left">
             <div className="watch-meta-row">
               <span className={`watch-price-tag ${isFree ? "free-tag" : ""}`}>
@@ -409,12 +612,12 @@ const [, creatorResult] = await Promise.all([
                 <span className="watch-inline-stars">
                   <span className="stars">
                     {[1,2,3,4,5].map(s => (
-                      <svg key={s} width="14" height="14" viewBox="0 0 24 24" fill={s <= Math.round(Number(avgRating)) ? "#f59e0b" : "none"} stroke="#f59e0b" strokeWidth="1.5">
+                      <svg key={s} width="13" height="13" viewBox="0 0 24 24" fill={s <= Math.round(Number(avgRating)) ? "#f59e0b" : "none"} stroke="#f59e0b" strokeWidth="1.5">
                         <polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/>
                       </svg>
                     ))}
                   </span>
-                  <span className="count">{avgRating} ({totalRatings} {totalRatings === 1 ? "rating" : "ratings"})</span>
+                  <span className="count">{avgRating} ({totalRatings})</span>
                 </span>
               )}
             </div>
@@ -431,7 +634,7 @@ const [, creatorResult] = await Promise.all([
               </>
             )}
 
-            {/* RATINGS BREAKDOWN */}
+            {/* RATINGS */}
             <div className="ratings-box">
               <div className="ratings-box-header">
                 <span className="ratings-box-title">Ratings</span>
@@ -461,53 +664,64 @@ const [, creatorResult] = await Promise.all([
             </div>
           </div>
 
-          {/* STICKY BUY CARD */}
+          {/* ── BUY CARD ── */}
           <div className="watch-card">
             <div className="watch-card-body">
-              <div className="watch-card-title">{video.title}</div>
-              <div className="watch-card-type">{video.product_type === "video" ? "Video" : "Digital Product"}</div>
-              {creator && (
-                <a href={`/${creator.username}`} className="watch-card-creator">
-                  <div className="watch-card-creator-avatar">
-                    {creator.avatar_url
-                      ? <img src={creator.avatar_url} alt={creatorDisplayName} />
-                      : creatorDisplayName.charAt(0).toUpperCase()
-                    }
-                  </div>
-                  <div className="watch-card-creator-info">
-                    <div className="watch-card-creator-name">{creatorDisplayName}</div>
-                    <div className="watch-card-creator-sub">View profile</div>
-                  </div>
-                </a>
-              )}
-              <div className="watch-card-divider" />
+
+              {/* Desktop-only: title, type, creator in the card */}
+              <div className="watch-card-desktop-only">
+                <div className="watch-card-title">{video.title}</div>
+                <div className="watch-card-type">{video.product_type === "video" ? "Video" : "Digital Product"}</div>
+                {creator && (
+                  <a href={`/${creator.username}`} className="watch-card-creator">
+                    <div className="watch-card-creator-avatar">
+                      {creator.avatar_url
+                        ? <img src={creator.avatar_url} alt={creatorDisplayName} />
+                        : creatorDisplayName.charAt(0).toUpperCase()
+                      }
+                    </div>
+                    <div className="watch-card-creator-info">
+                      <div className="watch-card-creator-name">{creatorDisplayName}</div>
+                      <div className="watch-card-creator-sub">View profile</div>
+                    </div>
+                  </a>
+                )}
+                <div className="watch-card-divider" />
+              </div>
+
               {owned && (
                 <div className="watch-owned-badge">
                   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
                   You own this product
                 </div>
               )}
-              <div className="watch-card-price">
-                {isFree ? <span className="free">Free</span> : `₹${video.price}`}
-              </div>
 
-              {owned ? (
-                downloadUrl ? (
-                  <button className="watch-download-btn" onClick={() => download(video.video_path, video.title)}>
-                    {video.product_type === "video" ? "▶ Watch / Download" : "⬇ Download"}
-                  </button>
+              {/* Price + CTA — side by side on mobile */}
+              <div className="watch-card-actions-mobile">
+                <div className="watch-card-price">
+                  {isFree ? <span className="free">Free</span> : `₹${video.price}`}
+                </div>
+
+                {owned ? (
+                  downloadUrl ? (
+                    <button className="watch-download-btn" onClick={() => download(video.video_path, video.title)}>
+                      {video.product_type === "video" ? "▶ Watch / Download" : "⬇ Download"}
+                    </button>
+                  ) : (
+                    <div style={{ flex: 1, textAlign: "center", fontSize: "0.85rem", color: "#a1a1aa", padding: "12px 0" }}>
+                      Preparing download...
+                    </div>
+                  )
                 ) : (
-                  <div style={{ textAlign: "center", fontSize: "0.85rem", color: "#a1a1aa", padding: "12px 0" }}>Preparing download...</div>
-                )
-              ) : (
-                <button
-                  className={`watch-buy-btn ${isFree ? "free-btn" : ""}`}
-                  onClick={buy}
-                  disabled={loading}
-                >
-                  {loading ? "Processing..." : isFree ? "Get for Free" : "Buy Now"}
-                </button>
-              )}
+                  <button
+                    className={`watch-buy-btn ${isFree ? "free-btn" : ""}`}
+                    onClick={buy}
+                    disabled={loading}
+                  >
+                    {loading ? "Processing..." : isFree ? "Get for Free" : "Buy Now"}
+                  </button>
+                )}
+              </div>
 
               <button className="watch-share-card-btn" onClick={handleShare}>
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
@@ -516,6 +730,7 @@ const [, creatorResult] = await Promise.all([
                 </svg>
                 Share this product
               </button>
+
               <div className="watch-secure">
                 <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
                 Secure checkout
@@ -524,9 +739,14 @@ const [, creatorResult] = await Promise.all([
           </div>
         </div>
 
-        {/* FOOTER */}
+        {/* ── FOOTER ── */}
         <div className="compact-footer">
-          <a href={userId ? "https://www.zelteb.com/dashboard/product" : "/login"} className="compact-footer-sell" target={userId ? "_blank" : "_self"} rel="noopener noreferrer">
+          <a
+            href={userId ? "https://www.zelteb.com/dashboard/product" : "/login"}
+            className="compact-footer-sell"
+            target={userId ? "_blank" : "_self"}
+            rel="noopener noreferrer"
+          >
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/>
               <line x1="3" y1="6" x2="21" y2="6"/>
@@ -540,7 +760,6 @@ const [, creatorResult] = await Promise.all([
             <a href="https://zelteb.com" target="_blank" rel="noopener noreferrer">Zelteb</a>
           </span>
         </div>
-
       </div>
 
       {showToast && (
