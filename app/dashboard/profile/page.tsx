@@ -149,37 +149,36 @@ export default function Profile() {
 
   const displayAvatar = avatarPreview || avatarUrl;
 
+  const inputClass =
+    "w-full border border-gray-300 rounded-xl px-4 py-3 text-base sm:text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-black transition-shadow";
+
   return (
     <div className="min-h-screen bg-[#f9f9f8]">
-      <div className="max-w-2xl mx-auto px-4 sm:px-6 py-8 sm:py-12 space-y-4">
+      {/* Extra bottom padding so save button clears mobile nav bars */}
+      <div className="max-w-2xl mx-auto px-4 sm:px-6 py-8 sm:py-12 space-y-4 pb-24 sm:pb-12">
 
         <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Profile</h1>
 
         {/* ── Cover Photo ── */}
         <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden">
-          {/* Cover image — clickable */}
           <div
-            className="relative w-full h-36 sm:h-44 bg-gray-200 group cursor-pointer"
+            className="relative w-full bg-gray-200 group cursor-pointer"
+            style={{ height: "clamp(120px, 25vw, 176px)" }}
             onClick={() => coverInputRef.current?.click()}
           >
             {coverUrl ? (
-              <Image
-                src={coverUrl} alt="Cover" fill
-                className="object-cover" unoptimized
-              />
+              <Image src={coverUrl} alt="Cover" fill className="object-cover" unoptimized />
             ) : (
               <div className="absolute inset-0 bg-gray-300 flex items-center justify-center">
-                <ImagePlus size={28} className="text-gray-400" />
+                <ImagePlus size={26} className="text-gray-400" />
               </div>
             )}
-
-            {/* Hover overlay */}
             <div className="absolute inset-0 bg-black/0 hover:bg-black/30 active:bg-black/40 transition-colors flex flex-col items-center justify-center gap-2">
               {coverUploading ? (
-                <Loader2 size={24} className="text-white animate-spin" />
+                <Loader2 size={22} className="text-white animate-spin" />
               ) : (
                 <>
-                  <ImagePlus size={22} className="text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                  <ImagePlus size={20} className="text-white opacity-0 group-hover:opacity-100 transition-opacity" />
                   <span className="text-xs text-white bg-black/50 px-2 py-0.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
                     1600 × 500 px recommended
                   </span>
@@ -188,13 +187,12 @@ export default function Profile() {
             </div>
           </div>
 
-          {/* Cover meta */}
-          <div className="px-5 py-3 flex items-center justify-between border-t border-gray-100">
+          <div className="px-4 py-3 flex items-center justify-between border-t border-gray-100">
             <p className="text-xs text-gray-400">Cover Photo · 16:5 ratio</p>
             <button
               onClick={() => coverInputRef.current?.click()}
               disabled={coverUploading}
-              className="text-xs font-medium text-gray-600 hover:text-black underline underline-offset-2 disabled:opacity-50"
+              className="text-xs font-medium text-gray-600 hover:text-black underline underline-offset-2 disabled:opacity-50 py-1 px-1"
             >
               {coverUploading ? "Uploading…" : "Change"}
             </button>
@@ -208,9 +206,9 @@ export default function Profile() {
           <p className="text-sm font-bold text-gray-900 mb-4">Profile Photo</p>
 
           <div className="flex items-center gap-4">
-            {/* Avatar */}
             <div className="relative group shrink-0">
-              <div className="w-20 h-20 rounded-2xl bg-gray-200 overflow-hidden border border-gray-200">
+              {/* Slightly larger avatar tap area on mobile */}
+              <div className="w-20 h-20 sm:w-20 sm:h-20 rounded-2xl bg-gray-200 overflow-hidden border border-gray-200">
                 {displayAvatar ? (
                   <Image
                     src={displayAvatar} alt="Avatar"
@@ -229,6 +227,7 @@ export default function Profile() {
                 onClick={() => fileInputRef.current?.click()}
                 disabled={avatarUploading}
                 className="absolute inset-0 rounded-2xl bg-black/0 hover:bg-black/40 active:bg-black/50 transition-colors flex items-center justify-center disabled:cursor-not-allowed"
+                style={{ WebkitTapHighlightColor: "transparent" }}
               >
                 {avatarUploading
                   ? <Loader2 size={18} className="text-white animate-spin" />
@@ -245,7 +244,8 @@ export default function Profile() {
               <button
                 onClick={() => fileInputRef.current?.click()}
                 disabled={avatarUploading}
-                className="mt-2 text-xs font-medium text-gray-600 hover:text-black underline underline-offset-2 disabled:opacity-50"
+                className="mt-2 text-xs font-medium text-gray-600 hover:text-black underline underline-offset-2 disabled:opacity-50 py-1"
+                style={{ WebkitTapHighlightColor: "transparent" }}
               >
                 {avatarUploading ? "Please wait…" : "Change photo"}
               </button>
@@ -266,7 +266,7 @@ export default function Profile() {
               value={fullName}
               onChange={(e) => setFullName(e.target.value)}
               placeholder="Eg: Basil Biju"
-              className="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-black"
+              className={inputClass}
             />
             <p className="text-xs text-gray-400 mt-1.5">
               This is the name shown on your public profile page.
@@ -280,10 +280,11 @@ export default function Profile() {
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               placeholder="your-username"
-              className={`w-full border rounded-xl px-4 py-3 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 ${
-                usernameError
-                  ? "border-red-400 focus:ring-red-200"
-                  : "border-gray-300 focus:ring-black"
+              autoCapitalize="none"
+              autoCorrect="off"
+              spellCheck={false}
+              className={`w-full border rounded-xl px-4 py-3 text-base sm:text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 ${
+                usernameError ? "border-red-400 focus:ring-red-200" : "border-gray-300 focus:ring-black"
               }`}
             />
             {usernameError && (
@@ -301,26 +302,27 @@ export default function Profile() {
               value={bio}
               onChange={(e) => setBio(e.target.value)}
               placeholder="Tell your audience about yourself..."
-              className="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm text-gray-900 placeholder-gray-400 h-28 resize-none focus:outline-none focus:ring-2 focus:ring-black"
+              className="w-full border border-gray-300 rounded-xl px-4 py-3 text-base sm:text-sm text-gray-900 placeholder-gray-400 h-28 resize-none focus:outline-none focus:ring-2 focus:ring-black"
             />
           </div>
         </div>
 
         {/* ── Save feedback ── */}
         {saved && (
-          <div className="flex items-center gap-2 text-green-600 text-sm font-medium px-1">
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+          <div className="flex items-center gap-2 bg-green-50 border border-green-100 text-green-700 text-sm font-medium px-4 py-3 rounded-xl">
+            <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
             </svg>
             Saved successfully
           </div>
         )}
 
-        {/* ── Save button — full width mobile ── */}
+        {/* ── Save button ── */}
         <button
           onClick={save}
           disabled={saving || !!usernameError}
           className="w-full sm:w-auto sm:px-10 bg-black text-white py-3.5 rounded-xl text-sm font-semibold disabled:opacity-50 hover:bg-gray-900 active:scale-95 transition-all"
+          style={{ WebkitTapHighlightColor: "transparent" }}
         >
           {saving ? "Saving..." : "Save profile"}
         </button>

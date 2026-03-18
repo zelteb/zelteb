@@ -104,6 +104,9 @@ export default function Payouts() {
     }
   };
 
+  const inputClass =
+    "w-full border border-gray-300 rounded-xl px-4 py-3 text-base sm:text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-black transition-shadow -webkit-appearance-none";
+
   if (fetching) {
     return (
       <div className="min-h-screen bg-[#f9f9f8] flex items-center justify-center">
@@ -114,21 +117,34 @@ export default function Payouts() {
 
   return (
     <div className="min-h-screen bg-[#f9f9f8]">
-      <div className="max-w-2xl mx-auto px-4 sm:px-6 py-8 sm:py-12 space-y-4">
+      {/* Extra bottom padding so the save button isn't hidden by mobile nav bars */}
+      <div className="max-w-2xl mx-auto px-4 sm:px-6 py-8 sm:py-12 space-y-4 pb-24 sm:pb-12">
 
-        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Payout method</h1>
+        <div className="mb-2">
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Payout method</h1>
+          <p className="text-sm text-gray-400 mt-1">Where you want to receive your earnings</p>
+        </div>
 
         {/* ── UPI ── */}
         <div className="bg-white border border-gray-200 rounded-2xl p-5">
-          <p className="font-bold text-gray-900">UPI</p>
-          <p className="text-sm text-gray-500 mt-0.5 mb-4">Instant payouts via UPI ID (e.g. name@upi)</p>
+          <div className="flex items-center gap-2 mb-1">
+            {/* UPI icon badge */}
+            <div className="w-7 h-7 rounded-lg bg-violet-50 flex items-center justify-content-center flex-shrink-0 flex items-center justify-center">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+            </div>
+            <p className="font-bold text-gray-900">UPI</p>
+          </div>
+          <p className="text-sm text-gray-400 mb-4 ml-9">Instant payouts via UPI ID (e.g. name@upi)</p>
 
           <label className="block text-sm font-medium text-gray-700 mb-1.5">UPI ID</label>
           <input
             value={upi_id}
             onChange={(e) => setUpiId(e.target.value)}
             placeholder="yourname@upi"
-            className="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-black"
+            autoCapitalize="none"
+            autoCorrect="off"
+            inputMode="email"
+            className={inputClass}
           />
 
           <div className="mt-3 rounded-xl bg-blue-50 border border-blue-100 px-4 py-3 text-xs text-blue-700 leading-relaxed">
@@ -138,29 +154,38 @@ export default function Payouts() {
 
         {/* ── Bank Account ── */}
         <div className="bg-white border border-gray-200 rounded-2xl p-5">
-          <p className="font-bold text-gray-900">Bank Account</p>
-          <p className="text-sm text-gray-500 mt-0.5 mb-4">Direct bank transfer via NEFT / IMPS</p>
+          <div className="flex items-center gap-2 mb-1">
+            <div className="w-7 h-7 rounded-lg bg-gray-100 flex items-center justify-center flex-shrink-0">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#555" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 21h18M3 10h18M5 6l7-3 7 3M4 10v11M20 10v11M8 14v3M12 14v3M16 14v3"/></svg>
+            </div>
+            <p className="font-bold text-gray-900">Bank Account</p>
+          </div>
+          <p className="text-sm text-gray-400 mb-4 ml-9">Direct bank transfer via NEFT / IMPS</p>
 
           <div className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                Full name of account holder
+                Account holder name <span className="text-red-400">*</span>
               </label>
               <input
                 value={account_holder}
                 onChange={(e) => setAccountHolder(e.target.value)}
                 placeholder="Enter full name"
-                className="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-black"
+                className={inputClass}
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">IFSC Code</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                IFSC Code <span className="text-red-400">*</span>
+              </label>
               <input
                 value={ifsc}
-                onChange={(e) => setIfsc(e.target.value)}
+                onChange={(e) => setIfsc(e.target.value.toUpperCase())}
                 placeholder="e.g. SBIN0001234"
-                className="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-black"
+                autoCapitalize="characters"
+                autoCorrect="off"
+                className={inputClass}
               />
             </div>
 
@@ -177,7 +202,8 @@ export default function Payouts() {
                 value={account_number}
                 onChange={(e) => setAccountNumber(e.target.value)}
                 placeholder={hasExistingAccount ? "Enter to change" : "Enter account number"}
-                className="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-black"
+                inputMode="numeric"
+                className={inputClass}
               />
             </div>
 
@@ -189,7 +215,8 @@ export default function Payouts() {
                 value={confirm_account}
                 onChange={(e) => setConfirmAccount(e.target.value)}
                 placeholder={hasExistingAccount ? "Enter to change" : "Re-enter account number"}
-                className="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-black"
+                inputMode="numeric"
+                className={inputClass}
               />
             </div>
 
@@ -203,27 +230,33 @@ export default function Payouts() {
 
         {/* ── Address ── */}
         <div className="bg-white border border-gray-200 rounded-2xl p-5">
-          <p className="font-bold text-gray-900 mb-4">Address</p>
+          <div className="flex items-center gap-2 mb-4">
+            <div className="w-7 h-7 rounded-lg bg-gray-100 flex items-center justify-center flex-shrink-0">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#555" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+            </div>
+            <p className="font-bold text-gray-900">Address</p>
+          </div>
 
           <div className="space-y-4">
             <input
               placeholder="Street address"
               value={street}
               onChange={(e) => setStreet(e.target.value)}
-              className="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-black"
+              className={inputClass}
             />
             <div className="grid grid-cols-2 gap-3">
               <input
                 placeholder="City"
                 value={city}
                 onChange={(e) => setCity(e.target.value)}
-                className="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-black"
+                className={inputClass}
               />
               <input
                 placeholder="Postal code"
                 value={postal_code}
                 onChange={(e) => setPostalCode(e.target.value)}
-                className="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-black"
+                inputMode="numeric"
+                className={inputClass}
               />
             </div>
           </div>
@@ -231,16 +264,26 @@ export default function Payouts() {
 
         {/* ── Message ── */}
         {message && (
-          <p className={`text-sm font-medium px-1 ${messageType === "success" ? "text-green-600" : "text-red-500"}`}>
+          <div className={`flex items-center gap-2 px-4 py-3 rounded-xl text-sm font-medium ${
+            messageType === "success"
+              ? "bg-green-50 border border-green-100 text-green-700"
+              : "bg-red-50 border border-red-100 text-red-600"
+          }`}>
+            {messageType === "success" ? (
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+            ) : (
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            )}
             {message}
-          </p>
+          </div>
         )}
 
-        {/* ── Save button — full width on mobile ── */}
+        {/* ── Save button ── */}
         <button
           onClick={handleSave}
           disabled={loading}
           className="w-full sm:w-auto sm:px-10 bg-black text-white py-3.5 rounded-xl text-sm font-semibold disabled:opacity-50 hover:bg-gray-900 active:scale-95 transition-all"
+          style={{ WebkitTapHighlightColor: "transparent" }}
         >
           {loading ? "Saving..." : "Save payout info"}
         </button>
