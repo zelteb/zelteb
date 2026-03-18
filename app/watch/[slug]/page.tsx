@@ -5,9 +5,7 @@ import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 
 declare global {
-  interface Window {
-    Razorpay: any;
-  }
+  interface Window { Razorpay: any; }
 }
 
 export default function Watch({ params }: { params: Promise<{ slug: string }> }) {
@@ -44,8 +42,7 @@ export default function Watch({ params }: { params: Promise<{ slug: string }> })
     return html.replace(/href="([^"]+)"/g, (match, url) => {
       const fixedUrl =
         /^https?:\/\//i.test(url) || url.startsWith("mailto:") || url.startsWith("#")
-          ? url
-          : `https://${url}`;
+          ? url : `https://${url}`;
       return `href="${fixedUrl}" target="_blank" rel="noopener noreferrer"`;
     });
   };
@@ -68,7 +65,6 @@ export default function Watch({ params }: { params: Promise<{ slug: string }> })
       setVideoId(v.id);
       if (v.thumbnail_url) setThumbnailUrl(v.thumbnail_url);
 
-      // Track view
       await supabase.from("video_views").insert({
         video_id: v.id,
         viewer_id: user?.id ?? null,
@@ -89,33 +85,14 @@ export default function Watch({ params }: { params: Promise<{ slug: string }> })
 
       if (isFree) {
         setOwned(true);
-        const { data: signed } = await supabase.storage
-          .from("videos")
-          .createSignedUrl(v.video_path, 60 * 60);
+        const { data: signed } = await supabase.storage.from("videos").createSignedUrl(v.video_path, 60 * 60);
         setDownloadUrl(signed?.signedUrl || null);
-
-        const { data: existingR } = await supabase
-          .from("ratings")
-          .select("*")
-          .eq("video_id", v.id)
-          .eq("buyer_id", user.id)
-          .maybeSingle();
-        if (existingR) {
-          setExistingRating(existingR);
-          setSelectedStar(existingR.rating);
-          setReview(existingR.review || "");
-          setRatingSubmitted(true);
-        }
+        const { data: existingR } = await supabase.from("ratings").select("*").eq("video_id", v.id).eq("buyer_id", user.id).maybeSingle();
+        if (existingR) { setExistingRating(existingR); setSelectedStar(existingR.rating); setReview(existingR.review || ""); setRatingSubmitted(true); }
         return;
       }
 
-      const { data: p } = await supabase
-        .from("purchases")
-        .select("id")
-        .eq("video_id", v.id)
-        .eq("buyer_id", user.id)
-        .single();
-
+      const { data: p } = await supabase.from("purchases").select("id").eq("video_id", v.id).eq("buyer_id", user.id).single();
       if (p) {
         setOwned(true);
         const [signedResult, existingRResult] = await Promise.all([
@@ -124,28 +101,23 @@ export default function Watch({ params }: { params: Promise<{ slug: string }> })
         ]);
         setDownloadUrl(signedResult.data?.signedUrl || null);
         const existingR = existingRResult.data;
-        if (existingR) {
-          setExistingRating(existingR);
-          setSelectedStar(existingR.rating);
-          setReview(existingR.review || "");
-          setRatingSubmitted(true);
-        }
+        if (existingR) { setExistingRating(existingR); setSelectedStar(existingR.rating); setReview(existingR.review || ""); setRatingSubmitted(true); }
       }
     };
     load();
   }, [slug]);
 
   const totalRatings = allRatings.length;
-  const avgRating = totalRatings > 0 ? (allRatings.reduce((sum, r) => sum + r.rating, 0) / totalRatings).toFixed(1) : null;
+  const avgRating = totalRatings > 0
+    ? (allRatings.reduce((sum, r) => sum + r.rating, 0) / totalRatings).toFixed(1)
+    : null;
   const countFor = (star: number) => allRatings.filter(r => r.rating === star).length;
   const pctFor = (star: number) => totalRatings > 0 ? Math.round((countFor(star) / totalRatings) * 100) : 0;
 
   const handleShare = async () => {
     const url = window.location.href;
     if (navigator.share) {
-      try {
-        await navigator.share({ title: video?.title || "Check this out", url });
-      } catch {}
+      try { await navigator.share({ title: video?.title || "Check this out", url }); } catch {}
     } else {
       await navigator.clipboard.writeText(url);
       setShowToast(true);
@@ -155,56 +127,34 @@ export default function Watch({ params }: { params: Promise<{ slug: string }> })
 
   const buy = async () => {
     setLoading(true);
-
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      router.push(`/login?redirect=/watch/${slug}`);
-      setLoading(false);
-      return;
-    }
+    if (!user) { router.push(`/login?redirect=/watch/${slug}`); setLoading(false); return; }
     if (owned) { setLoading(false); return; }
 
     try {
       const res = await fetch("/api/buy-video", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          action: "create-order",
-          video_id: video.id,
-          buyer_id: user.id,
-        }),
+        body: JSON.stringify({ action: "create-order", video_id: video.id, buyer_id: user.id }),
       });
-
-      if (!res.ok) {
-        alert("Failed to create order. Please try again.");
-        setLoading(false);
-        return;
-      }
+      if (!res.ok) { alert("Failed to create order. Please try again."); setLoading(false); return; }
 
       const data = await res.json();
-
       if (data.free) {
         setOwned(true);
-        const { data: signed } = await supabase.storage
-          .from("videos")
-          .createSignedUrl(video.video_path, 60 * 60);
+        const { data: signed } = await supabase.storage.from("videos").createSignedUrl(video.video_path, 60 * 60);
         setDownloadUrl(signed?.signedUrl || null);
         setLoading(false);
         return;
       }
 
       const order = data.order;
-
       const openCheckout = () => {
         const rzp = new window.Razorpay({
           key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
-          amount: order.amount,
-          currency: "INR",
-          name: "Zelteb",
-          description: video.title,
-          order_id: order.id,
-
-          handler: async function (response: any) {
+          amount: order.amount, currency: "INR",
+          name: "Zelteb", description: video.title, order_id: order.id,
+          handler: async (response: any) => {
             const verifyRes = await fetch("/api/buy-video", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
@@ -213,39 +163,30 @@ export default function Watch({ params }: { params: Promise<{ slug: string }> })
                 payment_id: response.razorpay_payment_id,
                 order_id: response.razorpay_order_id,
                 signature: response.razorpay_signature,
-                video_id: video.id,
-                buyer_id: user.id,
+                video_id: video.id, buyer_id: user.id,
               }),
             });
-
             if (verifyRes.ok) {
               setOwned(true);
-              const { data: signed } = await supabase.storage
-                .from("videos")
-                .createSignedUrl(video.video_path, 60 * 60);
+              const { data: signed } = await supabase.storage.from("videos").createSignedUrl(video.video_path, 60 * 60);
               setDownloadUrl(signed?.signedUrl || null);
             } else {
-              const msg = await verifyRes.text();
-              alert("Payment verification failed: " + msg);
+              alert("Payment verification failed: " + await verifyRes.text());
             }
             setLoading(false);
           },
-
           prefill: { email: user.email ?? "" },
           theme: { color: "#e91e8c" },
           modal: { ondismiss: () => setLoading(false) },
         });
-
         rzp.open();
       };
 
-      if (window.Razorpay) {
-        openCheckout();
-      } else {
+      if (window.Razorpay) { openCheckout(); }
+      else {
         const existing = document.querySelector('script[src="https://checkout.razorpay.com/v1/checkout.js"]') as HTMLScriptElement | null;
-        if (existing) {
-          existing.onload = openCheckout;
-        } else {
+        if (existing) { existing.onload = openCheckout; }
+        else {
           const script = document.createElement("script");
           script.src = "https://checkout.razorpay.com/v1/checkout.js";
           script.onload = openCheckout;
@@ -267,15 +208,10 @@ export default function Watch({ params }: { params: Promise<{ slug: string }> })
         const blob = await response.blob();
         const blobUrl = URL.createObjectURL(blob);
         const a = document.createElement("a");
-        a.href = blobUrl;
-        a.download = title || "download";
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
+        a.href = blobUrl; a.download = title || "download";
+        document.body.appendChild(a); a.click(); document.body.removeChild(a);
         setTimeout(() => URL.revokeObjectURL(blobUrl), 10000);
-      } catch {
-        window.open(data.signedUrl, "_blank");
-      }
+      } catch { window.open(data.signedUrl, "_blank"); }
     }
   };
 
@@ -306,6 +242,7 @@ export default function Watch({ params }: { params: Promise<{ slug: string }> })
 
   const displayStar = hoverStar || selectedStar;
   const creatorDisplayName = creator?.full_name || creator?.username || "Creator";
+  const isFree = video.is_free || Number(video.price) === 0;
 
   return (
     <>
@@ -315,34 +252,93 @@ export default function Watch({ params }: { params: Promise<{ slug: string }> })
         body { background: #fff; }
         .watch-wrap { font-family: 'DM Sans', sans-serif; background: #fff; min-height: 100vh; color: #18181b; }
 
-        .watch-nav { background: white; border-bottom: 1px solid #e4e4e7; padding: 0 40px; height: 54px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 10; }
-        .watch-nav-logo { font-size: 1.2rem; color: #18181b; text-decoration: none; font-weight: 800; }
-        .watch-nav-share { display: inline-flex; align-items: center; gap: 6px; padding: 7px 16px; border-radius: 8px; border: 1px solid #e4e4e7; background: white; font-size: 13px; font-weight: 600; font-family: 'DM Sans', sans-serif; color: #18181b; cursor: pointer; transition: background 0.15s, border-color 0.15s; }
+        /* ── NAV ── */
+        .watch-nav {
+          background: white; border-bottom: 1px solid #e4e4e7;
+          padding: 0 16px; height: 50px;
+          display: flex; align-items: center; justify-content: space-between;
+          position: sticky; top: 0; z-index: 10;
+        }
+        @media (min-width: 640px) { .watch-nav { padding: 0 40px; height: 54px; } }
+        .watch-nav-logo { font-size: 1.15rem; color: #18181b; text-decoration: none; font-weight: 800; }
+        .watch-nav-share {
+          display: inline-flex; align-items: center; gap: 6px;
+          padding: 6px 14px; border-radius: 8px; border: 1px solid #e4e4e7;
+          background: white; font-size: 13px; font-weight: 600;
+          font-family: 'DM Sans', sans-serif; color: #18181b;
+          cursor: pointer; transition: background 0.15s, border-color 0.15s;
+          -webkit-tap-highlight-color: transparent;
+        }
         .watch-nav-share:hover { background: #f4f4f6; border-color: #d4d4d8; }
 
-        .watch-hero { width: 100%; max-height: 480px; overflow: hidden; background: #18181b; }
-        .watch-hero img { width: 100%; height: 480px; object-fit: cover; display: block; }
-        .watch-hero-placeholder { width: 100%; height: 380px; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #18181b, #3f3f46); font-size: 5rem; }
+        /* ── HERO ── */
+        .watch-hero {
+          width: 100%; overflow: hidden; background: #18181b;
+          height: clamp(200px, 56vw, 460px);
+        }
+        .watch-hero img { width: 100%; height: 100%; object-fit: cover; display: block; }
+        .watch-hero-placeholder {
+          width: 100%; height: 100%;
+          display: flex; align-items: center; justify-content: center;
+          background: linear-gradient(135deg, #18181b, #3f3f46);
+          font-size: clamp(3rem, 10vw, 5rem);
+        }
 
-        .watch-main { max-width: 1000px; margin: 0 auto; padding: 0 24px 60px; display: grid; grid-template-columns: 1fr 300px; gap: 40px; align-items: start; }
-        .watch-left { padding-top: 28px; }
+        /* ── MAIN GRID ── */
+        .watch-main {
+          max-width: 1000px; margin: 0 auto;
+          padding: 0 16px 48px;
+          display: flex; flex-direction: column; gap: 0;
+        }
+        @media (min-width: 768px) {
+          .watch-main {
+            display: grid;
+            grid-template-columns: 1fr 300px;
+            gap: 40px;
+            padding: 0 24px 60px;
+            align-items: start;
+          }
+        }
 
-        .watch-meta-row { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; }
-        .watch-price-tag { display: inline-flex; align-items: center; background: #e91e8c; color: white; font-weight: 700; font-size: 14px; padding: 5px 16px 5px 12px; clip-path: polygon(0 0, 88% 0, 100% 50%, 88% 100%, 0 100%); flex-shrink: 0; }
+        /* ── LEFT ── */
+        .watch-left { padding-top: 20px; order: 2; }
+        @media (min-width: 768px) { .watch-left { padding-top: 28px; order: unset; } }
+
+        .watch-meta-row { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; flex-wrap: wrap; }
+        .watch-price-tag {
+          display: inline-flex; align-items: center;
+          background: #e91e8c; color: white; font-weight: 700; font-size: 13px;
+          padding: 5px 16px 5px 12px;
+          clip-path: polygon(0 0, 88% 0, 100% 50%, 88% 100%, 0 100%);
+          flex-shrink: 0;
+        }
         .watch-price-tag.free-tag { background: #16a34a; }
-
-        .watch-creator-pill { display: flex; align-items: center; gap: 7px; background: #f4f4f6; border-radius: 999px; padding: 5px 12px 5px 5px; text-decoration: none; transition: background 0.15s; }
+        .watch-creator-pill {
+          display: flex; align-items: center; gap: 7px;
+          background: #f4f4f6; border-radius: 999px;
+          padding: 5px 12px 5px 5px;
+          text-decoration: none; transition: background 0.15s;
+          -webkit-tap-highlight-color: transparent;
+        }
         .watch-creator-pill:hover { background: #e8e8e8; }
-        .watch-creator-avatar { width: 24px; height: 24px; border-radius: 50%; background: linear-gradient(135deg, #7c3aed, #e879f9); display: flex; align-items: center; justify-content: center; font-size: 11px; color: white; font-weight: 700; flex-shrink: 0; overflow: hidden; }
+        .watch-creator-avatar {
+          width: 24px; height: 24px; border-radius: 50%;
+          background: linear-gradient(135deg, #7c3aed, #e879f9);
+          display: flex; align-items: center; justify-content: center;
+          font-size: 11px; color: white; font-weight: 700; flex-shrink: 0; overflow: hidden;
+        }
         .watch-creator-avatar img { width: 100%; height: 100%; object-fit: cover; }
         .watch-creator-name { font-size: 13px; font-weight: 600; color: #18181b; }
-
         .watch-inline-stars { display: flex; align-items: center; gap: 5px; }
         .watch-inline-stars .stars { display: flex; gap: 2px; }
-        .watch-inline-stars .count { font-size: 13px; color: #71717a; }
+        .watch-inline-stars .count { font-size: 12px; color: #71717a; }
 
-        .watch-title { font-size: 1.75rem; font-weight: 800; color: #18181b; line-height: 1.2; letter-spacing: -0.02em; margin-bottom: 20px; }
-        .watch-divider-line { height: 1px; background: #f0f0f2; margin: 24px 0; }
+        .watch-title {
+          font-size: clamp(1.2rem, 5vw, 1.75rem);
+          font-weight: 800; color: #18181b;
+          line-height: 1.2; letter-spacing: -0.02em; margin-bottom: 18px;
+        }
+        .watch-divider-line { height: 1px; background: #f0f0f2; margin: 20px 0; }
         .watch-description { font-size: 0.9rem; color: #3f3f46; line-height: 1.8; }
         .watch-description p { margin-bottom: 10px; }
         .watch-description strong { font-weight: 700; color: #18181b; }
@@ -356,78 +352,219 @@ export default function Watch({ params }: { params: Promise<{ slug: string }> })
         .watch-description h3 { font-size: 1rem; font-weight: 600; margin-bottom: 5px; }
         .watch-description pre { background: #18181b; color: #e4e4e7; border-radius: 8px; padding: 12px 14px; font-family: monospace; font-size: 0.85rem; margin: 8px 0; overflow-x: auto; }
 
-        .ratings-box { margin-top: 36px; border-top: 1px solid #f0f0f2; padding-top: 28px; }
-        .ratings-box-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; }
+        /* ── RATINGS BREAKDOWN ── */
+        .ratings-box { margin-top: 32px; border-top: 1px solid #f0f0f2; padding-top: 24px; }
+        .ratings-box-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
         .ratings-box-title { font-size: 1rem; font-weight: 700; color: #18181b; }
         .ratings-avg { display: flex; align-items: center; gap: 5px; font-size: 0.9rem; font-weight: 700; color: #18181b; }
         .ratings-avg-count { font-size: 0.8rem; font-weight: 400; color: #71717a; }
         .ratings-row { display: flex; align-items: center; gap: 10px; margin-bottom: 9px; }
-        .ratings-label { font-size: 0.8rem; color: #52525b; width: 48px; flex-shrink: 0; text-align: right; }
-        .ratings-bar-track { flex: 1; height: 9px; background: #f0f0f2; border-radius: 99px; overflow: hidden; }
+        .ratings-label { font-size: 0.78rem; color: #52525b; width: 46px; flex-shrink: 0; text-align: right; }
+        .ratings-bar-track { flex: 1; height: 8px; background: #f0f0f2; border-radius: 99px; overflow: hidden; }
         .ratings-bar-fill { height: 100%; border-radius: 99px; background: #e879f9; transition: width 0.4s ease; }
-        .ratings-pct { font-size: 0.78rem; color: #71717a; width: 32px; flex-shrink: 0; text-align: right; }
-        .ratings-empty { font-size: 0.875rem; color: #a1a1aa; padding: 12px 0; }
+        .ratings-pct { font-size: 0.75rem; color: #71717a; width: 30px; flex-shrink: 0; text-align: right; }
+        .ratings-empty { font-size: 0.875rem; color: #a1a1aa; padding: 10px 0; }
 
-        .rating-section { margin-top: 32px; background: #fafafa; border: 1px solid #e4e4e7; border-radius: 16px; padding: 24px; }
+        /* ── RATING SUBMISSION ── */
+        .rating-section {
+          margin-top: 28px;
+          background: #fafafa; border: 1px solid #e4e4e7;
+          border-radius: 16px; padding: 20px;
+        }
+        @media (min-width: 480px) { .rating-section { padding: 24px; } }
         .rating-section h3 { font-size: 1rem; font-weight: 700; color: #18181b; margin-bottom: 4px; }
-        .rating-section > p { font-size: 0.83rem; color: #71717a; margin-bottom: 18px; }
-        .stars-row { display: flex; gap: 4px; margin-bottom: 16px; }
-        .star-btn { background: none; border: none; cursor: pointer; padding: 0; font-size: 1.8rem; line-height: 1; transition: transform 0.1s; }
-        .star-btn:hover { transform: scale(1.2); }
-        .rating-textarea { width: 100%; border: 1px solid #e4e4e7; border-radius: 10px; padding: 11px 13px; font-size: 0.875rem; font-family: 'DM Sans', sans-serif; color: #18181b; resize: none; height: 90px; outline: none; background: white; transition: border-color 0.15s; margin-bottom: 12px; }
+        .rating-section > p { font-size: 0.83rem; color: #71717a; margin-bottom: 16px; }
+
+        .stars-row { display: flex; gap: 2px; margin-bottom: 16px; }
+        /* Larger star tap targets on mobile */
+        .star-btn {
+          background: none; border: none; cursor: pointer; padding: 4px;
+          font-size: clamp(1.6rem, 7vw, 1.8rem);
+          line-height: 1; transition: transform 0.1s;
+          -webkit-tap-highlight-color: transparent;
+        }
+        .star-btn:hover { transform: scale(1.15); }
+        .star-btn:active { transform: scale(0.95); }
+
+        .rating-textarea {
+          width: 100%; border: 1px solid #e4e4e7; border-radius: 10px;
+          padding: 11px 13px; font-size: 1rem;
+          font-family: 'DM Sans', sans-serif; color: #18181b;
+          resize: none; height: 90px; outline: none; background: white;
+          transition: border-color 0.15s; margin-bottom: 12px;
+          -webkit-appearance: none;
+        }
+        @media (min-width: 480px) { .rating-textarea { font-size: 0.875rem; } }
         .rating-textarea:focus { border-color: #e879f9; }
         .rating-textarea::placeholder { color: #a1a1aa; }
-        .rating-submit-btn { background: #18181b; color: white; border: none; border-radius: 9px; padding: 10px 22px; font-size: 0.875rem; font-weight: 600; font-family: 'DM Sans', sans-serif; cursor: pointer; transition: background 0.15s; }
+
+        .rating-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+        .rating-submit-btn {
+          flex: 1;
+          background: #18181b; color: white; border: none;
+          border-radius: 9px; padding: 12px 22px;
+          font-size: 0.875rem; font-weight: 600;
+          font-family: 'DM Sans', sans-serif; cursor: pointer;
+          transition: background 0.15s;
+          -webkit-tap-highlight-color: transparent;
+        }
+        @media (min-width: 480px) { .rating-submit-btn { flex: none; } }
         .rating-submit-btn:hover:not(:disabled) { background: #27272a; }
         .rating-submit-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-        .rating-edit-btn { background: none; border: 1px solid #e4e4e7; border-radius: 9px; padding: 10px 22px; font-size: 0.875rem; font-weight: 600; font-family: 'DM Sans', sans-serif; cursor: pointer; color: #71717a; margin-left: 8px; transition: border-color 0.15s, color 0.15s; }
+        .rating-edit-btn {
+          background: none; border: 1px solid #e4e4e7; border-radius: 9px;
+          padding: 12px 22px; font-size: 0.875rem; font-weight: 600;
+          font-family: 'DM Sans', sans-serif; cursor: pointer; color: #71717a;
+          transition: border-color 0.15s, color 0.15s;
+          -webkit-tap-highlight-color: transparent;
+        }
         .rating-edit-btn:hover { border-color: #18181b; color: #18181b; }
-        .rating-success { display: flex; align-items: center; gap: 8px; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 10px; padding: 10px 14px; font-size: 0.83rem; color: #16a34a; font-weight: 500; margin-bottom: 14px; }
-        .submitted-stars { display: flex; gap: 3px; margin-bottom: 8px; font-size: 1.3rem; }
+
+        .rating-success {
+          display: flex; align-items: center; gap: 8px;
+          background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 10px;
+          padding: 10px 14px; font-size: 0.83rem; color: #16a34a;
+          font-weight: 500; margin-bottom: 14px;
+        }
+        .submitted-stars { display: flex; gap: 2px; margin-bottom: 8px; font-size: 1.3rem; }
         .submitted-review { font-size: 0.85rem; color: #52525b; line-height: 1.6; font-style: italic; margin-bottom: 12px; }
 
-        .watch-card { background: white; border: 1px solid #e4e4e7; border-radius: 16px; overflow: hidden; box-shadow: 0 2px 20px rgba(0,0,0,0.06); position: sticky; top: 74px; margin-top: 28px; }
-        .watch-card-body { padding: 20px; }
+        /* ── BUY CARD ── */
+        /* Mobile: card is order:1 (appears between title and description) */
+        .watch-card { order: 1; }
+        @media (min-width: 768px) { .watch-card { order: unset; } }
+
+        .watch-card {
+          background: white;
+          border: 1px solid #e4e4e7;
+          /* flush on mobile */
+          border-left: none; border-right: none; border-radius: 0;
+          overflow: hidden; box-shadow: none; margin-top: 0;
+        }
+        @media (min-width: 768px) {
+          .watch-card {
+            border: 1px solid #e4e4e7;
+            border-radius: 16px;
+            box-shadow: 0 2px 20px rgba(0,0,0,0.06);
+            position: sticky; top: 74px; margin-top: 28px;
+          }
+        }
+
+        .watch-card-body { padding: 16px; }
+        @media (min-width: 768px) { .watch-card-body { padding: 20px; } }
+
+        /* Desktop-only card header (title, type, creator — already visible above on mobile) */
+        .watch-card-desktop-only { display: none; }
+        @media (min-width: 768px) { .watch-card-desktop-only { display: block; } }
+
         .watch-card-title { font-size: 1rem; font-weight: 700; color: #18181b; line-height: 1.3; margin-bottom: 4px; }
         .watch-card-type { font-size: 0.72rem; color: #a1a1aa; font-weight: 400; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.06em; }
-        .watch-card-creator { display: flex; align-items: center; gap: 9px; padding: 10px 11px; background: #f7f7f7; border-radius: 10px; margin-bottom: 14px; text-decoration: none; transition: background 0.15s; }
+        .watch-card-creator {
+          display: flex; align-items: center; gap: 9px;
+          padding: 10px 11px; background: #f7f7f7; border-radius: 10px;
+          margin-bottom: 14px; text-decoration: none; transition: background 0.15s;
+          -webkit-tap-highlight-color: transparent;
+        }
         .watch-card-creator:hover { background: #efefef; }
-        .watch-card-creator-avatar { width: 32px; height: 32px; border-radius: 50%; background: linear-gradient(135deg, #7c3aed, #e879f9); display: flex; align-items: center; justify-content: center; font-size: 13px; color: white; font-weight: 700; flex-shrink: 0; overflow: hidden; }
+        .watch-card-creator-avatar {
+          width: 32px; height: 32px; border-radius: 50%;
+          background: linear-gradient(135deg, #7c3aed, #e879f9);
+          display: flex; align-items: center; justify-content: center;
+          font-size: 13px; color: white; font-weight: 700;
+          flex-shrink: 0; overflow: hidden;
+        }
         .watch-card-creator-avatar img { width: 100%; height: 100%; object-fit: cover; }
         .watch-card-creator-info { flex: 1; min-width: 0; }
         .watch-card-creator-name { font-size: 13px; font-weight: 600; color: #18181b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .watch-card-creator-sub { font-size: 11px; color: #a1a1aa; }
-        .watch-card-divider { height: 1px; background: #f0f0f2; margin: 14px 0; }
-        .watch-card-price { font-size: 1.5rem; font-weight: 800; color: #18181b; margin-bottom: 14px; }
+        .watch-card-divider { height: 1px; background: #f0f0f2; margin: 12px 0; }
+
+        /* Price + CTA in a flex row on mobile */
+        .watch-card-cta-row {
+          display: flex; align-items: center; gap: 12px;
+        }
+        @media (min-width: 768px) { .watch-card-cta-row { display: block; } }
+
+        .watch-card-price { font-size: 1.25rem; font-weight: 800; color: #18181b; flex-shrink: 0; }
+        @media (min-width: 768px) { .watch-card-price { font-size: 1.5rem; margin-bottom: 14px; } }
         .watch-card-price .free { font-size: 1rem; font-weight: 600; color: #16a34a; background: #f0fdf4; padding: 5px 12px; border-radius: 20px; display: inline-block; }
-        .watch-buy-btn { width: 100%; padding: 13px; background: #e91e8c; color: white; border: none; border-radius: 10px; font-size: 0.95rem; font-weight: 700; font-family: 'DM Sans', sans-serif; cursor: pointer; transition: background 0.15s, transform 0.1s; margin-bottom: 10px; }
+
+        .watch-buy-btn {
+          flex: 1;
+          padding: 13px; background: #e91e8c; color: white; border: none;
+          border-radius: 10px; font-size: 0.95rem; font-weight: 700;
+          font-family: 'DM Sans', sans-serif; cursor: pointer;
+          transition: background 0.15s, transform 0.1s;
+          -webkit-tap-highlight-color: transparent;
+        }
+        @media (min-width: 768px) { .watch-buy-btn { width: 100%; margin-bottom: 10px; } }
         .watch-buy-btn:hover:not(:disabled) { background: #c2185b; transform: translateY(-1px); }
+        .watch-buy-btn:active:not(:disabled) { transform: scale(0.98); }
         .watch-buy-btn:disabled { opacity: 0.6; cursor: not-allowed; }
         .watch-buy-btn.free-btn { background: #16a34a; }
         .watch-buy-btn.free-btn:hover:not(:disabled) { background: #15803d; }
-        .watch-download-btn { width: 100%; padding: 13px; background: #7c3aed; color: white; border: none; border-radius: 10px; font-size: 0.95rem; font-weight: 700; font-family: 'DM Sans', sans-serif; cursor: pointer; display: block; text-align: center; margin-bottom: 10px; transition: background 0.15s; }
-        .watch-download-btn:hover { background: #6d28d9; }
-        .watch-share-card-btn { width: 100%; padding: 11px; background: white; color: #18181b; border: 1px solid #e4e4e7; border-radius: 10px; font-size: 0.875rem; font-weight: 600; font-family: 'DM Sans', sans-serif; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 7px; margin-bottom: 10px; transition: background 0.15s; }
-        .watch-share-card-btn:hover { background: #f4f4f6; }
-        .watch-owned-badge { display: flex; align-items: center; gap: 6px; font-size: 0.78rem; color: #16a34a; font-weight: 500; background: #f0fdf4; padding: 7px 12px; border-radius: 8px; margin-bottom: 12px; }
-        .watch-secure { display: flex; align-items: center; gap: 5px; font-size: 0.73rem; color: #a1a1aa; justify-content: center; }
 
-        .compact-footer { display: flex; align-items: center; justify-content: center; gap: 18px; padding: 16px 24px; border-top: 1px solid #f0f0f0; font-family: 'DM Sans', sans-serif; }
-        .compact-footer-sell { display: inline-flex; align-items: center; gap: 6px; font-size: 14px; font-weight: 600; color: #2563eb; text-decoration: none; letter-spacing: -0.01em; transition: opacity 0.15s; }
+        .watch-download-btn {
+          flex: 1;
+          padding: 13px; background: #7c3aed; color: white; border: none;
+          border-radius: 10px; font-size: 0.95rem; font-weight: 700;
+          font-family: 'DM Sans', sans-serif; cursor: pointer;
+          text-align: center; transition: background 0.15s;
+          -webkit-tap-highlight-color: transparent;
+        }
+        @media (min-width: 768px) { .watch-download-btn { display: block; width: 100%; margin-bottom: 10px; } }
+        .watch-download-btn:hover { background: #6d28d9; }
+
+        .watch-share-card-btn {
+          width: 100%; padding: 11px; background: white; color: #18181b;
+          border: 1px solid #e4e4e7; border-radius: 10px; font-size: 0.875rem;
+          font-weight: 600; font-family: 'DM Sans', sans-serif; cursor: pointer;
+          display: flex; align-items: center; justify-content: center; gap: 7px;
+          margin-top: 10px; transition: background 0.15s;
+          -webkit-tap-highlight-color: transparent;
+        }
+        .watch-share-card-btn:hover { background: #f4f4f6; }
+
+        .watch-owned-badge {
+          display: flex; align-items: center; gap: 6px;
+          font-size: 0.78rem; color: #16a34a; font-weight: 500;
+          background: #f0fdf4; padding: 7px 12px; border-radius: 8px;
+          margin-bottom: 10px;
+        }
+        .watch-secure { display: flex; align-items: center; gap: 5px; font-size: 0.73rem; color: #a1a1aa; justify-content: center; margin-top: 10px; }
+
+        /* ── FOOTER ── */
+        .compact-footer {
+          display: flex; align-items: center; justify-content: center;
+          gap: 14px; padding: 14px 16px;
+          border-top: 1px solid #f0f0f0;
+          font-family: 'DM Sans', sans-serif;
+          flex-wrap: wrap;
+        }
+        .compact-footer-sell { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; color: #2563eb; text-decoration: none; letter-spacing: -0.01em; transition: opacity 0.15s; }
         .compact-footer-sell:hover { opacity: 0.75; }
         .compact-footer-dot { color: #d1d5db; font-size: 12px; }
-        .compact-footer-powered { font-size: 14px; color: #9ca3af; font-weight: 500; }
-        .compact-footer-powered a { color: #111; font-weight: 800; text-decoration: none; font-size: 15px; letter-spacing: -0.02em; transition: opacity 0.15s; }
+        .compact-footer-powered { font-size: 13px; color: #9ca3af; font-weight: 500; }
+        .compact-footer-powered a { color: #111; font-weight: 800; text-decoration: none; font-size: 14px; letter-spacing: -0.02em; transition: opacity 0.15s; }
         .compact-footer-powered a:hover { opacity: 0.7; }
 
-        .share-toast { position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%); background: #18181b; color: white; padding: 11px 22px; border-radius: 10px; font-size: 13px; font-weight: 500; z-index: 9999; display: flex; align-items: center; gap: 8px; box-shadow: 0 4px 24px rgba(0,0,0,0.22); animation: toast-in 0.22s ease; white-space: nowrap; }
+        /* ── TOAST ── */
+        .share-toast {
+          position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+          background: #18181b; color: white; padding: 11px 22px; border-radius: 10px;
+          font-size: 13px; font-weight: 500; z-index: 9999;
+          display: flex; align-items: center; gap: 8px;
+          box-shadow: 0 4px 24px rgba(0,0,0,0.22);
+          animation: toast-in 0.22s ease;
+          max-width: calc(100vw - 32px);
+        }
         @keyframes toast-in { from { opacity: 0; transform: translateX(-50%) translateY(10px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
         @keyframes spin { to { transform: rotate(360deg); } }
       `}</style>
 
       <div className="watch-wrap">
 
-        {/* NAVBAR */}
+        {/* ── NAVBAR ── */}
         <nav className="watch-nav">
           <a href="/" className="watch-nav-logo">Zelteb</a>
           <button className="watch-nav-share" onClick={handleShare}>
@@ -439,7 +576,7 @@ export default function Watch({ params }: { params: Promise<{ slug: string }> })
           </button>
         </nav>
 
-        {/* HERO */}
+        {/* ── HERO ── */}
         <div className="watch-hero">
           {thumbnailUrl
             ? <img src={thumbnailUrl} alt={video.title} />
@@ -447,12 +584,14 @@ export default function Watch({ params }: { params: Promise<{ slug: string }> })
           }
         </div>
 
-        {/* MAIN GRID */}
+        {/* ── MAIN ── */}
         <div className="watch-main">
+
+          {/* LEFT: title / description / ratings / rate-this */}
           <div className="watch-left">
             <div className="watch-meta-row">
-              <span className={`watch-price-tag ${video.is_free ? "free-tag" : ""}`}>
-                {video.is_free ? "Free" : `₹${video.price}`}
+              <span className={`watch-price-tag ${isFree ? "free-tag" : ""}`}>
+                {isFree ? "Free" : `₹${video.price}`}
               </span>
               {creator && (
                 <a href={`/${creator.username}`} className="watch-creator-pill">
@@ -469,12 +608,12 @@ export default function Watch({ params }: { params: Promise<{ slug: string }> })
                 <span className="watch-inline-stars">
                   <span className="stars">
                     {[1,2,3,4,5].map(s => (
-                      <svg key={s} width="14" height="14" viewBox="0 0 24 24" fill={s <= Math.round(Number(avgRating)) ? "#f59e0b" : "none"} stroke="#f59e0b" strokeWidth="1.5">
+                      <svg key={s} width="13" height="13" viewBox="0 0 24 24" fill={s <= Math.round(Number(avgRating)) ? "#f59e0b" : "none"} stroke="#f59e0b" strokeWidth="1.5">
                         <polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/>
                       </svg>
                     ))}
                   </span>
-                  <span className="count">{avgRating} ({totalRatings} {totalRatings === 1 ? "rating" : "ratings"})</span>
+                  <span className="count">{avgRating} ({totalRatings})</span>
                 </span>
               )}
             </div>
@@ -491,7 +630,7 @@ export default function Watch({ params }: { params: Promise<{ slug: string }> })
               </>
             )}
 
-            {/* RATINGS */}
+            {/* Ratings breakdown */}
             <div className="ratings-box">
               <div className="ratings-box-header">
                 <span className="ratings-box-title">Ratings</span>
@@ -520,20 +659,24 @@ export default function Watch({ params }: { params: Promise<{ slug: string }> })
               )}
             </div>
 
-            {/* RATE THIS PRODUCT */}
+            {/* Rate this product (owned only) */}
             {owned && (
               <div className="rating-section">
                 <h3>Rate this product</h3>
                 <p>Your feedback helps other buyers make better decisions.</p>
+
                 {ratingSubmitted && (
                   <div className="rating-success">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
                     Rating submitted — thank you!
                   </div>
                 )}
+
                 {ratingSubmitted ? (
                   <>
-                    <div className="submitted-stars">{[1,2,3,4,5].map(s => <span key={s}>{s <= selectedStar ? "⭐" : "☆"}</span>)}</div>
+                    <div className="submitted-stars">
+                      {[1,2,3,4,5].map(s => <span key={s}>{s <= selectedStar ? "⭐" : "☆"}</span>)}
+                    </div>
                     {review && <p className="submitted-review">"{review}"</p>}
                     <button className="rating-edit-btn" onClick={() => setRatingSubmitted(false)}>Edit rating</button>
                   </>
@@ -541,67 +684,98 @@ export default function Watch({ params }: { params: Promise<{ slug: string }> })
                   <>
                     <div className="stars-row">
                       {[1,2,3,4,5].map(s => (
-                        <button key={s} className="star-btn" onMouseEnter={() => setHoverStar(s)} onMouseLeave={() => setHoverStar(0)} onClick={() => setSelectedStar(s)}>
+                        <button
+                          key={s}
+                          className="star-btn"
+                          onMouseEnter={() => setHoverStar(s)}
+                          onMouseLeave={() => setHoverStar(0)}
+                          onClick={() => setSelectedStar(s)}
+                          aria-label={`Rate ${s} star${s !== 1 ? "s" : ""}`}
+                        >
                           {s <= displayStar ? "⭐" : "☆"}
                         </button>
                       ))}
                     </div>
-                    <textarea className="rating-textarea" placeholder="Share your experience (optional)..." value={review} onChange={(e) => setReview(e.target.value)} />
-                    <button className="rating-submit-btn" onClick={submitRating} disabled={ratingLoading || selectedStar === 0}>
-                      {ratingLoading ? "Submitting..." : existingRating ? "Update rating" : "Submit rating"}
-                    </button>
+                    <textarea
+                      className="rating-textarea"
+                      placeholder="Share your experience (optional)..."
+                      value={review}
+                      onChange={(e) => setReview(e.target.value)}
+                    />
+                    <div className="rating-actions">
+                      <button
+                        className="rating-submit-btn"
+                        onClick={submitRating}
+                        disabled={ratingLoading || selectedStar === 0}
+                      >
+                        {ratingLoading ? "Submitting..." : existingRating ? "Update rating" : "Submit rating"}
+                      </button>
+                    </div>
                   </>
                 )}
               </div>
             )}
           </div>
 
-          {/* STICKY BUY CARD */}
+          {/* ── BUY CARD ── */}
           <div className="watch-card">
             <div className="watch-card-body">
-              <div className="watch-card-title">{video.title}</div>
-              <div className="watch-card-type">{video.product_type === "video" ? "Video" : "Digital Product"}</div>
-              {creator && (
-                <a href={`/${creator.username}`} className="watch-card-creator">
-                  <div className="watch-card-creator-avatar">
-                    {creator.avatar_url
-                      ? <img src={creator.avatar_url} alt={creatorDisplayName} />
-                      : creatorDisplayName.charAt(0).toUpperCase()
-                    }
-                  </div>
-                  <div className="watch-card-creator-info">
-                    <div className="watch-card-creator-name">{creatorDisplayName}</div>
-                    <div className="watch-card-creator-sub">View profile</div>
-                  </div>
-                </a>
-              )}
-              <div className="watch-card-divider" />
+
+              {/* Desktop-only: title/type/creator */}
+              <div className="watch-card-desktop-only">
+                <div className="watch-card-title">{video.title}</div>
+                <div className="watch-card-type">{video.product_type === "video" ? "Video" : "Digital Product"}</div>
+                {creator && (
+                  <a href={`/${creator.username}`} className="watch-card-creator">
+                    <div className="watch-card-creator-avatar">
+                      {creator.avatar_url
+                        ? <img src={creator.avatar_url} alt={creatorDisplayName} />
+                        : creatorDisplayName.charAt(0).toUpperCase()
+                      }
+                    </div>
+                    <div className="watch-card-creator-info">
+                      <div className="watch-card-creator-name">{creatorDisplayName}</div>
+                      <div className="watch-card-creator-sub">View profile</div>
+                    </div>
+                  </a>
+                )}
+                <div className="watch-card-divider" />
+              </div>
+
               {owned && (
                 <div className="watch-owned-badge">
                   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
                   You own this product
                 </div>
               )}
-              <div className="watch-card-price">
-                {video.is_free ? <span className="free">Free</span> : `₹${video.price}`}
-              </div>
-              {owned ? (
-                downloadUrl ? (
-                  <button className="watch-download-btn" onClick={() => download(video.video_path, video.title)}>
-                    {video.product_type === "video" ? "▶ Watch / Download" : "⬇ Download"}
-                  </button>
+
+              {/* Price + CTA row */}
+              <div className="watch-card-cta-row">
+                <div className="watch-card-price">
+                  {isFree ? <span className="free">Free</span> : `₹${video.price}`}
+                </div>
+
+                {owned ? (
+                  downloadUrl ? (
+                    <button className="watch-download-btn" onClick={() => download(video.video_path, video.title)}>
+                      {video.product_type === "video" ? "▶ Watch / Download" : "⬇ Download"}
+                    </button>
+                  ) : (
+                    <div style={{ flex: 1, textAlign: "center", fontSize: "0.85rem", color: "#a1a1aa", padding: "12px 0" }}>
+                      Preparing download...
+                    </div>
+                  )
                 ) : (
-                  <div style={{ textAlign: "center", fontSize: "0.85rem", color: "#a1a1aa", padding: "12px 0" }}>Preparing download...</div>
-                )
-              ) : (
-                <button
-                  className={`watch-buy-btn ${video.is_free ? "free-btn" : ""}`}
-                  onClick={buy}
-                  disabled={loading}
-                >
-                  {loading ? "Processing..." : video.is_free ? "Get for Free" : "Buy Now"}
-                </button>
-              )}
+                  <button
+                    className={`watch-buy-btn ${isFree ? "free-btn" : ""}`}
+                    onClick={buy}
+                    disabled={loading}
+                  >
+                    {loading ? "Processing..." : isFree ? "Get for Free" : "Buy Now"}
+                  </button>
+                )}
+              </div>
+
               <button className="watch-share-card-btn" onClick={handleShare}>
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                   <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
@@ -609,15 +783,17 @@ export default function Watch({ params }: { params: Promise<{ slug: string }> })
                 </svg>
                 Share this product
               </button>
+
               <div className="watch-secure">
                 <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
                 Secure checkout
               </div>
             </div>
           </div>
+
         </div>
 
-        {/* COMPACT FOOTER */}
+        {/* ── FOOTER ── */}
         <div className="compact-footer">
           <a href={userId ? "https://www.zelteb.com/dashboard/product" : "/login"} className="compact-footer-sell" target={userId ? "_blank" : "_self"} rel="noopener noreferrer">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
@@ -630,9 +806,7 @@ export default function Watch({ params }: { params: Promise<{ slug: string }> })
           <span className="compact-footer-dot">·</span>
           <span className="compact-footer-powered">
             Powered by{" "}
-            <a href="https://zelteb.com" target="_blank" rel="noopener noreferrer">
-              Zelteb
-            </a>
+            <a href="https://zelteb.com" target="_blank" rel="noopener noreferrer">Zelteb</a>
           </span>
         </div>
 
