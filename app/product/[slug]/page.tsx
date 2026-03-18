@@ -261,20 +261,23 @@ export default function ProductPage() {
         body { background: #fff; }
         .watch-wrap { font-family: 'DM Sans', sans-serif; background: #fff; min-height: 100vh; color: #18181b; }
 
-        /* ── NAV ── */
+        /* ─────────────────────────────────────────
+           NAV — desktop only; hidden on mobile
+        ───────────────────────────────────────── */
         .watch-nav {
           background: white;
           border-bottom: 1px solid #e4e4e7;
-          padding: 0 16px;
-          height: 50px;
-          display: flex;
+          padding: 0 40px;
+          height: 54px;
+          display: none; /* hidden on mobile */
           align-items: center;
           justify-content: space-between;
           position: sticky;
           top: 0;
           z-index: 10;
         }
-        @media (min-width: 640px) { .watch-nav { padding: 0 40px; height: 54px; } }
+        @media (min-width: 768px) { .watch-nav { display: flex; } }
+
         .watch-nav-logo { font-size: 1.15rem; color: #18181b; text-decoration: none; font-weight: 800; }
         .watch-nav-share {
           display: inline-flex; align-items: center; gap: 6px;
@@ -286,13 +289,53 @@ export default function ProductPage() {
         }
         .watch-nav-share:hover { background: #f4f4f6; border-color: #d4d4d8; }
 
-        /* ── HERO ── */
+        /* ─────────────────────────────────────────
+           MOBILE TOP BAR — shown only on mobile
+           (logo left + share icon right)
+        ───────────────────────────────────────── */
+        .mobile-topbar {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: 0 16px;
+          height: 48px;
+          background: #fff;
+          position: sticky;
+          top: 0;
+          z-index: 20;
+          border-bottom: 1px solid #f0f0f2;
+        }
+        @media (min-width: 768px) { .mobile-topbar { display: none; } }
+        .mobile-topbar-logo { font-size: 1.1rem; font-weight: 800; color: #18181b; text-decoration: none; }
+        .mobile-topbar-share {
+          width: 34px; height: 34px;
+          border-radius: 50%;
+          border: 1px solid #e4e4e7;
+          background: white;
+          display: flex; align-items: center; justify-content: center;
+          cursor: pointer;
+          -webkit-tap-highlight-color: transparent;
+        }
+
+        /* ─────────────────────────────────────────
+           HERO — full-width, 1:1 square on mobile
+           (Gumroad uses a square-ish hero on mobile)
+        ───────────────────────────────────────── */
         .watch-hero {
           width: 100%;
           overflow: hidden;
           background: #18181b;
-          /* Fluid height: 56vw on mobile (natural 16:9), capped at 460px on desktop */
-          height: clamp(200px, 56vw, 460px);
+        }
+        /* Mobile: square aspect ratio */
+        @media (max-width: 767px) {
+          .watch-hero {
+            aspect-ratio: 1 / 1;
+            max-height: 100vw;
+          }
+        }
+        /* Desktop: 16:9 capped */
+        @media (min-width: 768px) {
+          .watch-hero { height: clamp(200px, 56vw, 460px); }
         }
         .watch-hero img { width: 100%; height: 100%; object-fit: cover; display: block; }
         .watch-hero-placeholder {
@@ -302,14 +345,16 @@ export default function ProductPage() {
           font-size: clamp(3rem, 10vw, 5rem);
         }
 
-        /* ── MAIN GRID ── */
+        /* ─────────────────────────────────────────
+           MAIN GRID
+        ───────────────────────────────────────── */
         .watch-main {
           max-width: 1000px;
           margin: 0 auto;
-          padding: 0 16px 48px;
           display: flex;
           flex-direction: column;
-          gap: 0;
+          /* bottom padding accounts for sticky bottom bar on mobile */
+          padding-bottom: 100px;
         }
         @media (min-width: 768px) {
           .watch-main {
@@ -321,23 +366,52 @@ export default function ProductPage() {
           }
         }
 
-        /* ── LEFT COLUMN ── */
-        .watch-left { padding-top: 20px; }
-        @media (min-width: 768px) { .watch-left { padding-top: 28px; } }
-
-        .watch-meta-row {
-          display: flex; align-items: center; gap: 10px;
-          margin-bottom: 14px; flex-wrap: wrap;
+        /* ─────────────────────────────────────────
+           MOBILE PRODUCT HEADER
+           (title block rendered right after hero)
+        ───────────────────────────────────────── */
+        .watch-product-header {
+          padding: 20px 16px 0;
+          border-bottom: 1px solid #f0f0f2;
+          padding-bottom: 16px;
         }
+        @media (min-width: 768px) { .watch-product-header { display: none; } }
+
+        .watch-title-mobile {
+          font-size: 1.75rem;
+          font-weight: 800;
+          color: #18181b;
+          line-height: 1.15;
+          letter-spacing: -0.02em;
+          margin-bottom: 14px;
+        }
+
+        /* Price tag + creator row */
+        .watch-meta-row-mobile {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          flex-wrap: wrap;
+        }
+
+        /* ─────────────────────────────────────────
+           PRICE TAG — arrow ribbon (Gumroad style)
+        ───────────────────────────────────────── */
         .watch-price-tag {
-          display: inline-flex; align-items: center;
-          background: #e91e8c; color: white; font-weight: 700; font-size: 13px;
-          padding: 5px 16px 5px 12px;
-          clip-path: polygon(0 0, 88% 0, 100% 50%, 88% 100%, 0 100%);
+          display: inline-flex;
+          align-items: center;
+          background: #e91e8c;
+          color: white;
+          font-weight: 700;
+          font-size: 13px;
+          padding: 5px 20px 5px 12px;
+          clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 50%, calc(100% - 10px) 100%, 0 100%);
           flex-shrink: 0;
+          letter-spacing: 0.01em;
         }
         .watch-price-tag.free-tag { background: #16a34a; }
 
+        /* Creator pill */
         .watch-creator-pill {
           display: flex; align-items: center; gap: 7px;
           background: #f4f4f6; border-radius: 999px;
@@ -355,16 +429,47 @@ export default function ProductPage() {
         .watch-creator-avatar img { width: 100%; height: 100%; object-fit: cover; }
         .watch-creator-name { font-size: 13px; font-weight: 600; color: #18181b; }
 
+        /* Inline stars */
         .watch-inline-stars { display: flex; align-items: center; gap: 5px; }
         .watch-inline-stars .stars { display: flex; gap: 2px; }
         .watch-inline-stars .count { font-size: 12px; color: #71717a; }
+
+        /* ─────────────────────────────────────────
+           LEFT COLUMN (desktop title/description)
+        ───────────────────────────────────────── */
+        .watch-left { padding-top: 28px; }
+
+        /* Hide desktop meta-row on mobile (we use watch-product-header instead) */
+        .watch-meta-row-desktop {
+          display: none;
+        }
+        @media (min-width: 768px) {
+          .watch-meta-row-desktop {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 14px;
+            flex-wrap: wrap;
+          }
+        }
 
         .watch-title {
           font-size: clamp(1.2rem, 5vw, 1.75rem);
           font-weight: 800; color: #18181b;
           line-height: 1.2; letter-spacing: -0.02em; margin-bottom: 18px;
         }
+        /* Hide desktop title on mobile */
+        @media (max-width: 767px) { .watch-title { display: none; } }
+
         .watch-divider-line { height: 1px; background: #f0f0f2; margin: 20px 0; }
+
+        /* ─────────────────────────────────────────
+           DESCRIPTION — mobile: padded sections
+        ───────────────────────────────────────── */
+        .watch-description-wrap {
+          padding: 0 16px;
+        }
+        @media (min-width: 768px) { .watch-description-wrap { padding: 0; } }
 
         .watch-description { font-size: 0.9rem; color: #3f3f46; line-height: 1.8; }
         .watch-description p { margin-bottom: 10px; }
@@ -373,14 +478,26 @@ export default function ProductPage() {
         .watch-description a { color: #e879f9; text-decoration: underline; cursor: pointer; }
         .watch-description a:hover { color: #c2185b; }
         .watch-description ul, .watch-description ol { padding-left: 20px; margin: 8px 0; }
+        .watch-description li { margin-bottom: 6px; }
         .watch-description img { max-width: 100%; border-radius: 8px; }
         .watch-description h1 { font-size: 1.5rem; font-weight: 800; margin-bottom: 8px; }
         .watch-description h2 { font-size: 1.2rem; font-weight: 700; margin-bottom: 6px; }
         .watch-description h3 { font-size: 1rem; font-weight: 600; margin-bottom: 5px; }
         .watch-description pre { background: #18181b; color: #e4e4e7; border-radius: 8px; padding: 12px 14px; font-family: monospace; font-size: 0.85rem; margin: 8px 0; overflow-x: auto; }
 
-        /* ── RATINGS ── */
-        .ratings-box { margin-top: 32px; border-top: 1px solid #f0f0f2; padding-top: 24px; }
+        /* ─────────────────────────────────────────
+           RATINGS
+        ───────────────────────────────────────── */
+        .ratings-box {
+          margin-top: 32px;
+          border-top: 1px solid #f0f0f2;
+          padding-top: 24px;
+          padding-left: 16px;
+          padding-right: 16px;
+        }
+        @media (min-width: 768px) {
+          .ratings-box { padding-left: 0; padding-right: 0; }
+        }
         .ratings-box-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
         .ratings-box-title { font-size: 1rem; font-weight: 700; color: #18181b; }
         .ratings-avg { display: flex; align-items: center; gap: 5px; font-size: 0.9rem; font-weight: 700; color: #18181b; }
@@ -392,34 +509,20 @@ export default function ProductPage() {
         .ratings-pct { font-size: 0.75rem; color: #71717a; width: 30px; flex-shrink: 0; text-align: right; }
         .ratings-empty { font-size: 0.875rem; color: #a1a1aa; padding: 10px 0; }
 
-        /* ── BUY CARD ── */
-        /*
-          On mobile: card renders BELOW the title/meta row but ABOVE description.
-          We use order to achieve this without duplicating JSX.
-          watch-left is order:2, watch-card is order:1 on mobile.
-        */
-        .watch-left { order: 2; }
-        .watch-card { order: 1; }
-
-        @media (min-width: 768px) {
-          .watch-left { order: unset; }
-          .watch-card { order: unset; }
-        }
-
+        /* ─────────────────────────────────────────
+           BUY CARD — desktop sidebar
+        ───────────────────────────────────────── */
+        /* Hide desktop card on mobile entirely */
         .watch-card {
-          background: white;
-          border: 1px solid #e4e4e7;
-          border-radius: 0;
-          overflow: hidden;
-          /* On mobile: flush card under the title block */
-          border-left: none; border-right: none;
-          box-shadow: none;
-          margin-top: 0;
+          display: none;
         }
         @media (min-width: 768px) {
           .watch-card {
-            border-radius: 16px;
+            display: block;
+            background: white;
             border: 1px solid #e4e4e7;
+            border-radius: 16px;
+            overflow: hidden;
             box-shadow: 0 2px 20px rgba(0,0,0,0.06);
             position: sticky;
             top: 74px;
@@ -427,13 +530,7 @@ export default function ProductPage() {
           }
         }
 
-        .watch-card-body { padding: 16px; }
-        @media (min-width: 768px) { .watch-card-body { padding: 20px; } }
-
-        /* On mobile, hide the card title/type/creator — already shown in the left col */
-        .watch-card-desktop-only { display: none; }
-        @media (min-width: 768px) { .watch-card-desktop-only { display: block; } }
-
+        .watch-card-body { padding: 20px; }
         .watch-card-title { font-size: 1rem; font-weight: 700; color: #18181b; line-height: 1.3; margin-bottom: 4px; }
         .watch-card-type { font-size: 0.72rem; color: #a1a1aa; font-weight: 400; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.06em; }
         .watch-card-creator {
@@ -454,40 +551,18 @@ export default function ProductPage() {
         .watch-card-creator-name { font-size: 13px; font-weight: 600; color: #18181b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .watch-card-creator-sub { font-size: 11px; color: #a1a1aa; }
         .watch-card-divider { height: 1px; background: #f0f0f2; margin: 12px 0; }
-
-        /* Mobile: show price inline next to button */
-        .watch-card-price-row {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          margin-bottom: 12px;
-          gap: 12px;
-        }
-        @media (min-width: 768px) {
-          .watch-card-price-row { display: block; margin-bottom: 14px; }
-        }
-        .watch-card-price { font-size: 1.5rem; font-weight: 800; color: #18181b; }
-        @media (max-width: 767px) { .watch-card-price { font-size: 1.25rem; } }
+        .watch-card-price { font-size: 1.5rem; font-weight: 800; color: #18181b; margin-bottom: 14px; }
         .watch-card-price .free { font-size: 1rem; font-weight: 600; color: #16a34a; background: #f0fdf4; padding: 5px 12px; border-radius: 20px; display: inline-block; }
 
-        /* On mobile: price + button side by side */
-        .watch-card-actions-mobile {
-          display: flex;
-          align-items: center;
-          gap: 10px;
-        }
-        @media (min-width: 768px) { .watch-card-actions-mobile { display: block; } }
-
         .watch-buy-btn {
-          flex: 1;
+          width: 100%;
           padding: 13px;
           background: #e91e8c; color: white; border: none; border-radius: 10px;
           font-size: 0.95rem; font-weight: 700; font-family: 'DM Sans', sans-serif;
           cursor: pointer; transition: background 0.15s, transform 0.1s;
-          margin-bottom: 0;
+          margin-bottom: 10px;
           -webkit-tap-highlight-color: transparent;
         }
-        @media (min-width: 768px) { .watch-buy-btn { width: 100%; margin-bottom: 10px; } }
         .watch-buy-btn:hover:not(:disabled) { background: #c2185b; transform: translateY(-1px); }
         .watch-buy-btn:active:not(:disabled) { transform: scale(0.98); }
         .watch-buy-btn:disabled { opacity: 0.6; cursor: not-allowed; }
@@ -495,15 +570,14 @@ export default function ProductPage() {
         .watch-buy-btn.free-btn:hover:not(:disabled) { background: #15803d; }
 
         .watch-download-btn {
-          flex: 1;
+          width: 100%;
           padding: 13px; background: #7c3aed; color: white; border: none;
           border-radius: 10px; font-size: 0.95rem; font-weight: 700;
           font-family: 'DM Sans', sans-serif; cursor: pointer;
-          display: block; text-align: center; margin-bottom: 0;
+          display: block; text-align: center; margin-bottom: 10px;
           transition: background 0.15s;
           -webkit-tap-highlight-color: transparent;
         }
-        @media (min-width: 768px) { .watch-download-btn { width: 100%; margin-bottom: 10px; } }
         .watch-download-btn:hover { background: #6d28d9; }
 
         .watch-share-card-btn {
@@ -530,13 +604,78 @@ export default function ProductPage() {
           margin-top: 10px;
         }
 
-        /* ── FOOTER ── */
+        /* ─────────────────────────────────────────
+           MOBILE STICKY BOTTOM BAR
+           (replaces the card on mobile — Gumroad style)
+        ───────────────────────────────────────── */
+        .mobile-sticky-bar {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 12px;
+          position: fixed;
+          bottom: 0;
+          left: 0;
+          right: 0;
+          z-index: 50;
+          background: white;
+          border-top: 1px solid #e4e4e7;
+          padding: 10px 16px;
+          padding-bottom: calc(10px + env(safe-area-inset-bottom));
+        }
+        @media (min-width: 768px) { .mobile-sticky-bar { display: none; } }
+
+        .mobile-sticky-price {
+          display: inline-flex;
+          align-items: center;
+          background: #e91e8c;
+          color: white;
+          font-weight: 800;
+          font-size: 14px;
+          padding: 8px 22px 8px 14px;
+          clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 50%, calc(100% - 12px) 100%, 0 100%);
+          flex-shrink: 0;
+          white-space: nowrap;
+        }
+        .mobile-sticky-price.free-price { background: #16a34a; }
+
+        .mobile-sticky-cta {
+          flex: 1;
+          padding: 12px 20px;
+          background: #e91e8c;
+          color: white;
+          border: none;
+          border-radius: 10px;
+          font-size: 1rem;
+          font-weight: 700;
+          font-family: 'DM Sans', sans-serif;
+          cursor: pointer;
+          transition: background 0.15s, transform 0.1s;
+          text-align: center;
+          -webkit-tap-highlight-color: transparent;
+        }
+        .mobile-sticky-cta:hover:not(:disabled) { background: #c2185b; }
+        .mobile-sticky-cta:active:not(:disabled) { transform: scale(0.98); }
+        .mobile-sticky-cta:disabled { opacity: 0.6; cursor: not-allowed; }
+        .mobile-sticky-cta.free-cta { background: #16a34a; }
+        .mobile-sticky-cta.free-cta:hover:not(:disabled) { background: #15803d; }
+        .mobile-sticky-cta.download-cta { background: #7c3aed; }
+        .mobile-sticky-cta.download-cta:hover:not(:disabled) { background: #6d28d9; }
+
+        /* ─────────────────────────────────────────
+           FOOTER
+        ───────────────────────────────────────── */
         .compact-footer {
           display: flex; align-items: center; justify-content: center;
           gap: 14px; padding: 14px 16px;
           border-top: 1px solid #f0f0f0;
           font-family: 'DM Sans', sans-serif;
           flex-wrap: wrap;
+          /* on mobile push above sticky bar */
+          margin-bottom: 0;
+        }
+        @media (max-width: 767px) {
+          .compact-footer { padding-bottom: 80px; }
         }
         .compact-footer-sell {
           display: inline-flex; align-items: center; gap: 6px;
@@ -549,9 +688,11 @@ export default function ProductPage() {
         .compact-footer-powered a { color: #111; font-weight: 800; text-decoration: none; font-size: 14px; letter-spacing: -0.02em; transition: opacity 0.15s; }
         .compact-footer-powered a:hover { opacity: 0.7; }
 
-        /* ── TOAST ── */
+        /* ─────────────────────────────────────────
+           TOAST
+        ───────────────────────────────────────── */
         .share-toast {
-          position: fixed; bottom: 24px; left: 50%;
+          position: fixed; bottom: 80px; left: 50%;
           transform: translateX(-50%);
           background: #18181b; color: white;
           padding: 11px 22px; border-radius: 10px;
@@ -568,7 +709,18 @@ export default function ProductPage() {
 
       <div className="watch-wrap">
 
-        {/* ── NAVBAR ── */}
+        {/* ── MOBILE TOP BAR ── */}
+        <div className="mobile-topbar">
+          <a href="/" className="mobile-topbar-logo">Zelteb</a>
+          <button className="mobile-topbar-share" onClick={handleShare} aria-label="Share">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
+              <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
+            </svg>
+          </button>
+        </div>
+
+        {/* ── DESKTOP NAVBAR ── */}
         <nav className="watch-nav">
           <a href="/" className="watch-nav-logo">Zelteb</a>
           <button className="watch-nav-share" onClick={handleShare}>
@@ -588,12 +740,47 @@ export default function ProductPage() {
           }
         </div>
 
-        {/* ── MAIN ── */}
+        {/* ── MOBILE PRODUCT HEADER (title + price tag + creator) ── */}
+        <div className="watch-product-header">
+          <h1 className="watch-title-mobile">{video.title}</h1>
+          <div className="watch-meta-row-mobile">
+            <span className={`watch-price-tag ${isFree ? "free-tag" : ""}`}>
+              {isFree ? "Free" : `₹${video.price}`}
+            </span>
+            {creator && (
+              <a href={`/${creator.username}`} className="watch-creator-pill">
+                <span className="watch-creator-avatar">
+                  {creator.avatar_url
+                    ? <img src={creator.avatar_url} alt={creatorDisplayName} />
+                    : creatorDisplayName.charAt(0).toUpperCase()
+                  }
+                </span>
+                <span className="watch-creator-name">{creatorDisplayName}</span>
+              </a>
+            )}
+            {avgRating && (
+              <span className="watch-inline-stars">
+                <span className="stars">
+                  {[1,2,3,4,5].map(s => (
+                    <svg key={s} width="13" height="13" viewBox="0 0 24 24" fill={s <= Math.round(Number(avgRating)) ? "#f59e0b" : "none"} stroke="#f59e0b" strokeWidth="1.5">
+                      <polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/>
+                    </svg>
+                  ))}
+                </span>
+                <span className="count">{avgRating} ({totalRatings})</span>
+              </span>
+            )}
+          </div>
+        </div>
+
+        {/* ── MAIN GRID ── */}
         <div className="watch-main">
 
-          {/* LEFT — title/meta/description */}
+          {/* LEFT — description & ratings */}
           <div className="watch-left">
-            <div className="watch-meta-row">
+
+            {/* Desktop-only: meta row + title */}
+            <div className="watch-meta-row-desktop">
               <span className={`watch-price-tag ${isFree ? "free-tag" : ""}`}>
                 {isFree ? "Free" : `₹${video.price}`}
               </span>
@@ -627,10 +814,12 @@ export default function ProductPage() {
             {video.description && (
               <>
                 <div className="watch-divider-line" />
-                <div
-                  className="watch-description"
-                  dangerouslySetInnerHTML={{ __html: fixDescriptionLinks(video.description) }}
-                />
+                <div className="watch-description-wrap">
+                  <div
+                    className="watch-description"
+                    dangerouslySetInnerHTML={{ __html: fixDescriptionLinks(video.description) }}
+                  />
+                </div>
               </>
             )}
 
@@ -664,30 +853,26 @@ export default function ProductPage() {
             </div>
           </div>
 
-          {/* ── BUY CARD ── */}
+          {/* ── DESKTOP BUY CARD ── */}
           <div className="watch-card">
             <div className="watch-card-body">
-
-              {/* Desktop-only: title, type, creator in the card */}
-              <div className="watch-card-desktop-only">
-                <div className="watch-card-title">{video.title}</div>
-                <div className="watch-card-type">{video.product_type === "video" ? "Video" : "Digital Product"}</div>
-                {creator && (
-                  <a href={`/${creator.username}`} className="watch-card-creator">
-                    <div className="watch-card-creator-avatar">
-                      {creator.avatar_url
-                        ? <img src={creator.avatar_url} alt={creatorDisplayName} />
-                        : creatorDisplayName.charAt(0).toUpperCase()
-                      }
-                    </div>
-                    <div className="watch-card-creator-info">
-                      <div className="watch-card-creator-name">{creatorDisplayName}</div>
-                      <div className="watch-card-creator-sub">View profile</div>
-                    </div>
-                  </a>
-                )}
-                <div className="watch-card-divider" />
-              </div>
+              <div className="watch-card-title">{video.title}</div>
+              <div className="watch-card-type">{video.product_type === "video" ? "Video" : "Digital Product"}</div>
+              {creator && (
+                <a href={`/${creator.username}`} className="watch-card-creator">
+                  <div className="watch-card-creator-avatar">
+                    {creator.avatar_url
+                      ? <img src={creator.avatar_url} alt={creatorDisplayName} />
+                      : creatorDisplayName.charAt(0).toUpperCase()
+                    }
+                  </div>
+                  <div className="watch-card-creator-info">
+                    <div className="watch-card-creator-name">{creatorDisplayName}</div>
+                    <div className="watch-card-creator-sub">View profile</div>
+                  </div>
+                </a>
+              )}
+              <div className="watch-card-divider" />
 
               {owned && (
                 <div className="watch-owned-badge">
@@ -696,32 +881,29 @@ export default function ProductPage() {
                 </div>
               )}
 
-              {/* Price + CTA — side by side on mobile */}
-              <div className="watch-card-actions-mobile">
-                <div className="watch-card-price">
-                  {isFree ? <span className="free">Free</span> : `₹${video.price}`}
-                </div>
-
-                {owned ? (
-                  downloadUrl ? (
-                    <button className="watch-download-btn" onClick={() => download(video.video_path, video.title)}>
-                      {video.product_type === "video" ? "▶ Watch / Download" : "⬇ Download"}
-                    </button>
-                  ) : (
-                    <div style={{ flex: 1, textAlign: "center", fontSize: "0.85rem", color: "#a1a1aa", padding: "12px 0" }}>
-                      Preparing download...
-                    </div>
-                  )
-                ) : (
-                  <button
-                    className={`watch-buy-btn ${isFree ? "free-btn" : ""}`}
-                    onClick={buy}
-                    disabled={loading}
-                  >
-                    {loading ? "Processing..." : isFree ? "Get for Free" : "Buy Now"}
-                  </button>
-                )}
+              <div className="watch-card-price">
+                {isFree ? <span className="free">Free</span> : `₹${video.price}`}
               </div>
+
+              {owned ? (
+                downloadUrl ? (
+                  <button className="watch-download-btn" onClick={() => download(video.video_path, video.title)}>
+                    {video.product_type === "video" ? "▶ Watch / Download" : "⬇ Download"}
+                  </button>
+                ) : (
+                  <div style={{ textAlign: "center", fontSize: "0.85rem", color: "#a1a1aa", padding: "12px 0" }}>
+                    Preparing download...
+                  </div>
+                )
+              ) : (
+                <button
+                  className={`watch-buy-btn ${isFree ? "free-btn" : ""}`}
+                  onClick={buy}
+                  disabled={loading}
+                >
+                  {loading ? "Processing..." : isFree ? "Get for Free" : "Buy Now"}
+                </button>
+              )}
 
               <button className="watch-share-card-btn" onClick={handleShare}>
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
@@ -759,6 +941,36 @@ export default function ProductPage() {
             Powered by{" "}
             <a href="https://zelteb.com" target="_blank" rel="noopener noreferrer">Zelteb</a>
           </span>
+        </div>
+
+        {/* ── MOBILE STICKY BOTTOM BAR ── */}
+        <div className="mobile-sticky-bar">
+          <span className={`mobile-sticky-price ${isFree ? "free-price" : ""}`}>
+            {isFree ? "Free" : `₹${video.price}`}
+          </span>
+
+          {owned ? (
+            downloadUrl ? (
+              <button
+                className="mobile-sticky-cta download-cta"
+                onClick={() => download(video.video_path, video.title)}
+              >
+                {video.product_type === "video" ? "▶ Watch / Download" : "⬇ Download"}
+              </button>
+            ) : (
+              <button className="mobile-sticky-cta" disabled>
+                Preparing…
+              </button>
+            )
+          ) : (
+            <button
+              className={`mobile-sticky-cta ${isFree ? "free-cta" : ""}`}
+              onClick={buy}
+              disabled={loading}
+            >
+              {loading ? "Processing..." : isFree ? "Get for Free" : "I want this!"}
+            </button>
+          )}
         </div>
       </div>
 
