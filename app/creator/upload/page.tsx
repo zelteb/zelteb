@@ -24,6 +24,7 @@ export default function Upload() {
   const [showLinkModal, setShowLinkModal] = useState(false);
   const [linkText, setLinkText] = useState("");
   const [linkUrl, setLinkUrl] = useState("");
+  const [showPreview, setShowPreview] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const thumbInputRef = useRef<HTMLInputElement>(null);
@@ -199,66 +200,218 @@ export default function Upload() {
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Manrope:wght@400;500;600;700&display=swap');
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-        .page-layout { display: flex; min-height: 100vh; background: #f4f4f6; font-family: 'Plus Jakarta Sans', system-ui, sans-serif; color: #18181b; }
-        .up-wrap { flex: 1; padding: 48px 32px 48px 48px; overflow-y: auto; max-width: 700px; }
+        .page-layout {
+          display: flex;
+          min-height: 100vh;
+          background: #f4f4f6;
+          font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+          color: #18181b;
+        }
+
+        /* ── FORM COLUMN ── */
+        .up-wrap {
+          flex: 1;
+          min-width: 0;
+          padding: 32px 16px 48px;
+          overflow-y: auto;
+        }
+        @media (min-width: 480px) { .up-wrap { padding: 32px 24px 48px; } }
+        @media (min-width: 768px) { .up-wrap { padding: 48px 32px 48px 48px; max-width: 700px; } }
+
         .up-inner { display: flex; flex-direction: column; gap: 12px; }
+
         .up-header { margin-bottom: 8px; }
-        .up-header h1 { font-size: 1.75rem; font-weight: 800; color: #18181b; letter-spacing: -0.03em; line-height: 1.2; }
+        .up-header h1 {
+          font-size: 1.5rem;
+          font-weight: 800;
+          color: #18181b;
+          letter-spacing: -0.03em;
+          line-height: 1.2;
+        }
+        @media (min-width: 480px) { .up-header h1 { font-size: 1.75rem; } }
         .up-header p { font-size: 0.875rem; color: #71717a; margin-top: 4px; }
+
+        /* Mobile preview toggle */
+        .mobile-preview-toggle {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          background: #fff;
+          border: 1px solid #e4e4e7;
+          border-radius: 9px;
+          padding: 10px 16px;
+          font-size: 0.85rem;
+          font-weight: 600;
+          font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+          color: #7c3aed;
+          cursor: pointer;
+          width: 100%;
+          justify-content: center;
+          transition: background 0.15s;
+          -webkit-tap-highlight-color: transparent;
+        }
+        .mobile-preview-toggle:hover { background: #faf5ff; }
+        @media (min-width: 900px) { .mobile-preview-toggle { display: none; } }
+
         .up-card { background: #fff; border: 1px solid #e4e4e7; border-radius: 14px; overflow: hidden; }
-        .up-card-header { display: flex; align-items: center; gap: 10px; padding: 18px 24px; border-bottom: 1px solid #f0f0f2; }
+        .up-card-header {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          padding: 14px 16px;
+          border-bottom: 1px solid #f0f0f2;
+        }
+        @media (min-width: 480px) { .up-card-header { padding: 18px 24px; } }
         .up-card-header svg { color: #a1a1aa; flex-shrink: 0; }
         .up-card-header h2 { font-size: 0.9375rem; font-weight: 600; color: #18181b; flex: 1; }
         .up-card-header .required { color: #7c3aed; margin-left: 2px; }
-        .up-card-header-badge { font-size: 0.72rem; font-weight: 500; color: #a1a1aa; background: #f4f4f6; padding: 3px 8px; border-radius: 20px; }
-        .up-card-body { padding: 20px 24px; }
+        .up-card-header-badge { font-size: 0.72rem; font-weight: 500; color: #a1a1aa; background: #f4f4f6; padding: 3px 8px; border-radius: 20px; white-space: nowrap; }
+        .up-card-body { padding: 16px; }
+        @media (min-width: 480px) { .up-card-body { padding: 20px 24px; } }
+
         .up-label { display: block; font-size: 0.8125rem; font-weight: 500; color: #3f3f46; margin-bottom: 6px; }
         .up-label .req { color: #7c3aed; }
-        .up-input { width: 100%; background: #fafafa; border: 1px solid #e4e4e7; border-radius: 8px; padding: 10px 14px; font-size: 0.9rem; font-family: 'Plus Jakarta Sans', system-ui, sans-serif; color: #18181b; outline: none; transition: border-color 0.15s, box-shadow 0.15s; resize: vertical; }
+        .up-input {
+          width: 100%;
+          background: #fafafa;
+          border: 1px solid #e4e4e7;
+          border-radius: 8px;
+          padding: 10px 14px;
+          font-size: 1rem;
+          font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+          color: #18181b;
+          outline: none;
+          transition: border-color 0.15s, box-shadow 0.15s;
+          resize: vertical;
+          -webkit-appearance: none;
+        }
+        @media (min-width: 480px) { .up-input { font-size: 0.9rem; } }
         .up-input::placeholder { color: #a1a1aa; }
         .up-input:focus { border-color: #7c3aed; box-shadow: 0 0 0 3px rgba(124,58,237,0.08); }
         .up-hint { font-size: 0.78rem; color: #a1a1aa; margin-top: 6px; }
 
+        /* SLUG */
         .slug-input-wrap { position: relative; display: flex; align-items: center; }
-        .slug-prefix { position: absolute; left: 12px; font-size: 0.85rem; color: #a1a1aa; pointer-events: none; white-space: nowrap; user-select: none; }
-        .slug-input { padding-left: 80px !important; font-family: 'Courier New', monospace !important; font-size: 0.875rem !important; }
+        .slug-prefix {
+          position: absolute;
+          left: 12px;
+          font-size: 0.8rem;
+          color: #a1a1aa;
+          pointer-events: none;
+          white-space: nowrap;
+          user-select: none;
+        }
+        .slug-input { padding-left: 76px !important; font-family: 'Courier New', monospace !important; font-size: 0.875rem !important; }
         .slug-input:not(:placeholder-shown) { color: #7c3aed !important; }
         .slug-preview { display: flex; align-items: center; gap: 5px; margin-top: 8px; font-size: 0.775rem; color: #a1a1aa; flex-wrap: wrap; }
         .slug-preview-url { color: #7c3aed; font-weight: 600; font-family: 'Courier New', monospace; word-break: break-all; }
         .slug-auto-badge { display: inline-flex; align-items: center; gap: 3px; font-size: 0.7rem; background: #f0fdf4; color: #16a34a; border: 1px solid #bbf7d0; padding: 2px 7px; border-radius: 20px; font-weight: 500; }
 
-        .up-editor-wrap { border: 1px solid #e4e4e7; border-radius: 8px; overflow: hidden; background: #fafafa; transition: border-color 0.15s, box-shadow 0.15s; }
+        /* EDITOR */
+        .up-editor-wrap {
+          border: 1px solid #e4e4e7;
+          border-radius: 8px;
+          overflow: hidden;
+          background: #fafafa;
+          transition: border-color 0.15s, box-shadow 0.15s;
+        }
         .up-editor-wrap:focus-within { border-color: #7c3aed; box-shadow: 0 0 0 3px rgba(124,58,237,0.08); }
-        .up-toolbar { display: flex; align-items: center; gap: 2px; padding: 8px 10px; background: #18181b; flex-wrap: wrap; position: relative; }
-        .up-toolbar-btn { background: none; border: none; color: #d4d4d8; cursor: pointer; width: 30px; height: 30px; border-radius: 5px; display: flex; align-items: center; justify-content: center; font-size: 0.85rem; font-weight: 600; transition: background 0.12s, color 0.12s; font-family: 'Plus Jakarta Sans', system-ui, sans-serif; }
-        .up-toolbar-btn:hover { background: #3f3f46; color: white; }
+        .up-toolbar {
+          display: flex;
+          align-items: center;
+          gap: 1px;
+          padding: 6px 8px;
+          background: #18181b;
+          flex-wrap: wrap;
+          position: relative;
+        }
+        .up-toolbar-btn {
+          background: none;
+          border: none;
+          color: #d4d4d8;
+          cursor: pointer;
+          width: 28px;
+          height: 28px;
+          border-radius: 5px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 0.85rem;
+          font-weight: 600;
+          transition: background 0.12s, color 0.12s;
+          font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+          flex-shrink: 0;
+          -webkit-tap-highlight-color: transparent;
+        }
+        .up-toolbar-btn:hover, .up-toolbar-btn:active { background: #3f3f46; color: white; }
         .up-toolbar-btn.active { background: #7c3aed; color: white; }
-        .up-toolbar-divider { width: 1px; height: 18px; background: #3f3f46; margin: 0 4px; flex-shrink: 0; }
+        .up-toolbar-divider { width: 1px; height: 18px; background: #3f3f46; margin: 0 3px; flex-shrink: 0; }
+
         .up-text-dropdown-wrap { position: relative; }
-        .up-text-dropdown-btn { background: none; border: none; color: #d4d4d8; cursor: pointer; height: 30px; border-radius: 5px; display: flex; align-items: center; gap: 5px; padding: 0 8px; font-size: 0.82rem; font-weight: 600; font-family: 'Plus Jakarta Sans', system-ui, sans-serif; transition: background 0.12s, color 0.12s; white-space: nowrap; }
+        .up-text-dropdown-btn {
+          background: none;
+          border: none;
+          color: #d4d4d8;
+          cursor: pointer;
+          height: 28px;
+          border-radius: 5px;
+          display: flex;
+          align-items: center;
+          gap: 4px;
+          padding: 0 7px;
+          font-size: 0.78rem;
+          font-weight: 600;
+          font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+          transition: background 0.12s, color 0.12s;
+          white-space: nowrap;
+          -webkit-tap-highlight-color: transparent;
+        }
         .up-text-dropdown-btn:hover { background: #3f3f46; color: white; }
-        .up-text-dropdown-menu { position: absolute; top: calc(100% + 6px); left: 0; background: white; border: 1px solid #e4e4e7; border-radius: 10px; box-shadow: 0 8px 24px rgba(0,0,0,0.12); z-index: 100; min-width: 170px; overflow: hidden; padding: 4px; }
+        .up-text-dropdown-menu {
+          position: absolute;
+          top: calc(100% + 6px);
+          left: 0;
+          background: white;
+          border: 1px solid #e4e4e7;
+          border-radius: 10px;
+          box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+          z-index: 100;
+          min-width: 165px;
+          overflow: hidden;
+          padding: 4px;
+        }
         .up-text-dropdown-item { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 6px; cursor: pointer; transition: background 0.1s; }
         .up-text-dropdown-item:hover { background: #f4f4f6; }
         .up-text-dropdown-item.active { background: #faf5ff; }
         .up-text-dropdown-item-icon { width: 28px; height: 28px; background: #f4f4f6; border-radius: 6px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
         .up-text-dropdown-item-label { font-size: 0.875rem; font-weight: 500; color: #18181b; }
 
-        .up-modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 200; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(2px); }
-        .up-modal { background: white; border-radius: 16px; padding: 28px; width: 100%; max-width: 420px; box-shadow: 0 20px 60px rgba(0,0,0,0.15); }
+        .up-modal-overlay {
+          position: fixed;
+          inset: 0;
+          background: rgba(0,0,0,0.5);
+          z-index: 200;
+          display: flex;
+          align-items: flex-end;
+          justify-content: center;
+          backdrop-filter: blur(2px);
+          padding: 16px;
+        }
+        @media (min-width: 480px) { .up-modal-overlay { align-items: center; } }
+        .up-modal { background: white; border-radius: 16px; padding: 24px; width: 100%; max-width: 420px; box-shadow: 0 20px 60px rgba(0,0,0,0.15); }
         .up-modal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
         .up-modal-title { font-size: 1.1rem; font-weight: 700; color: #18181b; }
-        .up-modal-close { background: none; border: none; cursor: pointer; color: #71717a; width: 28px; height: 28px; border-radius: 6px; display: flex; align-items: center; justify-content: center; transition: background 0.12s; }
+        .up-modal-close { background: none; border: none; cursor: pointer; color: #71717a; width: 32px; height: 32px; border-radius: 6px; display: flex; align-items: center; justify-content: center; transition: background 0.12s; }
         .up-modal-close:hover { background: #f4f4f6; color: #18181b; }
         .up-modal-field { margin-bottom: 14px; }
         .up-modal-label { display: block; font-size: 0.8125rem; font-weight: 500; color: #3f3f46; margin-bottom: 6px; }
-        .up-modal-input { width: 100%; background: white; border: 1.5px solid #e4e4e7; border-radius: 8px; padding: 10px 14px; font-size: 0.9rem; font-family: 'Plus Jakarta Sans', system-ui, sans-serif; color: #18181b; outline: none; transition: border-color 0.15s, box-shadow 0.15s; }
+        .up-modal-input { width: 100%; background: white; border: 1.5px solid #e4e4e7; border-radius: 8px; padding: 11px 14px; font-size: 1rem; font-family: 'Plus Jakarta Sans', system-ui, sans-serif; color: #18181b; outline: none; transition: border-color 0.15s, box-shadow 0.15s; -webkit-appearance: none; }
         .up-modal-input:focus { border-color: #7c3aed; box-shadow: 0 0 0 3px rgba(124,58,237,0.08); }
         .up-modal-input::placeholder { color: #a1a1aa; }
-        .up-modal-submit { width: 100%; background: #18181b; color: white; border: none; border-radius: 9px; padding: 12px; font-size: 0.9rem; font-weight: 600; font-family: 'Plus Jakarta Sans', system-ui, sans-serif; cursor: pointer; transition: background 0.15s; margin-top: 4px; }
+        .up-modal-submit { width: 100%; background: #18181b; color: white; border: none; border-radius: 9px; padding: 13px; font-size: 0.9rem; font-weight: 600; font-family: 'Plus Jakarta Sans', system-ui, sans-serif; cursor: pointer; transition: background 0.15s; margin-top: 4px; }
         .up-modal-submit:hover { background: #3f3f46; }
 
-        .tiptap-editor { min-height: 140px; padding: 12px 14px; font-size: 0.9rem; font-family: 'Manrope', sans-serif; color: #18181b; outline: none; line-height: 1.6; }
+        .tiptap-editor { min-height: 120px; padding: 12px 14px; font-size: 0.9rem; font-family: 'Manrope', sans-serif; color: #18181b; outline: none; line-height: 1.6; }
         .tiptap-editor p { margin-bottom: 6px; }
         .tiptap-editor strong { font-weight: 700; }
         .tiptap-editor em { font-style: italic; }
@@ -277,54 +430,136 @@ export default function Upload() {
         .tiptap-editor pre code { background: none; padding: 0; }
 
         .up-select-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        .up-select-card { border: 1.5px solid #e4e4e7; border-radius: 10px; padding: 14px 16px; cursor: pointer; transition: border-color 0.15s, background 0.15s; position: relative; background: #fafafa; }
+        .up-select-card { border: 1.5px solid #e4e4e7; border-radius: 10px; padding: 12px 14px; cursor: pointer; transition: border-color 0.15s, background 0.15s; position: relative; background: #fafafa; -webkit-tap-highlight-color: transparent; }
         .up-select-card.active { border-color: #7c3aed; background: #faf5ff; }
-        .up-select-card-title { font-size: 0.9rem; font-weight: 600; color: #18181b; margin-bottom: 3px; }
-        .up-select-card-desc { font-size: 0.78rem; color: #71717a; font-weight: 400; line-height: 1.4; }
-        .up-check-icon { position: absolute; top: 12px; right: 12px; width: 20px; height: 20px; border-radius: 50%; background: #7c3aed; display: flex; align-items: center; justify-content: center; }
-        .up-check-icon svg { width: 11px; height: 11px; stroke: white; stroke-width: 2.5; fill: none; }
+        .up-select-card-title { font-size: 0.875rem; font-weight: 600; color: #18181b; margin-bottom: 3px; }
+        .up-select-card-desc { font-size: 0.75rem; color: #71717a; font-weight: 400; line-height: 1.4; }
+        .up-check-icon { position: absolute; top: 10px; right: 10px; width: 18px; height: 18px; border-radius: 50%; background: #7c3aed; display: flex; align-items: center; justify-content: center; }
+        .up-check-icon svg { width: 10px; height: 10px; stroke: white; stroke-width: 2.5; fill: none; }
 
-        /* ── COMPRESS TIP BOX ── */
-        .compress-tip { display: flex; align-items: center; gap: 10px; background: #faf5ff; border: 1px solid #e9d5ff; border-radius: 9px; padding: 10px 14px; margin-bottom: 12px; text-decoration: none; transition: background 0.15s, border-color 0.15s; cursor: pointer; }
+        /* compress tip */
+        .compress-tip { display: flex; align-items: center; gap: 10px; background: #faf5ff; border: 1px solid #e9d5ff; border-radius: 9px; padding: 10px 14px; margin-bottom: 12px; text-decoration: none; transition: background 0.15s, border-color 0.15s; cursor: pointer; -webkit-tap-highlight-color: transparent; }
         .compress-tip:hover { background: #f3e8ff; border-color: #c084fc; }
         .compress-tip-icon { width: 30px; height: 30px; background: #7c3aed; border-radius: 7px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-        .compress-tip-text { flex: 1; }
+        .compress-tip-text { flex: 1; min-width: 0; }
         .compress-tip-text strong { display: block; font-size: 0.8rem; font-weight: 700; color: #18181b; margin-bottom: 1px; }
         .compress-tip-text span { font-size: 0.74rem; color: #71717a; }
         .compress-tip-arrow { color: #7c3aed; flex-shrink: 0; }
 
-        .up-dropzone { border: 1.5px dashed #d4d4d8; border-radius: 10px; padding: 28px 20px; text-align: center; cursor: pointer; transition: border-color 0.15s, background 0.15s; background: #fafafa; }
-        .up-dropzone:hover { border-color: #7c3aed; background: #faf5ff; }
+        .up-dropzone {
+          border: 1.5px dashed #d4d4d8;
+          border-radius: 10px;
+          padding: 24px 16px;
+          text-align: center;
+          cursor: pointer;
+          transition: border-color 0.15s, background 0.15s;
+          background: #fafafa;
+          -webkit-tap-highlight-color: transparent;
+        }
+        .up-dropzone:hover, .up-dropzone:active { border-color: #7c3aed; background: #faf5ff; }
         .up-dropzone-icon { width: 40px; height: 40px; border-radius: 50%; background: #f0f0f2; display: flex; align-items: center; justify-content: center; margin: 0 auto 10px; }
         .up-dropzone p { font-size: 0.85rem; color: #71717a; }
         .up-dropzone a { color: #7c3aed; font-weight: 500; text-decoration: none; }
         .up-dropzone-sub { font-size: 0.75rem; color: #a1a1aa; margin-top: 4px; }
         .up-file-chosen { display: flex; align-items: center; gap: 10px; background: #f4f4f6; border-radius: 8px; padding: 10px 14px; margin-top: 10px; font-size: 0.83rem; color: #3f3f46; }
         .up-file-chosen svg { color: #7c3aed; flex-shrink: 0; }
+
         .up-price-symbol { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); font-size: 0.9rem; color: #71717a; pointer-events: none; }
         .up-price-input { padding-left: 24px !important; }
-        .up-thumb-preview { width: 100%; max-height: 200px; object-fit: cover; border-radius: 8px; border: 1px solid #e4e4e7; }
+        .up-thumb-preview { width: 100%; max-height: 200px; object-fit: cover; border-radius: 8px; border: 1px solid #e4e4e7; display: block; }
+
         .up-submit-row { display: flex; justify-content: flex-end; padding-top: 4px; }
-        .up-btn { background: #7c3aed; color: white; border: none; border-radius: 9px; padding: 11px 28px; font-size: 0.9rem; font-weight: 600; font-family: 'Plus Jakarta Sans', system-ui, sans-serif; cursor: pointer; transition: background 0.15s, transform 0.1s, box-shadow 0.15s; box-shadow: 0 2px 8px rgba(124,58,237,0.25); }
+        .up-btn {
+          background: #7c3aed;
+          color: white;
+          border: none;
+          border-radius: 9px;
+          padding: 13px 28px;
+          font-size: 0.9rem;
+          font-weight: 600;
+          font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+          cursor: pointer;
+          transition: background 0.15s, transform 0.1s, box-shadow 0.15s;
+          box-shadow: 0 2px 8px rgba(124,58,237,0.25);
+          -webkit-tap-highlight-color: transparent;
+          width: 100%;
+        }
+        @media (min-width: 480px) { .up-btn { width: auto; } }
         .up-btn:hover:not(:disabled) { background: #6d28d9; box-shadow: 0 4px 16px rgba(124,58,237,0.35); transform: translateY(-1px); }
         .up-btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
         .up-spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid rgba(255,255,255,0.4); border-top-color: white; border-radius: 50%; animation: spin 0.7s linear infinite; margin-right: 8px; vertical-align: middle; }
         @keyframes spin { to { transform: rotate(360deg); } }
 
-        .preview-panel { width: 360px; flex-shrink: 0; background: #fff; border-left: 1px solid #e4e4e7; position: sticky; top: 0; height: 100vh; overflow-y: auto; display: flex; flex-direction: column; }
-        .preview-header { padding: 16px 20px; border-bottom: 1px solid #f0f0f2; display: flex; align-items: center; justify-content: space-between; background: #fafafa; flex-shrink: 0; }
+        /* ── PREVIEW PANEL ── */
+        .preview-panel {
+          display: none;
+          flex-direction: column;
+          background: #fff;
+          border-left: 1px solid #e4e4e7;
+        }
+        @media (min-width: 900px) {
+          .preview-panel {
+            display: flex;
+            width: 360px;
+            flex-shrink: 0;
+            position: sticky;
+            top: 0;
+            height: 100vh;
+            overflow-y: auto;
+          }
+        }
+        .preview-panel.mobile-open {
+          display: flex;
+          position: fixed;
+          inset: 0;
+          z-index: 150;
+          overflow-y: auto;
+          border-left: none;
+          width: 100%;
+        }
+
+        .preview-header {
+          padding: 14px 16px;
+          border-bottom: 1px solid #f0f0f2;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          background: #fafafa;
+          flex-shrink: 0;
+          position: sticky;
+          top: 0;
+          z-index: 1;
+        }
         .preview-header h3 { font-size: 0.8125rem; font-weight: 600; color: #71717a; text-transform: uppercase; letter-spacing: 0.06em; }
         .preview-live-dot { display: flex; align-items: center; gap: 5px; font-size: 0.75rem; color: #22c55e; font-weight: 500; }
         .preview-live-dot::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: #22c55e; animation: pulse 1.5s ease-in-out infinite; }
         @keyframes pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.5; transform: scale(0.8); } }
-        .preview-body { flex: 1; padding: 24px 20px; }
-        .pv-card { border: 1px solid #e4e4e7; border-radius: 16px; overflow: hidden; background: white; box-shadow: 0 4px 24px rgba(0,0,0,0.06); }
+        .preview-close-btn {
+          background: none;
+          border: none;
+          cursor: pointer;
+          color: #71717a;
+          width: 32px;
+          height: 32px;
+          border-radius: 6px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          -webkit-tap-highlight-color: transparent;
+        }
+        .preview-close-btn:hover { background: #f4f4f6; }
+        @media (min-width: 900px) { .preview-close-btn { display: none; } }
+
+        .preview-body { flex: 1; padding: 20px 16px; }
+        @media (min-width: 480px) { .preview-body { padding: 24px 20px; } }
+
+        .pv-card { border: 1px solid #e4e4e7; border-radius: 16px; overflow: hidden; background: white; box-shadow: 0 4px 24px rgba(0,0,0,0.06); max-width: 380px; margin: 0 auto; }
         .pv-thumb { width: 100%; height: 180px; background: linear-gradient(135deg, #f4f4f6 0%, #e4e4e7 100%); display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden; }
         .pv-thumb img { width: 100%; height: 100%; object-fit: cover; }
         .pv-thumb-placeholder { display: flex; flex-direction: column; align-items: center; gap: 8px; color: #a1a1aa; }
         .pv-thumb-placeholder span { font-size: 0.75rem; }
         .pv-type-badge { position: absolute; top: 10px; left: 10px; background: rgba(0,0,0,0.6); color: white; font-size: 0.7rem; font-weight: 600; padding: 3px 8px; border-radius: 20px; text-transform: uppercase; letter-spacing: 0.05em; backdrop-filter: blur(4px); }
-        .pv-content { padding: 18px; }
+        .pv-content { padding: 16px; }
         .pv-title { font-size: 1.1rem; font-weight: 700; color: #18181b; line-height: 1.3; margin-bottom: 8px; min-height: 1.5em; letter-spacing: -0.02em; }
         .pv-title-placeholder { color: #d4d4d8; font-style: italic; font-weight: 400; }
         .pv-description { font-size: 0.82rem; color: #71717a; line-height: 1.6; margin-bottom: 16px; font-family: 'Manrope', sans-serif; }
@@ -377,6 +612,12 @@ export default function Upload() {
               <p>Add product info, pricing structure, thumbnail and images.</p>
             </div>
 
+            {/* Mobile preview toggle */}
+            <button className="mobile-preview-toggle" onClick={() => setShowPreview(true)}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+              Preview product
+            </button>
+
             {/* ── DETAILS ── */}
             <div className="up-card">
               <div className="up-card-header">
@@ -393,7 +634,7 @@ export default function Upload() {
                     <div className="up-text-dropdown-wrap">
                       <button className="up-text-dropdown-btn" onMouseDown={(e) => { e.preventDefault(); setShowTextDropdown(v => !v); }}>
                         {getActiveTextLabel()}
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
                       </button>
                       {showTextDropdown && (
                         <div className="up-text-dropdown-menu">
@@ -463,10 +704,12 @@ export default function Upload() {
                   <span className="slug-prefix">zelteb.com/</span>
                   <input
                     className="up-input slug-input"
-                    placeholder="Enter product slug"
+                    placeholder="your-slug"
                     value={slug}
                     onChange={handleSlugChange}
                     spellCheck={false}
+                    autoCapitalize="none"
+                    autoCorrect="off"
                   />
                 </div>
                 {slug && (
@@ -492,31 +735,27 @@ export default function Upload() {
                 <h2>Product file <span className="required">*</span></h2>
               </div>
               <div className="up-card-body">
-
-                {/* ── COMPRESS TIP — always visible for both types ── */}
-                {true && (
-                  <a
-                    href="https://www.compress2go.com/"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="compress-tip"
-                  >
-                    <div className="compress-tip-icon">
-                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                        <polyline points="7 10 12 15 17 10"/>
-                        <line x1="12" y1="15" x2="12" y2="3"/>
-                      </svg>
-                    </div>
-                    <div className="compress-tip-text">
-                      <strong>Want to reduce file size?</strong>
-                      <span>Compress your file before uploading → compress2go.com</span>
-                    </div>
-                    <div className="compress-tip-arrow">
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
-                    </div>
-                  </a>
-                )}
+                <a
+                  href="https://www.compress2go.com/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="compress-tip"
+                >
+                  <div className="compress-tip-icon">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                      <polyline points="7 10 12 15 17 10"/>
+                      <line x1="12" y1="15" x2="12" y2="3"/>
+                    </svg>
+                  </div>
+                  <div className="compress-tip-text">
+                    <strong>Want to reduce file size?</strong>
+                    <span>Compress before uploading → compress2go.com</span>
+                  </div>
+                  <div className="compress-tip-arrow">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+                  </div>
+                </a>
 
                 <div className="up-select-grid" style={{ marginBottom: 16 }}>
                   <div className={`up-select-card ${type === "video" ? "active" : ""}`} onClick={() => { setType("video"); setFile(null); }}>
@@ -534,7 +773,7 @@ export default function Upload() {
                   <div className="up-dropzone-icon">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/></svg>
                   </div>
-                  <p>Drag it here, or <a onClick={(e) => e.stopPropagation()}>click to browse</a></p>
+                  <p>Tap to browse files</p>
                   <p className="up-dropzone-sub">{type === "video" ? "MP4, MOV, AVI supported" : "PDF, ZIP, any file accepted"}</p>
                   <input ref={fileInputRef} type="file" accept={type === "video" ? "video/*" : "*"} style={{ display: "none" }} onChange={(e) => setFile(e.target.files?.[0] || null)} />
                 </div>
@@ -542,7 +781,7 @@ export default function Upload() {
                   <div className="up-file-chosen">
                     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
                     <span style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{file.name}</span>
-                    <button onClick={() => { setFile(null); if (fileInputRef.current) fileInputRef.current.value = ""; }} style={{ background: "none", border: "none", cursor: "pointer", padding: "2px", display: "flex", alignItems: "center", color: "#a1a1aa", flexShrink: 0, borderRadius: "4px" }} onMouseEnter={e => (e.currentTarget.style.color = "#ef4444")} onMouseLeave={e => (e.currentTarget.style.color = "#a1a1aa")}>
+                    <button onClick={() => { setFile(null); if (fileInputRef.current) fileInputRef.current.value = ""; }} style={{ background: "none", border: "none", cursor: "pointer", padding: "4px", display: "flex", alignItems: "center", color: "#a1a1aa", flexShrink: 0, borderRadius: "4px" }} onMouseEnter={e => (e.currentTarget.style.color = "#ef4444")} onMouseLeave={e => (e.currentTarget.style.color = "#a1a1aa")}>
                       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                     </button>
                   </div>
@@ -575,7 +814,7 @@ export default function Upload() {
                     <label className="up-label" style={{ marginBottom: 8 }}>Price <span className="req">*</span></label>
                     <div style={{ position: "relative" }}>
                       <span className="up-price-symbol">₹</span>
-                      <input className="up-input up-price-input" type="number" placeholder="0" value={price} onChange={(e) => setPrice(e.target.value)} min="0" step="0.01" />
+                      <input className="up-input up-price-input" type="number" inputMode="decimal" placeholder="0" value={price} onChange={(e) => setPrice(e.target.value)} min="0" step="0.01" />
                     </div>
                   </div>
                 )}
@@ -590,20 +829,20 @@ export default function Upload() {
               </div>
               <div className="up-card-body">
                 <p className="up-hint" style={{ marginBottom: 14 }}>
-                  Upload a thumbnail of your product. Recommended size: <strong>1280×720px</strong> (16:9 ratio), JPG or PNG.
+                  Recommended size: <strong>1280×720px</strong> (16:9), JPG or PNG.
                 </p>
                 <div className="up-dropzone" onClick={() => thumbInputRef.current?.click()}>
                   <div className="up-dropzone-icon">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/></svg>
                   </div>
-                  <p>Drag it here, or <a onClick={(e) => e.stopPropagation()}>click to browse</a></p>
+                  <p>Tap to choose image</p>
                   <p className="up-dropzone-sub">Supports JPEG, PNG, GIF, WEBP</p>
                   <input ref={thumbInputRef} type="file" accept="image/jpeg,image/png,image/gif,image/webp" style={{ display: "none" }} onChange={handleThumbChange} />
                 </div>
                 {thumbPreview && (
                   <div style={{ position: "relative", marginTop: 12 }}>
                     <img src={thumbPreview} alt="Thumbnail preview" className="up-thumb-preview" />
-                    <button onClick={() => { setThumb(null); setThumbPreview(null); if (thumbInputRef.current) thumbInputRef.current.value = ""; }} style={{ position: "absolute", top: 8, right: 8, background: "rgba(0,0,0,0.6)", border: "none", borderRadius: "50%", width: 28, height: 28, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: "white", backdropFilter: "blur(4px)" }}>
+                    <button onClick={() => { setThumb(null); setThumbPreview(null); if (thumbInputRef.current) thumbInputRef.current.value = ""; }} style={{ position: "absolute", top: 8, right: 8, background: "rgba(0,0,0,0.6)", border: "none", borderRadius: "50%", width: 32, height: 32, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: "white", backdropFilter: "blur(4px)" }}>
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                     </button>
                   </div>
@@ -623,10 +862,15 @@ export default function Upload() {
         </div>
 
         {/* ── LIVE PREVIEW ── */}
-        <div className="preview-panel">
+        <div className={`preview-panel ${showPreview ? "mobile-open" : ""}`}>
           <div className="preview-header">
             <h3>Preview</h3>
-            <span className="preview-live-dot">Live</span>
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <span className="preview-live-dot">Live</span>
+              <button className="preview-close-btn" onClick={() => setShowPreview(false)}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              </button>
+            </div>
           </div>
           <div className="preview-body">
             <div className="pv-card">
