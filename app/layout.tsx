@@ -109,6 +109,13 @@ export default function RootLayout({
             `,
           }}
         />
+        <script
+          async
+          defer
+          src="https://www.faurya.com/js/script.js"
+          data-website-id="cmn7joa18001gl4048to5u9tu"
+          data-domain="www.zelteb.com"
+        />
       </head>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         {children}
