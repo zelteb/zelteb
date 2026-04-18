@@ -26,6 +26,11 @@ export default function Profile() {
   const [saved, setSaved] = useState(false);
   const [usernameError, setUsernameError] = useState("");
 
+  // Social links
+  const [instagram, setInstagram] = useState("");
+  const [youtube, setYoutube] = useState("");
+  const [twitter, setTwitter] = useState("");
+
   useEffect(() => {
     const load = async () => {
       const { data: auth } = await supabase.auth.getUser();
@@ -43,6 +48,9 @@ export default function Profile() {
         setBio(profile.bio || "");
         setAvatarUrl(profile.avatar_url || null);
         setCoverUrl(profile.cover_url || null);
+        setInstagram(profile.instagram || "");
+        setYoutube(profile.youtube || "");
+        setTwitter(profile.twitter || "");
       }
       setLoading(false);
     };
@@ -110,6 +118,17 @@ export default function Profile() {
     }
   };
 
+  // Strip full URLs down to just the handle/username
+  const cleanHandle = (value: string, platform: "instagram" | "youtube" | "twitter") => {
+    const patterns: Record<string, RegExp> = {
+      instagram: /(?:instagram\.com\/)?@?([A-Za-z0-9_.]+)/,
+      youtube: /(?:youtube\.com\/(?:@|c\/|user\/|channel\/))?@?([A-Za-z0-9_.-]+)/,
+      twitter: /(?:(?:twitter|x)\.com\/)?@?([A-Za-z0-9_]+)/,
+    };
+    const match = value.match(patterns[platform]);
+    return match ? match[1] : value;
+  };
+
   const save = async () => {
     if (!username.trim()) { setUsernameError("Username is required"); return; }
     if (usernameError) return;
@@ -120,6 +139,9 @@ export default function Profile() {
         username: username.trim().toLowerCase(),
         full_name: fullName.trim(),
         bio,
+        instagram: cleanHandle(instagram.trim(), "instagram"),
+        youtube: cleanHandle(youtube.trim(), "youtube"),
+        twitter: cleanHandle(twitter.trim(), "twitter"),
         updated_at: new Date().toISOString(),
       }).eq("id", user.id);
 
@@ -152,9 +174,43 @@ export default function Profile() {
   const inputClass =
     "w-full border border-gray-300 rounded-xl px-4 py-3 text-base sm:text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-black transition-shadow";
 
+  // Social input with a branded prefix badge
+  const SocialInput = ({
+    icon,
+    prefix,
+    value,
+    onChange,
+    placeholder,
+    bgColor,
+    textColor,
+  }: {
+    icon: React.ReactNode;
+    prefix: string;
+    value: string;
+    onChange: (v: string) => void;
+    placeholder: string;
+    bgColor: string;
+    textColor: string;
+  }) => (
+    <div className="flex rounded-xl border border-gray-300 overflow-hidden focus-within:ring-2 focus-within:ring-black transition-shadow">
+      <div className={`flex items-center gap-1.5 px-3 ${bgColor} border-r border-gray-300 shrink-0`}>
+        <span className={`${textColor}`}>{icon}</span>
+        <span className={`text-xs font-medium ${textColor} hidden sm:inline`}>{prefix}</span>
+      </div>
+      <input
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        autoCapitalize="none"
+        autoCorrect="off"
+        spellCheck={false}
+        className="flex-1 px-3 py-3 text-base sm:text-sm text-gray-900 placeholder-gray-400 focus:outline-none bg-white min-w-0"
+      />
+    </div>
+  );
+
   return (
     <div className="min-h-screen bg-[#f9f9f8]">
-      {/* Extra bottom padding so save button clears mobile nav bars */}
       <div className="max-w-2xl mx-auto px-4 sm:px-6 py-8 sm:py-12 space-y-4 pb-24 sm:pb-12">
 
         <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Profile</h1>
@@ -207,7 +263,6 @@ export default function Profile() {
 
           <div className="flex items-center gap-4">
             <div className="relative group shrink-0">
-              {/* Slightly larger avatar tap area on mobile */}
               <div className="w-20 h-20 sm:w-20 sm:h-20 rounded-2xl bg-gray-200 overflow-hidden border border-gray-200">
                 {displayAvatar ? (
                   <Image
@@ -303,6 +358,68 @@ export default function Profile() {
               onChange={(e) => setBio(e.target.value)}
               placeholder="Tell your audience about yourself..."
               className="w-full border border-gray-300 rounded-xl px-4 py-3 text-base sm:text-sm text-gray-900 placeholder-gray-400 h-28 resize-none focus:outline-none focus:ring-2 focus:ring-black"
+            />
+          </div>
+        </div>
+
+        {/* ── Social Links ── */}
+        <div className="bg-white border border-gray-200 rounded-2xl p-5 space-y-5">
+          <div>
+            <p className="text-sm font-bold text-gray-900">Social Links</p>
+            <p className="text-xs text-gray-400 mt-0.5">These will appear on your public profile.</p>
+          </div>
+
+          {/* Instagram */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">Instagram</label>
+            <SocialInput
+              icon={
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
+                </svg>
+              }
+              prefix="instagram.com/"
+              value={instagram}
+              onChange={setInstagram}
+              placeholder="yourhandle"
+              bgColor="bg-rose-50"
+              textColor="text-rose-500"
+            />
+          </div>
+
+          {/* YouTube */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">YouTube</label>
+            <SocialInput
+              icon={
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+                </svg>
+              }
+              prefix="youtube.com/@"
+              value={youtube}
+              onChange={setYoutube}
+              placeholder="yourchannel"
+              bgColor="bg-red-50"
+              textColor="text-red-600"
+            />
+          </div>
+
+          {/* X / Twitter */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">X (Twitter)</label>
+            <SocialInput
+              icon={
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+                </svg>
+              }
+              prefix="x.com/"
+              value={twitter}
+              onChange={setTwitter}
+              placeholder="yourhandle"
+              bgColor="bg-gray-100"
+              textColor="text-gray-800"
             />
           </div>
         </div>
