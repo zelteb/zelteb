@@ -1,36 +1,44 @@
-import { createClient } from "@supabase/supabase-js";
+import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 
-export async function POST(req: Request) {
+export async function GET() {
   try {
-    const cookieStore = await cookies(); // ✅ FIX
+    const cookieStore = await cookies();
 
-    const userId = cookieStore.get("sb-user")?.value;
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          get(name) {
+            return cookieStore.get(name)?.value;
+          },
+          set() {},
+          remove() {},
+        },
+      }
+    );
 
-    if (!userId) {
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
+
+    if (userError || !user) {
       return Response.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const body = await req.json();
-
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!
-    );
-
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from("payouts")
-      .upsert({
-        user_id: userId,
-        account_holder: body.account_holder,
-        ifsc: body.ifsc,
-        upi_id: body.upi_id || null,
-        account_number_encrypted: body.account_number || null,
-      });
+      .select("*")
+      .eq("user_id", user.id)
+      .maybeSingle();
 
-    if (error) throw error;
+    if (error) {
+      return Response.json({ error: error.message }, { status: 500 });
+    }
 
-    return Response.json({ success: true });
+    return Response.json({ data });
   } catch (e: any) {
     return Response.json({ error: e.message }, { status: 500 });
   }
