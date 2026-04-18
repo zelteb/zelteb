@@ -82,9 +82,11 @@ function CoverPhoto({ profile, isOwner, pending, inputRef, onChange }: {
 }) {
   const [hovered, setHovered] = useState(false);
   return (
-    <div className="relative w-full h-56 md:h-72 bg-stone-300"
+    <div
+      className="relative w-full h-56 md:h-72 bg-stone-300"
       onMouseEnter={() => isOwner && setHovered(true)}
-      onMouseLeave={() => setHovered(false)}>
+      onMouseLeave={() => setHovered(false)}
+    >
       <div className="absolute inset-0 overflow-hidden">
         {profile.cover_url
           ? <Image src={profile.cover_url} alt="Cover photo" fill className="object-cover" priority unoptimized />
@@ -92,13 +94,20 @@ function CoverPhoto({ profile, isOwner, pending, inputRef, onChange }: {
       </div>
       {isOwner && (
         <>
-          <div className="absolute inset-0 transition-colors duration-200 pointer-events-none"
-            style={{ backgroundColor: hovered ? "rgba(0,0,0,0.3)" : "transparent" }} />
-          <div className="absolute bottom-3 right-3 z-10 flex items-center gap-2 transition-opacity duration-200"
-            style={{ opacity: hovered ? 1 : 0 }}>
+          <div
+            className="absolute inset-0 transition-colors duration-200 pointer-events-none"
+            style={{ backgroundColor: hovered ? "rgba(0,0,0,0.3)" : "transparent" }}
+          />
+          <div
+            className="absolute bottom-3 right-3 z-10 flex items-center gap-2 transition-opacity duration-200"
+            style={{ opacity: hovered ? 1 : 0 }}
+          >
             <UploadHint label="16 : 5  ·  1600 × 500 px" />
-            <button onClick={() => inputRef.current?.click()} disabled={pending}
-              className="flex items-center gap-1.5 bg-white/90 hover:bg-white text-gray-800 text-xs font-medium px-3 py-1.5 rounded-full shadow-md transition-colors disabled:opacity-60 cursor-pointer">
+            <button
+              onClick={() => inputRef.current?.click()}
+              disabled={pending}
+              className="flex items-center gap-1.5 bg-white/90 hover:bg-white text-gray-800 text-xs font-medium px-3 py-1.5 rounded-full shadow-md transition-colors disabled:opacity-60 cursor-pointer"
+            >
               {pending ? <Loader2 size={14} className="animate-spin" /> : <ImagePlus size={14} />}
               {pending ? "Uploading…" : "Change cover"}
             </button>
@@ -118,31 +127,40 @@ function AvatarPhoto({ profile, isOwner, pending, inputRef, onChange }: {
 }) {
   const [hovered, setHovered] = useState(false);
   return (
-    <div className="relative"
+    <div
+      className="relative"
       onMouseEnter={() => isOwner && setHovered(true)}
-      onMouseLeave={() => setHovered(false)}>
+      onMouseLeave={() => setHovered(false)}
+    >
       <div className="w-28 h-28 md:w-36 md:h-36 rounded-2xl border-4 border-white bg-white shadow-xl overflow-hidden">
         {profile.avatar_url
           ? <Image src={profile.avatar_url} alt={profile.username} width={144} height={144} className="object-cover w-full h-full" unoptimized />
           : <div className="w-full h-full flex items-center justify-center bg-stone-800">
-            <span className="text-4xl font-bold text-amber-400 uppercase tracking-widest">
-              {profile.username?.charAt(0) ?? "?"}
-            </span>
-          </div>}
+              <span className="text-4xl font-bold text-amber-400 uppercase tracking-widest">
+                {profile.username?.charAt(0) ?? "?"}
+              </span>
+            </div>}
       </div>
       {isOwner && (
         <>
-          <div className="absolute inset-0 rounded-2xl flex items-center justify-center transition-colors duration-200"
-            style={{ backgroundColor: hovered ? "rgba(0,0,0,0.42)" : "transparent" }}>
-            <button onClick={() => inputRef.current?.click()} disabled={pending}
+          <div
+            className="absolute inset-0 rounded-2xl flex items-center justify-center transition-colors duration-200"
+            style={{ backgroundColor: hovered ? "rgba(0,0,0,0.42)" : "transparent" }}
+          >
+            <button
+              onClick={() => inputRef.current?.click()}
+              disabled={pending}
               title="Upload profile photo"
               className="bg-white/90 hover:bg-white text-gray-800 p-2 rounded-full shadow-md disabled:opacity-60 cursor-pointer transition-opacity duration-200"
-              style={{ opacity: hovered ? 1 : 0 }}>
+              style={{ opacity: hovered ? 1 : 0 }}
+            >
               {pending ? <Loader2 size={18} className="animate-spin" /> : <Camera size={18} />}
             </button>
           </div>
-          <div className="absolute -bottom-7 left-1/2 -translate-x-1/2 pointer-events-none transition-opacity duration-200 whitespace-nowrap"
-            style={{ opacity: hovered ? 1 : 0 }}>
+          <div
+            className="absolute -bottom-7 left-1/2 -translate-x-1/2 pointer-events-none transition-opacity duration-200 whitespace-nowrap"
+            style={{ opacity: hovered ? 1 : 0 }}
+          >
             <UploadHint label="1 : 1  ·  400 × 400 px" />
           </div>
           <input ref={inputRef} type="file" accept="image/*" className="hidden" onChange={onChange} />
@@ -169,18 +187,22 @@ function SocialLinksModal({ profile, onClose, onSave }: {
   }
 
   const fields = [
-    { label: "YouTube", icon: <YoutubeIcon size={16} />, color: "text-red-500", value: youtube, setValue: setYoutube, placeholder: "https://youtube.com/@yourchannel" },
-    { label: "Instagram", icon: <InstagramIcon size={16} />, color: "text-pink-500", value: instagram, setValue: setInstagram, placeholder: "https://instagram.com/yourusername" },
-    { label: "X / Twitter", icon: <XIcon size={16} />, color: "text-gray-800", value: x, setValue: setX, placeholder: "https://x.com/yourusername" },
+    { label: "YouTube",     icon: <YoutubeIcon size={16} />,   color: "text-red-500",  value: youtube,   setValue: setYoutube,   placeholder: "https://youtube.com/@yourchannel" },
+    { label: "Instagram",   icon: <InstagramIcon size={16} />, color: "text-pink-500", value: instagram, setValue: setInstagram, placeholder: "https://instagram.com/yourusername" },
+    { label: "X / Twitter", icon: <XIcon size={16} />,         color: "text-gray-800", value: x,         setValue: setX,         placeholder: "https://x.com/yourusername" },
   ];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4"
-      onClick={(e) => e.target === e.currentTarget && onClose()}>
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4"
+      onClick={(e) => e.target === e.currentTarget && onClose()}
+    >
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden">
         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
           <h2 className="text-base font-semibold text-gray-900">Social Links</h2>
-          <button onClick={onClose} className="p-1.5 rounded-full hover:bg-gray-100 text-gray-500 transition-colors"><X size={16} /></button>
+          <button onClick={onClose} className="p-1.5 rounded-full hover:bg-gray-100 text-gray-500 transition-colors">
+            <X size={16} />
+          </button>
         </div>
         <div className="px-5 py-5 flex flex-col gap-4">
           {fields.map(({ label, icon, color, value, setValue, placeholder }) => (
@@ -190,17 +212,31 @@ function SocialLinksModal({ profile, onClose, onSave }: {
               </label>
               <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 focus-within:ring-2 focus-within:ring-amber-400 focus-within:border-transparent transition-all">
                 <LinkIcon size={12} className="text-gray-400 flex-shrink-0" />
-                <input type="url" value={value} onChange={(e) => setValue(e.target.value)} placeholder={placeholder}
-                  className="flex-1 text-sm text-gray-800 bg-transparent outline-none placeholder:text-gray-300" />
-                {value && <button onClick={() => setValue("")} className="text-gray-400 hover:text-gray-600 flex-shrink-0"><X size={12} /></button>}
+                <input
+                  type="url"
+                  value={value}
+                  onChange={(e) => setValue(e.target.value)}
+                  placeholder={placeholder}
+                  className="flex-1 text-sm text-gray-800 bg-transparent outline-none placeholder:text-gray-300"
+                />
+                {value && (
+                  <button onClick={() => setValue("")} className="text-gray-400 hover:text-gray-600 flex-shrink-0">
+                    <X size={12} />
+                  </button>
+                )}
               </div>
             </div>
           ))}
         </div>
         <div className="px-5 pb-5 flex justify-end gap-2">
-          <button onClick={onClose} className="text-sm text-gray-500 hover:text-gray-800 px-4 py-2 rounded-xl hover:bg-gray-100 transition-colors">Cancel</button>
-          <button onClick={handleSave} disabled={saving}
-            className="flex items-center gap-2 text-sm bg-gray-900 text-white px-5 py-2 rounded-xl hover:bg-gray-700 transition-colors disabled:opacity-60">
+          <button onClick={onClose} className="text-sm text-gray-500 hover:text-gray-800 px-4 py-2 rounded-xl hover:bg-gray-100 transition-colors">
+            Cancel
+          </button>
+          <button
+            onClick={handleSave}
+            disabled={saving}
+            className="flex items-center gap-2 text-sm bg-gray-900 text-white px-5 py-2 rounded-xl hover:bg-gray-700 transition-colors disabled:opacity-60"
+          >
             {saving && <Loader2 size={13} className="animate-spin" />}
             {saving ? "Saving…" : "Save links"}
           </button>
@@ -211,8 +247,6 @@ function SocialLinksModal({ profile, onClose, onSave }: {
 }
 
 // ── Social Icons Row ──────────────────────────────────────────────────────────
-// Only shows icons for platforms that have a saved URL.
-// For owners with no links saved yet, shows dashed placeholders to prompt adding.
 function SocialIconsRow({ profile, isOwner, onEditClick }: {
   profile: Profile; isOwner: boolean; onEditClick: () => void;
 }) {
@@ -220,35 +254,33 @@ function SocialIconsRow({ profile, isOwner, onEditClick }: {
     {
       key: "youtube",
       url: profile.youtube_url,
-      icon: <YoutubeIcon size={19} />,
+      icon: <YoutubeIcon size={24} />,
       label: "YouTube",
-      activeClass: "text-red-500 hover:bg-red-50 hover:border-red-100",
+      activeClass: "text-red-500 hover:bg-red-50 hover:border-red-200",
     },
     {
       key: "instagram",
       url: profile.instagram_url,
-      icon: <InstagramIcon size={19} />,
+      icon: <InstagramIcon size={24} />,
       label: "Instagram",
-      activeClass: "text-pink-500 hover:bg-pink-50 hover:border-pink-100",
+      activeClass: "text-pink-500 hover:bg-pink-50 hover:border-pink-200",
     },
     {
       key: "x",
       url: profile.x_url,
-      icon: <XIcon size={19} />,
+      icon: <XIcon size={22} />,
       label: "X / Twitter",
-      activeClass: "text-gray-800 hover:bg-gray-100 hover:border-gray-200",
+      activeClass: "text-gray-800 hover:bg-gray-100 hover:border-gray-300",
     },
   ];
 
   const hasAnyLink = savedLinks.some((l) => !!l.url);
 
-  // Visitors: show nothing if no links at all
   if (!isOwner && !hasAnyLink) return null;
 
   return (
-    <div className="flex items-center justify-center gap-2 mt-3">
+    <div className="flex items-center justify-center gap-3 mt-4">
       {savedLinks.map(({ key, url, icon, label, activeClass }) => {
-        // Always show saved link icons (for both owner and visitor)
         if (url) {
           return (
             <a
@@ -257,21 +289,20 @@ function SocialIconsRow({ profile, isOwner, onEditClick }: {
               target="_blank"
               rel="noopener noreferrer"
               title={`Visit ${label}`}
-              className={`flex items-center justify-center w-9 h-9 rounded-xl border border-gray-100 bg-white shadow-sm transition-all duration-150 ${activeClass}`}
+              className={`flex items-center justify-center w-11 h-11 rounded-xl border border-gray-200 bg-white shadow-sm transition-all duration-150 ${activeClass}`}
             >
               {icon}
             </a>
           );
         }
 
-        // Owner only: show dashed placeholder for unsaved platforms
         if (isOwner) {
           return (
             <button
               key={key}
               onClick={onEditClick}
               title={`Add ${label} link`}
-              className="flex items-center justify-center w-9 h-9 rounded-xl border border-dashed border-gray-200 bg-white text-gray-300 hover:border-amber-400 hover:text-amber-400 transition-all duration-150"
+              className="flex items-center justify-center w-11 h-11 rounded-xl border border-dashed border-gray-200 bg-white text-gray-300 hover:border-amber-400 hover:text-amber-400 transition-all duration-150"
             >
               {icon}
             </button>
@@ -281,14 +312,13 @@ function SocialIconsRow({ profile, isOwner, onEditClick }: {
         return null;
       })}
 
-      {/* Edit pencil button — only shown to owner when at least one link is saved */}
       {isOwner && hasAnyLink && (
         <button
           onClick={onEditClick}
           title="Edit social links"
-          className="flex items-center justify-center w-9 h-9 rounded-xl border border-gray-100 bg-white text-gray-400 shadow-sm hover:text-gray-700 hover:bg-gray-50 transition-all duration-150"
+          className="flex items-center justify-center w-11 h-11 rounded-xl border border-gray-200 bg-white text-gray-400 shadow-sm hover:text-gray-700 hover:bg-gray-50 transition-all duration-150"
         >
-          <Pencil size={14} />
+          <Pencil size={16} />
         </button>
       )}
     </div>
@@ -308,23 +338,29 @@ function ShareModal({ profile, onClose }: { profile: Profile; onClose: () => voi
 
   const shareLinks = [
     { label: "Twitter / X", icon: Twitter, href: `https://twitter.com/intent/tweet?url=${encodeURIComponent(profileUrl)}&text=Check out ${profile.full_name ?? profile.username}!`, color: "hover:bg-sky-50 hover:text-sky-600 hover:border-sky-200" },
-    { label: "Facebook", icon: Facebook, href: `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(profileUrl)}`, color: "hover:bg-blue-50 hover:text-blue-600 hover:border-blue-200" },
-    { label: "Email", icon: Mail, href: `mailto:?subject=Check out ${profile.full_name ?? profile.username}&body=${encodeURIComponent(profileUrl)}`, color: "hover:bg-amber-50 hover:text-amber-600 hover:border-amber-200" },
+    { label: "Facebook",    icon: Facebook, href: `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(profileUrl)}`, color: "hover:bg-blue-50 hover:text-blue-600 hover:border-blue-200" },
+    { label: "Email",       icon: Mail,     href: `mailto:?subject=Check out ${profile.full_name ?? profile.username}&body=${encodeURIComponent(profileUrl)}`, color: "hover:bg-amber-50 hover:text-amber-600 hover:border-amber-200" },
   ];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4"
-      onClick={(e) => e.target === e.currentTarget && onClose()}>
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4"
+      onClick={(e) => e.target === e.currentTarget && onClose()}
+    >
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden">
         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
           <h2 className="text-base font-semibold text-gray-900">Share this profile</h2>
-          <button onClick={onClose} className="p-1.5 rounded-full hover:bg-gray-100 text-gray-500 transition-colors"><X size={16} /></button>
+          <button onClick={onClose} className="p-1.5 rounded-full hover:bg-gray-100 text-gray-500 transition-colors">
+            <X size={16} />
+          </button>
         </div>
         <div className="flex items-center gap-3 px-5 py-4 bg-stone-50 border-b border-gray-100">
           <div className="w-10 h-10 rounded-xl overflow-hidden flex-shrink-0 bg-stone-800">
             {profile.avatar_url
               ? <Image src={profile.avatar_url} alt={profile.username} width={40} height={40} className="object-cover w-full h-full" unoptimized />
-              : <div className="w-full h-full flex items-center justify-center"><span className="text-sm font-bold text-amber-400 uppercase">{profile.username?.charAt(0) ?? "?"}</span></div>}
+              : <div className="w-full h-full flex items-center justify-center">
+                  <span className="text-sm font-bold text-amber-400 uppercase">{profile.username?.charAt(0) ?? "?"}</span>
+                </div>}
           </div>
           <div>
             <p className="text-sm font-semibold text-gray-900">{profile.full_name ?? profile.username}</p>
@@ -335,8 +371,10 @@ function ShareModal({ profile, onClose }: { profile: Profile; onClose: () => voi
           <p className="text-xs text-gray-500 font-medium uppercase tracking-wide mb-2">Page link</p>
           <div className="flex gap-2">
             <div className="flex-1 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-xs text-gray-600 truncate font-mono">{profileUrl}</div>
-            <button onClick={copyLink}
-              className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition-all border ${copied ? "bg-green-50 text-green-600 border-green-200" : "bg-gray-900 text-white border-gray-900 hover:bg-gray-700"}`}>
+            <button
+              onClick={copyLink}
+              className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition-all border ${copied ? "bg-green-50 text-green-600 border-green-200" : "bg-gray-900 text-white border-gray-900 hover:bg-gray-700"}`}
+            >
               {copied ? <Check size={13} /> : <LinkIcon size={13} />}
               {copied ? "Copied!" : "Copy"}
             </button>
@@ -346,8 +384,13 @@ function ShareModal({ profile, onClose }: { profile: Profile; onClose: () => voi
           <p className="text-xs text-gray-500 font-medium uppercase tracking-wide mb-3">Share on</p>
           <div className="flex flex-col gap-2">
             {shareLinks.map(({ label, icon: Icon, href, color }) => (
-              <a key={label} href={href} target="_blank" rel="noopener noreferrer"
-                className={`flex items-center gap-2.5 px-3 py-2.5 rounded-xl border border-gray-100 text-sm text-gray-700 transition-all ${color}`}>
+              <a
+                key={label}
+                href={href}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={`flex items-center gap-2.5 px-3 py-2.5 rounded-xl border border-gray-100 text-sm text-gray-700 transition-all ${color}`}
+              >
                 <Icon size={15} />{label}
               </a>
             ))}
@@ -361,14 +404,16 @@ function ShareModal({ profile, onClose }: { profile: Profile; onClose: () => voi
 // ── Product Card ──────────────────────────────────────────────────────────────
 function ProductCard({ product }: { product: Product }) {
   return (
-    <Link href={`/watch/${product.id}`}
-      className="group block bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
+    <Link
+      href={`/watch/${product.id}`}
+      className="group block bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden hover:shadow-md hover:-translate-y-0.5 transition-all duration-200"
+    >
       <div className="w-full aspect-video bg-gray-900 overflow-hidden relative">
         {product.thumbnail_url
           ? <img src={product.thumbnail_url} alt={product.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
           : <div className="w-full h-full flex items-center justify-center text-3xl">
-            {product.product_type === "video" ? "🎬" : "📁"}
-          </div>}
+              {product.product_type === "video" ? "🎬" : "📁"}
+            </div>}
         <span className="absolute top-2 left-2 text-[10px] font-semibold uppercase tracking-wider bg-black/60 text-white px-2 py-0.5 rounded-full backdrop-blur-sm">
           {product.product_type === "video" ? "Video" : "Digital"}
         </span>
@@ -409,8 +454,10 @@ function ProductsSection({ profile, products, isOwner, loading }: {
             {isOwner ? "You haven't created any products yet." : "No products yet."}
           </p>
           {isOwner && (
-            <Link href="/creator/upload"
-              className="inline-block mt-4 text-xs font-semibold bg-gray-900 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors">
+            <Link
+              href="/creator/upload"
+              className="inline-block mt-4 text-xs font-semibold bg-gray-900 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors"
+            >
               + Create your first product
             </Link>
           )}
@@ -468,13 +515,13 @@ export default function UserProfileClient({
           const updated = payload.new as Profile;
           setProfile((p) => ({
             ...p,
-            avatar_url: updated.avatar_url ?? p.avatar_url,
-            cover_url: updated.cover_url ?? p.cover_url,
-            full_name: updated.full_name ?? p.full_name,
-            bio: updated.bio ?? p.bio,
-            youtube_url: updated.youtube_url !== undefined ? updated.youtube_url : p.youtube_url,
+            avatar_url:    updated.avatar_url    ?? p.avatar_url,
+            cover_url:     updated.cover_url     ?? p.cover_url,
+            full_name:     updated.full_name     ?? p.full_name,
+            bio:           updated.bio           ?? p.bio,
+            youtube_url:   updated.youtube_url   !== undefined ? updated.youtube_url   : p.youtube_url,
             instagram_url: updated.instagram_url !== undefined ? updated.instagram_url : p.instagram_url,
-            x_url: updated.x_url !== undefined ? updated.x_url : p.x_url,
+            x_url:         updated.x_url         !== undefined ? updated.x_url         : p.x_url,
           }));
         })
       .subscribe();
@@ -533,9 +580,9 @@ export default function UserProfileClient({
 
   async function handleSocialSave(links: { youtube_url: string; instagram_url: string; x_url: string }) {
     const payload = {
-      youtube_url: links.youtube_url || null,
+      youtube_url:   links.youtube_url   || null,
       instagram_url: links.instagram_url || null,
-      x_url: links.x_url || null,
+      x_url:         links.x_url         || null,
     };
     await supabase.from("profiles").update(payload).eq("username", profile.username);
     setProfile((p) => ({ ...p, ...payload }));
@@ -549,38 +596,57 @@ export default function UserProfileClient({
       )}
 
       {/* Cover */}
-      <CoverPhoto profile={profile} isOwner={isOwner} pending={coverPending} inputRef={coverInputRef} onChange={handleCoverChange} />
+      <CoverPhoto
+        profile={profile}
+        isOwner={isOwner}
+        pending={coverPending}
+        inputRef={coverInputRef}
+        onChange={handleCoverChange}
+      />
 
       {/* Profile header */}
       <div className="max-w-2xl mx-auto px-4">
+
+        {/* Avatar row — floats up over the cover */}
         <div className="flex items-end justify-between -mt-16 md:-mt-20 relative z-10">
-          <div className="w-10" />
-          <AvatarPhoto profile={profile} isOwner={isOwner} pending={avatarPending} inputRef={avatarInputRef} onChange={handleAvatarChange} />
-          <div className="mb-1">
-            <button onClick={() => setShowShare(true)}
-              className="flex items-center gap-1.5 bg-white hover:bg-gray-50 text-gray-700 text-xs font-medium px-3 py-2 rounded-full shadow-md border border-gray-200 transition-colors">
+          <div className="w-16" />
+          <AvatarPhoto
+            profile={profile}
+            isOwner={isOwner}
+            pending={avatarPending}
+            inputRef={avatarInputRef}
+            onChange={handleAvatarChange}
+          />
+          <div className="mb-1 w-16 flex justify-end">
+            <button
+              onClick={() => setShowShare(true)}
+              className="flex items-center gap-1.5 bg-white hover:bg-gray-50 text-gray-700 text-xs font-medium px-3 py-2 rounded-full shadow-md border border-gray-200 transition-colors"
+            >
               <Share2 size={13} /> Share
             </button>
           </div>
         </div>
 
         {error && (
-          <p className="text-red-500 text-sm text-center mt-4 bg-red-50 border border-red-200 rounded-lg py-2 px-4">⚠️ {error}</p>
+          <p className="text-red-500 text-sm text-center mt-4 bg-red-50 border border-red-200 rounded-lg py-2 px-4">
+            ⚠️ {error}
+          </p>
         )}
 
-        {/* ── Name + Username + Social Icons ── */}
-        <div className="mt-10 text-center">
-          {/* Full name */}
-          <h1 className="text-2xl md:text-3xl font-bold text-gray-900 tracking-tight">
+        {/* ── Name + handle + social icons — stacked directly under avatar ── */}
+        <div className="mt-4 text-center">
+
+          {/* Full name — bold, prominent, right under the avatar */}
+          <h1 className="text-2xl md:text-3xl font-bold text-gray-900 tracking-tight leading-tight">
             {profile.full_name ?? profile.username}
           </h1>
 
-          {/* @username shown below name */}
+          {/* @username — softer, one line below */}
           <p className="mt-1 text-sm text-gray-400 font-medium tracking-wide">
             @{profile.username}
           </p>
 
-          {/* Social icons — only saved platforms show for visitors */}
+          {/* Social icons — larger (w-11 h-11, icon size 24), only saved platforms */}
           <SocialIconsRow
             profile={profile}
             isOwner={isOwner}
@@ -590,7 +656,12 @@ export default function UserProfileClient({
       </div>
 
       {/* Products */}
-      <ProductsSection profile={profile} products={products} isOwner={isOwner} loading={productsLoading} />
+      <ProductsSection
+        profile={profile}
+        products={products}
+        isOwner={isOwner}
+        loading={productsLoading}
+      />
     </div>
   );
 }
