@@ -16,7 +16,6 @@ export default function Profile() {
   const [fullName, setFullName] = useState("");
   const [bio, setBio] = useState("");
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
-  const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [avatarUploading, setAvatarUploading] = useState(false);
   const [coverUrl, setCoverUrl] = useState<string | null>(null);
@@ -26,7 +25,7 @@ export default function Profile() {
   const [saved, setSaved] = useState(false);
   const [usernameError, setUsernameError] = useState("");
 
-  // Social links
+  // Social links — stored as handles only, displayed with prefix
   const [instagram, setInstagram] = useState("");
   const [youtube, setYoutube] = useState("");
   const [twitter, setTwitter] = useState("");
@@ -48,9 +47,11 @@ export default function Profile() {
         setBio(profile.bio || "");
         setAvatarUrl(profile.avatar_url || null);
         setCoverUrl(profile.cover_url || null);
-        setInstagram(profile.instagram || "");
-        setYoutube(profile.youtube || "");
-        setTwitter(profile.twitter || "");
+
+        // Load handles by stripping the base URL if full URL was saved previously
+        setInstagram(extractHandle(profile.instagram_url || "", "instagram"));
+        setYoutube(extractHandle(profile.youtube_url || "", "youtube"));
+        setTwitter(extractHandle(profile.x_url || "", "x"));
       }
       setLoading(false);
     };
@@ -70,12 +71,37 @@ export default function Profile() {
     return () => clearTimeout(timeout);
   }, [username, user]);
 
+  // Extract just the handle from a full URL or raw handle input
+  function extractHandle(value: string, platform: "instagram" | "youtube" | "x"): string {
+    if (!value) return "";
+    const patterns: Record<string, RegExp> = {
+      instagram: /(?:instagram\.com\/)?@?([A-Za-z0-9_.]+)\/?$/,
+      youtube:   /(?:youtube\.com\/(?:@|c\/|user\/|channel\/))?@?([A-Za-z0-9_.-]+)\/?$/,
+      x:         /(?:(?:twitter|x)\.com\/)?@?([A-Za-z0-9_]+)\/?$/,
+    };
+    const match = value.match(patterns[platform]);
+    return match ? match[1] : value;
+  }
+
+  // Build full URLs to store in DB (so UserProfileClient can use them directly as hrefs)
+  function buildUrl(handle: string, platform: "instagram" | "youtube" | "x"): string | null {
+    const h = handle.trim();
+    if (!h) return null;
+    const clean = extractHandle(h, platform);
+    if (!clean) return null;
+    const bases: Record<string, string> = {
+      instagram: "https://instagram.com/",
+      youtube:   "https://youtube.com/@",
+      x:         "https://x.com/",
+    };
+    return bases[platform] + clean;
+  }
+
   const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     e.target.value = "";
     setAvatarPreview(URL.createObjectURL(file));
-    setAvatarFile(file);
     setAvatarUploading(true);
     try {
       const ext = file.name.split(".").pop();
@@ -118,17 +144,6 @@ export default function Profile() {
     }
   };
 
-  // Strip full URLs down to just the handle/username
-  const cleanHandle = (value: string, platform: "instagram" | "youtube" | "twitter") => {
-    const patterns: Record<string, RegExp> = {
-      instagram: /(?:instagram\.com\/)?@?([A-Za-z0-9_.]+)/,
-      youtube: /(?:youtube\.com\/(?:@|c\/|user\/|channel\/))?@?([A-Za-z0-9_.-]+)/,
-      twitter: /(?:(?:twitter|x)\.com\/)?@?([A-Za-z0-9_]+)/,
-    };
-    const match = value.match(patterns[platform]);
-    return match ? match[1] : value;
-  };
-
   const save = async () => {
     if (!username.trim()) { setUsernameError("Username is required"); return; }
     if (usernameError) return;
@@ -136,13 +151,14 @@ export default function Profile() {
     setSaved(false);
     try {
       const { error } = await supabase.from("profiles").update({
-        username: username.trim().toLowerCase(),
-        full_name: fullName.trim(),
+        username:      username.trim().toLowerCase(),
+        full_name:     fullName.trim(),
         bio,
-        instagram: cleanHandle(instagram.trim(), "instagram"),
-        youtube: cleanHandle(youtube.trim(), "youtube"),
-        twitter: cleanHandle(twitter.trim(), "twitter"),
-        updated_at: new Date().toISOString(),
+        // Save as full URLs — column names match UserProfileClient's Profile interface
+        instagram_url: buildUrl(instagram, "instagram"),
+        youtube_url:   buildUrl(youtube, "youtube"),
+        x_url:         buildUrl(twitter, "x"),
+        updated_at:    new Date().toISOString(),
       }).eq("id", user.id);
 
       if (error) {
@@ -174,7 +190,6 @@ export default function Profile() {
   const inputClass =
     "w-full border border-gray-300 rounded-xl px-4 py-3 text-base sm:text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-black transition-shadow";
 
-  // Social input with a branded prefix badge
   const SocialInput = ({
     icon,
     prefix,
@@ -194,7 +209,7 @@ export default function Profile() {
   }) => (
     <div className="flex rounded-xl border border-gray-300 overflow-hidden focus-within:ring-2 focus-within:ring-black transition-shadow">
       <div className={`flex items-center gap-1.5 px-3 ${bgColor} border-r border-gray-300 shrink-0`}>
-        <span className={`${textColor}`}>{icon}</span>
+        <span className={textColor}>{icon}</span>
         <span className={`text-xs font-medium ${textColor} hidden sm:inline`}>{prefix}</span>
       </div>
       <input
@@ -263,13 +278,9 @@ export default function Profile() {
 
           <div className="flex items-center gap-4">
             <div className="relative group shrink-0">
-              <div className="w-20 h-20 sm:w-20 sm:h-20 rounded-2xl bg-gray-200 overflow-hidden border border-gray-200">
+              <div className="w-20 h-20 rounded-2xl bg-gray-200 overflow-hidden border border-gray-200">
                 {displayAvatar ? (
-                  <Image
-                    src={displayAvatar} alt="Avatar"
-                    width={80} height={80}
-                    className="object-cover w-full h-full" unoptimized
-                  />
+                  <Image src={displayAvatar} alt="Avatar" width={80} height={80} className="object-cover w-full h-full" unoptimized />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center bg-gray-800">
                     <span className="text-2xl font-bold text-amber-400 uppercase">
@@ -310,11 +321,10 @@ export default function Profile() {
           <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarChange} />
         </div>
 
-        {/* ── Form fields ── */}
+        {/* ── Account Details ── */}
         <div className="bg-white border border-gray-200 rounded-2xl p-5 space-y-5">
           <p className="text-sm font-bold text-gray-900">Account Details</p>
 
-          {/* Full Name */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1.5">Full Name</label>
             <input
@@ -323,12 +333,9 @@ export default function Profile() {
               placeholder="Eg: Basil Biju"
               className={inputClass}
             />
-            <p className="text-xs text-gray-400 mt-1.5">
-              This is the name shown on your public profile page.
-            </p>
+            <p className="text-xs text-gray-400 mt-1.5">This is the name shown on your public profile page.</p>
           </div>
 
-          {/* Username */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1.5">Username</label>
             <input
@@ -342,15 +349,10 @@ export default function Profile() {
                 usernameError ? "border-red-400 focus:ring-red-200" : "border-gray-300 focus:ring-black"
               }`}
             />
-            {usernameError && (
-              <p className="text-red-500 text-xs mt-1.5">{usernameError}</p>
-            )}
-            <p className="text-xs text-gray-400 mt-1.5">
-              Your public URL: zelteb.com/{username || "username"}
-            </p>
+            {usernameError && <p className="text-red-500 text-xs mt-1.5">{usernameError}</p>}
+            <p className="text-xs text-gray-400 mt-1.5">Your public URL: zelteb.com/{username || "username"}</p>
           </div>
 
-          {/* Bio */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1.5">Bio</label>
             <textarea
@@ -369,7 +371,6 @@ export default function Profile() {
             <p className="text-xs text-gray-400 mt-0.5">These will appear on your public profile.</p>
           </div>
 
-          {/* Instagram */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1.5">Instagram</label>
             <SocialInput
@@ -387,7 +388,6 @@ export default function Profile() {
             />
           </div>
 
-          {/* YouTube */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1.5">YouTube</label>
             <SocialInput
@@ -405,7 +405,6 @@ export default function Profile() {
             />
           </div>
 
-          {/* X / Twitter */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1.5">X (Twitter)</label>
             <SocialInput
@@ -424,7 +423,6 @@ export default function Profile() {
           </div>
         </div>
 
-        {/* ── Save feedback ── */}
         {saved && (
           <div className="flex items-center gap-2 bg-green-50 border border-green-100 text-green-700 text-sm font-medium px-4 py-3 rounded-xl">
             <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
@@ -434,7 +432,6 @@ export default function Profile() {
           </div>
         )}
 
-        {/* ── Save button ── */}
         <button
           onClick={save}
           disabled={saving || !!usernameError}

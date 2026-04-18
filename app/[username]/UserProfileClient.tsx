@@ -53,7 +53,7 @@ function UploadHint({ label }: { label: string }) {
 function YoutubeIcon({ size = 18 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor">
-      <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+      <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z" />
     </svg>
   );
 }
@@ -61,7 +61,7 @@ function YoutubeIcon({ size = 18 }: { size?: number }) {
 function InstagramIcon({ size = 18 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor">
-      <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 1 0 0 12.324 6.162 6.162 0 0 0 0-12.324zM12 16a4 4 0 1 1 0-8 4 4 0 0 1 0 8zm6.406-11.845a1.44 1.44 0 1 0 0 2.881 1.44 1.44 0 0 0 0-2.881z"/>
+      <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 1 0 0 12.324 6.162 6.162 0 0 0 0-12.324zM12 16a4 4 0 1 1 0-8 4 4 0 0 1 0 8zm6.406-11.845a1.44 1.44 0 1 0 0 2.881 1.44 1.44 0 0 0 0-2.881z" />
     </svg>
   );
 }
@@ -69,7 +69,7 @@ function InstagramIcon({ size = 18 }: { size?: number }) {
 function XIcon({ size = 18 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor">
-      <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.746l7.73-8.835L1.254 2.25H8.08l4.253 5.622zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+      <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.746l7.73-8.835L1.254 2.25H8.08l4.253 5.622zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
     </svg>
   );
 }
@@ -125,10 +125,10 @@ function AvatarPhoto({ profile, isOwner, pending, inputRef, onChange }: {
         {profile.avatar_url
           ? <Image src={profile.avatar_url} alt={profile.username} width={144} height={144} className="object-cover w-full h-full" unoptimized />
           : <div className="w-full h-full flex items-center justify-center bg-stone-800">
-              <span className="text-4xl font-bold text-amber-400 uppercase tracking-widest">
-                {profile.username?.charAt(0) ?? "?"}
-              </span>
-            </div>}
+            <span className="text-4xl font-bold text-amber-400 uppercase tracking-widest">
+              {profile.username?.charAt(0) ?? "?"}
+            </span>
+          </div>}
       </div>
       {isOwner && (
         <>
@@ -169,9 +169,9 @@ function SocialLinksModal({ profile, onClose, onSave }: {
   }
 
   const fields = [
-    { label: "YouTube",     icon: <YoutubeIcon size={16} />,   color: "text-red-500",  value: youtube,   setValue: setYoutube,   placeholder: "https://youtube.com/@yourchannel" },
-    { label: "Instagram",   icon: <InstagramIcon size={16} />, color: "text-pink-500", value: instagram, setValue: setInstagram, placeholder: "https://instagram.com/yourusername" },
-    { label: "X / Twitter", icon: <XIcon size={16} />,         color: "text-gray-800", value: x,         setValue: setX,         placeholder: "https://x.com/yourusername" },
+    { label: "YouTube", icon: <YoutubeIcon size={16} />, color: "text-red-500", value: youtube, setValue: setYoutube, placeholder: "https://youtube.com/@yourchannel" },
+    { label: "Instagram", icon: <InstagramIcon size={16} />, color: "text-pink-500", value: instagram, setValue: setInstagram, placeholder: "https://instagram.com/yourusername" },
+    { label: "X / Twitter", icon: <XIcon size={16} />, color: "text-gray-800", value: x, setValue: setX, placeholder: "https://x.com/yourusername" },
   ];
 
   return (
@@ -211,38 +211,83 @@ function SocialLinksModal({ profile, onClose, onSave }: {
 }
 
 // ── Social Icons Row ──────────────────────────────────────────────────────────
+// Only shows icons for platforms that have a saved URL.
+// For owners with no links saved yet, shows dashed placeholders to prompt adding.
 function SocialIconsRow({ profile, isOwner, onEditClick }: {
   profile: Profile; isOwner: boolean; onEditClick: () => void;
 }) {
-  const hasAnyLink = !!(profile.youtube_url || profile.instagram_url || profile.x_url);
-  if (!isOwner && !hasAnyLink) return null;
-
-  const icons = [
-    { key: "youtube",   url: profile.youtube_url,   icon: <YoutubeIcon size={19} />,   label: "YouTube",   activeClass: "text-red-500 hover:bg-red-50 hover:border-red-100" },
-    { key: "instagram", url: profile.instagram_url, icon: <InstagramIcon size={19} />, label: "Instagram", activeClass: "text-pink-500 hover:bg-pink-50 hover:border-pink-100" },
-    { key: "x",         url: profile.x_url,         icon: <XIcon size={19} />,         label: "X",         activeClass: "text-gray-800 hover:bg-gray-100 hover:border-gray-200" },
+  const savedLinks = [
+    {
+      key: "youtube",
+      url: profile.youtube_url,
+      icon: <YoutubeIcon size={19} />,
+      label: "YouTube",
+      activeClass: "text-red-500 hover:bg-red-50 hover:border-red-100",
+    },
+    {
+      key: "instagram",
+      url: profile.instagram_url,
+      icon: <InstagramIcon size={19} />,
+      label: "Instagram",
+      activeClass: "text-pink-500 hover:bg-pink-50 hover:border-pink-100",
+    },
+    {
+      key: "x",
+      url: profile.x_url,
+      icon: <XIcon size={19} />,
+      label: "X / Twitter",
+      activeClass: "text-gray-800 hover:bg-gray-100 hover:border-gray-200",
+    },
   ];
+
+  const hasAnyLink = savedLinks.some((l) => !!l.url);
+
+  // Visitors: show nothing if no links at all
+  if (!isOwner && !hasAnyLink) return null;
 
   return (
     <div className="flex items-center justify-center gap-2 mt-3">
-      {icons.map(({ key, url, icon, label, activeClass }) => {
-        if (url) return (
-          <a key={key} href={url} target="_blank" rel="noopener noreferrer" title={`Visit ${label}`}
-            className={`flex items-center justify-center w-9 h-9 rounded-xl border border-gray-100 bg-white shadow-sm transition-all duration-150 ${activeClass}`}>
-            {icon}
-          </a>
-        );
-        if (isOwner) return (
-          <button key={key} onClick={onEditClick} title={`Add ${label} link`}
-            className="flex items-center justify-center w-9 h-9 rounded-xl border border-dashed border-gray-200 bg-white text-gray-300 hover:border-amber-400 hover:text-amber-400 transition-all duration-150">
-            {icon}
-          </button>
-        );
+      {savedLinks.map(({ key, url, icon, label, activeClass }) => {
+        // Always show saved link icons (for both owner and visitor)
+        if (url) {
+          return (
+            <a
+              key={key}
+              href={url}
+              target="_blank"
+              rel="noopener noreferrer"
+              title={`Visit ${label}`}
+              className={`flex items-center justify-center w-9 h-9 rounded-xl border border-gray-100 bg-white shadow-sm transition-all duration-150 ${activeClass}`}
+            >
+              {icon}
+            </a>
+          );
+        }
+
+        // Owner only: show dashed placeholder for unsaved platforms
+        if (isOwner) {
+          return (
+            <button
+              key={key}
+              onClick={onEditClick}
+              title={`Add ${label} link`}
+              className="flex items-center justify-center w-9 h-9 rounded-xl border border-dashed border-gray-200 bg-white text-gray-300 hover:border-amber-400 hover:text-amber-400 transition-all duration-150"
+            >
+              {icon}
+            </button>
+          );
+        }
+
         return null;
       })}
+
+      {/* Edit pencil button — only shown to owner when at least one link is saved */}
       {isOwner && hasAnyLink && (
-        <button onClick={onEditClick} title="Edit social links"
-          className="flex items-center justify-center w-9 h-9 rounded-xl border border-gray-100 bg-white text-gray-400 shadow-sm hover:text-gray-700 hover:bg-gray-50 transition-all duration-150">
+        <button
+          onClick={onEditClick}
+          title="Edit social links"
+          className="flex items-center justify-center w-9 h-9 rounded-xl border border-gray-100 bg-white text-gray-400 shadow-sm hover:text-gray-700 hover:bg-gray-50 transition-all duration-150"
+        >
           <Pencil size={14} />
         </button>
       )}
@@ -318,18 +363,16 @@ function ProductCard({ product }: { product: Product }) {
   return (
     <Link href={`/watch/${product.id}`}
       className="group block bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
-      {/* Thumbnail */}
       <div className="w-full aspect-video bg-gray-900 overflow-hidden relative">
         {product.thumbnail_url
           ? <img src={product.thumbnail_url} alt={product.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
           : <div className="w-full h-full flex items-center justify-center text-3xl">
-              {product.product_type === "video" ? "🎬" : "📁"}
-            </div>}
+            {product.product_type === "video" ? "🎬" : "📁"}
+          </div>}
         <span className="absolute top-2 left-2 text-[10px] font-semibold uppercase tracking-wider bg-black/60 text-white px-2 py-0.5 rounded-full backdrop-blur-sm">
           {product.product_type === "video" ? "Video" : "Digital"}
         </span>
       </div>
-      {/* Info */}
       <div className="p-4">
         <p className="text-sm font-semibold text-gray-900 leading-snug line-clamp-2 mb-3">{product.title}</p>
         <span
@@ -403,7 +446,6 @@ export default function UserProfileClient({
   const coverInputRef = useRef<HTMLInputElement>(null);
   const avatarInputRef = useRef<HTMLInputElement>(null);
 
-  // Fetch products client-side
   useEffect(() => {
     const fetchProducts = async () => {
       setProductsLoading(true);
@@ -418,7 +460,6 @@ export default function UserProfileClient({
     fetchProducts();
   }, [profile.id]);
 
-  // Real-time profile sync
   useEffect(() => {
     const channel = supabase
       .channel(`profile:${profile.username}`)
@@ -427,20 +468,19 @@ export default function UserProfileClient({
           const updated = payload.new as Profile;
           setProfile((p) => ({
             ...p,
-            avatar_url:    updated.avatar_url    ?? p.avatar_url,
-            cover_url:     updated.cover_url     ?? p.cover_url,
-            full_name:     updated.full_name     ?? p.full_name,
-            bio:           updated.bio           ?? p.bio,
-            youtube_url:   updated.youtube_url   !== undefined ? updated.youtube_url   : p.youtube_url,
+            avatar_url: updated.avatar_url ?? p.avatar_url,
+            cover_url: updated.cover_url ?? p.cover_url,
+            full_name: updated.full_name ?? p.full_name,
+            bio: updated.bio ?? p.bio,
+            youtube_url: updated.youtube_url !== undefined ? updated.youtube_url : p.youtube_url,
             instagram_url: updated.instagram_url !== undefined ? updated.instagram_url : p.instagram_url,
-            x_url:         updated.x_url         !== undefined ? updated.x_url         : p.x_url,
+            x_url: updated.x_url !== undefined ? updated.x_url : p.x_url,
           }));
         })
       .subscribe();
     return () => { supabase.removeChannel(channel); };
   }, [profile.username]);
 
-  // Real-time products sync — listen for new inserts
   useEffect(() => {
     const channel = supabase
       .channel(`products:${profile.id}`)
@@ -493,9 +533,9 @@ export default function UserProfileClient({
 
   async function handleSocialSave(links: { youtube_url: string; instagram_url: string; x_url: string }) {
     const payload = {
-      youtube_url:   links.youtube_url   || null,
+      youtube_url: links.youtube_url || null,
       instagram_url: links.instagram_url || null,
-      x_url:         links.x_url         || null,
+      x_url: links.x_url || null,
     };
     await supabase.from("profiles").update(payload).eq("username", profile.username);
     setProfile((p) => ({ ...p, ...payload }));
@@ -528,15 +568,28 @@ export default function UserProfileClient({
           <p className="text-red-500 text-sm text-center mt-4 bg-red-50 border border-red-200 rounded-lg py-2 px-4">⚠️ {error}</p>
         )}
 
+        {/* ── Name + Username + Social Icons ── */}
         <div className="mt-10 text-center">
+          {/* Full name */}
           <h1 className="text-2xl md:text-3xl font-bold text-gray-900 tracking-tight">
             {profile.full_name ?? profile.username}
           </h1>
-          <SocialIconsRow profile={profile} isOwner={isOwner} onEditClick={() => setShowSocialEdit(true)} />
+
+          {/* @username shown below name */}
+          <p className="mt-1 text-sm text-gray-400 font-medium tracking-wide">
+            @{profile.username}
+          </p>
+
+          {/* Social icons — only saved platforms show for visitors */}
+          <SocialIconsRow
+            profile={profile}
+            isOwner={isOwner}
+            onEditClick={() => setShowSocialEdit(true)}
+          />
         </div>
       </div>
 
-      {/* Products — no tabs, shown directly */}
+      {/* Products */}
       <ProductsSection profile={profile} products={products} isOwner={isOwner} loading={productsLoading} />
     </div>
   );
