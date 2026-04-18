@@ -3,16 +3,18 @@ import { cookies } from "next/headers";
 
 export async function GET() {
   try {
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!
-    );
+    const cookieStore = await cookies(); // ✅ FIX
 
-    const userId = cookies().get("sb-user")?.value;
+    const userId = cookieStore.get("sb-user")?.value;
 
     if (!userId) {
       return Response.json({ error: "Unauthorized" }, { status: 401 });
     }
+
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    );
 
     const { data, error } = await supabase
       .from("payouts")
