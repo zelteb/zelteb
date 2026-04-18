@@ -402,7 +402,7 @@
           {/* ── Transactions ── */}
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
             <div className="px-4 sm:px-6 py-4 border-b border-gray-100 flex items-center justify-between">
-              <h2 className="text-sm sm:text-base font-bold text-gray-900">Recent Purchases</h2>
+              <h2 className="text-sm sm:text-base font-bold text-gray-900">Recent Earnings</h2>
               {filteredPurchases.length > 0 && (
                 <span className="text-xs text-gray-400 font-medium">
                   {filteredPurchases.length} transaction{filteredPurchases.length !== 1 ? "s" : ""}
