@@ -10,7 +10,6 @@ export default function Sidebar() {
   const pathname = usePathname();
   const [user, setUser] = useState<any>(null);
   const [username, setUsername] = useState<string | null>(null);
-  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [isOpen, setIsOpen] = useState(false);
 
   useEffect(() => {
@@ -25,17 +24,19 @@ export default function Sidebar() {
 
       const { data: profile } = await supabase
         .from("profiles")
-        .select("username, avatar_url")
+        .select("username")
         .eq("id", data.user.id)
         .single();
 
-      if (profile?.username) setUsername(profile.username);
-      if (profile?.avatar_url) setAvatarUrl(profile.avatar_url);
+      if (profile?.username) {
+        setUsername(profile.username);
+      }
     };
 
     load();
   }, [router]);
 
+  // Close sidebar on route change
   useEffect(() => {
     setIsOpen(false);
   }, [pathname]);
@@ -78,7 +79,7 @@ export default function Sidebar() {
         />
       )}
 
-      {/* Sidebar */}
+      {/* Sidebar — always visible on desktop, slide-in on mobile */}
       <aside
         className={`
           fixed top-0 left-0 h-screen bg-black text-white flex flex-col z-50
@@ -88,11 +89,12 @@ export default function Sidebar() {
           md:translate-x-0
         `}
       >
-        {/* Header */}
+        {/* Sidebar header */}
         <div className="p-6 flex items-center justify-between border-b border-white/10">
           <Link href="/" className="text-2xl font-black tracking-tighter">
             Zelteb
           </Link>
+          {/* Close button — mobile only */}
           <button
             onClick={() => setIsOpen(false)}
             className="md:hidden text-white text-2xl focus:outline-none"
@@ -122,23 +124,10 @@ export default function Sidebar() {
           })}
         </nav>
 
-        {/* Bottom user section */}
         <div className="p-4 border-t border-white/10 flex items-center gap-3">
-          <Link href="/dashboard/profile" className="shrink-0">
-            <div className="w-9 h-9 rounded-full overflow-hidden bg-gray-700 flex items-center justify-center border-2 border-white/20 hover:border-[#f398e4] transition-colors">
-              {avatarUrl ? (
-                <img
-                  src={avatarUrl}
-                  alt="avatar"
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <span className="text-xs font-bold text-amber-400 uppercase">
-                  {user?.email?.[0]?.toUpperCase()}
-                </span>
-              )}
-            </div>
-          </Link>
+          <div className="w-8 h-8 rounded-full bg-gray-600 flex items-center justify-center text-xs font-bold">
+            {user?.email?.[0]?.toUpperCase()}
+          </div>
           <button
             onClick={logout}
             className="flex-1 bg-white text-black py-2 rounded-lg font-bold text-sm"
@@ -148,6 +137,7 @@ export default function Sidebar() {
         </div>
       </aside>
 
+      {/* Spacer so content doesn't go under mobile top bar */}
       <div className="md:hidden h-14" />
     </>
   );
