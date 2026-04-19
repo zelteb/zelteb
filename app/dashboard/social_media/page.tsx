@@ -1,23 +1,25 @@
-"use client";
-import { useEffect, useState } from "react";
-
-export default function Dashboard() {
-  const [data, setData] = useState<any>(null);
-
-  useEffect(() => {
-    fetch("/api/sync-instagram")
-      .then((res) => res.json())
-      .then(setData);
-  }, []);
-
-  if (!data) return <p>Loading...</p>;
-
+export default function SocialPage() {
   return (
-    <div>
-      <h2>Followers: {data.followers}</h2>
-      <h2>Avg Likes: {data.avgLikes.toFixed(1)}</h2>
-      <h2>Avg Views: {data.avgViews.toFixed(1)}</h2>
-      <h2>Engagement: {data.engagementRate.toFixed(2)}%</h2>
+    <div style={{ padding: 20 }}>
+      <h1>Connect Social Accounts</h1>
+
+      <div style={{ marginTop: 20 }}>
+        <a href="/api/instagram/connect">
+          <button
+            style={{
+              padding: "12px 20px",
+              background: "#E1306C",
+              color: "white",
+              border: "none",
+              borderRadius: 8,
+              cursor: "pointer",
+              fontSize: 16,
+            }}
+          >
+            Connect Instagram
+          </button>
+        </a>
+      </div>
     </div>
-  );
+  )
 }
