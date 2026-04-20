@@ -10,14 +10,12 @@ import {
   ImagePlus,
   UserCircle,
   ShieldCheck,
-  ShoppingBag,
-  Bell,
 } from "lucide-react";
 
 // ─── Sidebar nav items ───────────────────────────────────────────────────────
 const NAV_ITEMS = [
-  { key: "edit-profile",    label: "Edit profile",     icon: UserCircle  },
-  { key: "account-security",label: "Verify social media", icon: ShieldCheck },
+  { key: "edit-profile",     label: "Edit profile",        icon: UserCircle  },
+  { key: "account-security", label: "Verify social media", icon: ShieldCheck },
 ] as const;
 
 type NavKey = (typeof NAV_ITEMS)[number]["key"];
@@ -82,22 +80,94 @@ function SocialInput({
   );
 }
 
-// ─── Placeholder panels ───────────────────────────────────────────────────────
-function AccountSecurityPanel() {
+// ─── Verify Social Media Panel ────────────────────────────────────────────────
+function AccountSecurityPanel({
+  instagram, setInstagram,
+  youtube, setYoutube,
+  twitter, setTwitter,
+  linkedin, setLinkedin,
+  reddit, setReddit,
+  onSave, saving, saved,
+}: {
+  instagram: string; setInstagram: (v: string) => void;
+  youtube: string;   setYoutube:   (v: string) => void;
+  twitter: string;   setTwitter:   (v: string) => void;
+  linkedin: string;  setLinkedin:  (v: string) => void;
+  reddit: string;    setReddit:    (v: string) => void;
+  onSave: () => void; saving: boolean; saved: boolean;
+}) {
   return (
-    <div className="bg-white border border-gray-200 rounded-2xl p-6 space-y-4">
-      <h2 className="text-base font-bold text-gray-900">Verify social media</h2>
-      <p className="text-sm text-gray-500">Password and two-factor authentication settings will appear here.</p>
-    </div>
-  );
-}
+    <div className="space-y-4">
+      <div className="bg-white border border-gray-200 rounded-2xl p-5 space-y-5">
+        <div>
+          <p className="text-sm font-bold text-gray-900">Social Links</p>
+          <p className="text-xs text-gray-400 mt-1">Add your social media handles to verify your presence across platforms.</p>
+        </div>
 
+        <SocialInput
+          icon={<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>}
+          prefix="instagram.com/"
+          value={instagram}
+          onChange={setInstagram}
+          placeholder="handle"
+          bgColor="bg-rose-50"
+          textColor="text-rose-500"
+        />
 
-function NotificationsPanel() {
-  return (
-    <div className="bg-white border border-gray-200 rounded-2xl p-6 space-y-4">
-      <h2 className="text-base font-bold text-gray-900">Notifications</h2>
-      <p className="text-sm text-gray-500">Manage your email and push notification preferences here.</p>
+        <SocialInput
+          icon={<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/></svg>}
+          prefix="linkedin.com/in/"
+          value={linkedin}
+          onChange={setLinkedin}
+          placeholder="username"
+          bgColor="bg-blue-50"
+          textColor="text-blue-600"
+        />
+
+        <SocialInput
+          icon={<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0c-6.627 0-12 5.373-12 12s5.373 12 12 12 12-5.373 12-12-5.373-12-12-12zm5.01 4.744c.688 0 1.25.561 1.25 1.249a1.25 1.25 0 0 1-2.498.056l-2.597-.547-.8 3.747c1.824.07 3.48.632 4.674 1.488.308-.309.73-.491 1.207-.491.968 0 1.754.786 1.754 1.754 0 .716-.435 1.333-1.056 1.597.032.222.049.449.049.678 0 2.737-3.129 4.965-6.993 4.965-3.864 0-6.993-2.228-6.993-4.965 0-.213.017-.421.041-.626a1.756 1.756 0 0 1-1.103-1.648c0-.968.786-1.754 1.754-1.754.463 0 .883.18 1.189.471 1.187-.844 2.819-1.397 4.611-1.477l.871-4.081c.045-.21.23-.362.443-.362l2.991.632c.08-.37.408-.651.803-.651z"/></svg>}
+          prefix="reddit.com/user/"
+          value={reddit}
+          onChange={setReddit}
+          placeholder="username"
+          bgColor="bg-orange-50"
+          textColor="text-orange-600"
+        />
+
+        <SocialInput
+          icon={<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>}
+          prefix="youtube.com/@"
+          value={youtube}
+          onChange={setYoutube}
+          placeholder="channel"
+          bgColor="bg-red-50"
+          textColor="text-red-600"
+        />
+
+        <SocialInput
+          icon={<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>}
+          prefix="x.com/"
+          value={twitter}
+          onChange={setTwitter}
+          placeholder="handle"
+          bgColor="bg-gray-100"
+          textColor="text-gray-800"
+        />
+      </div>
+
+      {saved && (
+        <div className="bg-green-50 border border-green-100 text-green-700 px-4 py-3 rounded-xl text-sm">
+          Saved successfully
+        </div>
+      )}
+
+      <button
+        onClick={onSave}
+        disabled={saving}
+        className="w-full sm:w-auto sm:px-10 bg-black text-white py-3.5 rounded-xl text-sm font-semibold active:scale-95 transition-all disabled:opacity-50"
+      >
+        {saving ? "Saving..." : "Save social links"}
+      </button>
     </div>
   );
 }
@@ -122,6 +192,8 @@ export default function Profile() {
   const [loading, setLoading]             = useState(true);
   const [saving, setSaving]               = useState(false);
   const [saved, setSaved]                 = useState(false);
+  const [socialSaving, setSocialSaving]   = useState(false);
+  const [socialSaved, setSocialSaved]     = useState(false);
   const [usernameError, setUsernameError] = useState("");
 
   const [instagram, setInstagram] = useState("");
@@ -218,21 +290,17 @@ export default function Profile() {
     }
   };
 
+  // Save profile details (no social links)
   const save = async () => {
     if (!username.trim()) { setUsernameError("Username is required"); return; }
     if (usernameError) return;
     setSaving(true);
     try {
       const { error } = await supabase.from("profiles").update({
-        username:      username.trim().toLowerCase(),
-        full_name:     fullName.trim(),
+        username:   username.trim().toLowerCase(),
+        full_name:  fullName.trim(),
         bio,
-        instagram_url: buildUrl(instagram, "instagram"),
-        youtube_url:   buildUrl(youtube, "youtube"),
-        x_url:         buildUrl(twitter, "x"),
-        linkedin_url:  buildUrl(linkedin, "linkedin"),
-        reddit_url:    buildUrl(reddit, "reddit"),
-        updated_at:    new Date().toISOString(),
+        updated_at: new Date().toISOString(),
       }).eq("id", user.id);
 
       if (error) {
@@ -249,6 +317,27 @@ export default function Profile() {
       alert("Failed to save: " + err.message);
     }
     setSaving(false);
+  };
+
+  // Save social links only
+  const saveSocial = async () => {
+    setSocialSaving(true);
+    try {
+      const { error } = await supabase.from("profiles").update({
+        instagram_url: buildUrl(instagram, "instagram"),
+        youtube_url:   buildUrl(youtube, "youtube"),
+        x_url:         buildUrl(twitter, "x"),
+        linkedin_url:  buildUrl(linkedin, "linkedin"),
+        reddit_url:    buildUrl(reddit, "reddit"),
+        updated_at:    new Date().toISOString(),
+      }).eq("id", user.id);
+      if (error) throw error;
+      setSocialSaved(true);
+      setTimeout(() => setSocialSaved(false), 3000);
+    } catch (err: any) {
+      alert("Failed to save: " + err.message);
+    }
+    setSocialSaving(false);
   };
 
   if (loading) {
@@ -390,21 +479,6 @@ export default function Profile() {
                   </div>
                 </div>
 
-                {/* Social Links */}
-                <div className="bg-white border border-gray-200 rounded-2xl p-5 space-y-5">
-                  <p className="text-sm font-bold text-gray-900">Social Links</p>
-
-                  <SocialInput icon={<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>} prefix="instagram.com/" value={instagram} onChange={setInstagram} placeholder="handle" bgColor="bg-rose-50" textColor="text-rose-500" />
-
-                  <SocialInput icon={<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/></svg>} prefix="linkedin.com/in/" value={linkedin} onChange={setLinkedin} placeholder="username" bgColor="bg-blue-50" textColor="text-blue-600" />
-
-                  <SocialInput icon={<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0c-6.627 0-12 5.373-12 12s5.373 12 12 12 12-5.373 12-12-5.373-12-12-12zm5.01 4.744c.688 0 1.25.561 1.25 1.249a1.25 1.25 0 0 1-2.498.056l-2.597-.547-.8 3.747c1.824.07 3.48.632 4.674 1.488.308-.309.73-.491 1.207-.491.968 0 1.754.786 1.754 1.754 0 .716-.435 1.333-1.056 1.597.032.222.049.449.049.678 0 2.737-3.129 4.965-6.993 4.965-3.864 0-6.993-2.228-6.993-4.965 0-.213.017-.421.041-.626a1.756 1.756 0 0 1-1.103-1.648c0-.968.786-1.754 1.754-1.754.463 0 .883.18 1.189.471 1.187-.844 2.819-1.397 4.611-1.477l.871-4.081c.045-.21.23-.362.443-.362l2.991.632c.08-.37.408-.651.803-.651z"/></svg>} prefix="reddit.com/user/" value={reddit} onChange={setReddit} placeholder="username" bgColor="bg-orange-50" textColor="text-orange-600" />
-
-                  <SocialInput icon={<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>} prefix="youtube.com/@" value={youtube} onChange={setYoutube} placeholder="channel" bgColor="bg-red-50" textColor="text-red-600" />
-
-                  <SocialInput icon={<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>} prefix="x.com/" value={twitter} onChange={setTwitter} placeholder="handle" bgColor="bg-gray-100" textColor="text-gray-800" />
-                </div>
-
                 {saved && (
                   <div className="bg-green-50 border border-green-100 text-green-700 px-4 py-3 rounded-xl text-sm">
                     Saved successfully
@@ -421,7 +495,18 @@ export default function Profile() {
               </>
             )}
 
-            {activeNav === "account-security" && <AccountSecurityPanel />}
+            {activeNav === "account-security" && (
+              <AccountSecurityPanel
+                instagram={instagram} setInstagram={setInstagram}
+                youtube={youtube}     setYoutube={setYoutube}
+                twitter={twitter}     setTwitter={setTwitter}
+                linkedin={linkedin}   setLinkedin={setLinkedin}
+                reddit={reddit}       setReddit={setReddit}
+                onSave={saveSocial}
+                saving={socialSaving}
+                saved={socialSaved}
+              />
+            )}
           </div>
         </div>
       </div>
