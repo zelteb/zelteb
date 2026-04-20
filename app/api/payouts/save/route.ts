@@ -30,9 +30,26 @@ export async function POST(req: Request) {
 
     const body = await req.json();
 
-    // validation
     if (!body.account_holder || !body.ifsc) {
       return Response.json({ error: "Missing required fields" }, { status: 400 });
+    }
+
+    // Fetch existing row to preserve account_number_encrypted if not updating
+    const { data: existing } = await supabase
+      .from("payouts")
+      .select("account_number_encrypted")
+      .eq("user_id", user.id)
+      .single();
+
+    const account_number_encrypted =
+      body.account_number || existing?.account_number_encrypted || null;
+
+    // Validate: must have at least one payment method
+    if (!account_number_encrypted && !body.upi_id) {
+      return Response.json(
+        { error: "Provide at least a UPI ID or bank account number" },
+        { status: 400 }
+      );
     }
 
     const { error } = await supabase
@@ -42,7 +59,7 @@ export async function POST(req: Request) {
         account_holder: body.account_holder,
         ifsc: body.ifsc,
         upi_id: body.upi_id || null,
-        account_number_encrypted: body.account_number || null,
+        account_number_encrypted,
       });
 
     if (error) {
