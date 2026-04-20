@@ -7,7 +7,9 @@ export default function SocialPage() {
 
   const connect = (platform: string) => {
     setLoading(platform)
-    window.location.href = `/api/${platform}/connect`
+
+    // use full URL (avoids issues in prod like zelteb.com)
+    window.location.href = `${window.location.origin}/api/${platform}/connect`
   }
 
   return (
@@ -21,6 +23,7 @@ export default function SocialPage() {
         {/* Instagram */}
         <button
           onClick={() => connect("instagram")}
+          disabled={loading !== null}
           style={btn("#E1306C")}
         >
           {loading === "instagram" ? "Connecting..." : "Connect Instagram"}
@@ -29,48 +32,53 @@ export default function SocialPage() {
         {/* YouTube */}
         <button
           onClick={() => connect("youtube")}
+          disabled={loading !== null}
           style={btn("#FF0000")}
         >
           {loading === "youtube" ? "Connecting..." : "Connect YouTube"}
         </button>
 
-        {/* X (Twitter) */}
+        {/* X */}
         <button
           onClick={() => connect("x")}
-          style={btn("#000000")}
+          disabled
+          style={btn("#000000", true)}
         >
-          Connect X
+          Coming Soon (X)
         </button>
 
         {/* LinkedIn */}
         <button
           onClick={() => connect("linkedin")}
-          style={btn("#0077B5")}
+          disabled
+          style={btn("#0077B5", true)}
         >
-          Connect LinkedIn
+          Coming Soon (LinkedIn)
         </button>
 
         {/* Reddit */}
         <button
           onClick={() => connect("reddit")}
-          style={btn("#FF4500")}
+          disabled
+          style={btn("#FF4500", true)}
         >
-          Connect Reddit
+          Coming Soon (Reddit)
         </button>
       </div>
     </div>
   )
 }
 
-function btn(color: string) {
+function btn(color: string, disabled = false) {
   return {
     padding: "12px 20px",
-    background: color,
+    background: disabled ? "#ccc" : color,
     color: "white",
     border: "none",
     borderRadius: 8,
-    cursor: "pointer",
+    cursor: disabled ? "not-allowed" : "pointer",
     fontSize: 15,
     minWidth: 180,
+    opacity: disabled ? 0.6 : 1,
   }
 }
