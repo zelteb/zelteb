@@ -1,8 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 
 export default function Payouts() {
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState<"payout" | "withdrawals">("payout");
 
   const [account_holder, setAccountHolder] = useState("");
@@ -132,7 +134,7 @@ export default function Payouts() {
 
         <h1 className="text-2xl font-bold">Payout</h1>
 
-        {/* 🔥 SUB SIDEBAR (TABS) */}
+        {/* SUB SIDEBAR (TABS) */}
         <div className="flex gap-2 bg-gray-100 p-1 rounded-xl w-fit">
           <button
             onClick={() => setActiveTab("payout")}
@@ -146,12 +148,8 @@ export default function Payouts() {
           </button>
 
           <button
-            onClick={() => setActiveTab("withdrawals")}
-            className={`px-4 py-2 rounded-lg text-sm ${
-              activeTab === "withdrawals"
-                ? "bg-white shadow font-medium"
-                : "text-gray-500"
-            }`}
+            onClick={() => router.push("/dashboard/payout/withdrawals")}
+            className="px-4 py-2 rounded-lg text-sm text-gray-500"
           >
             Withdrawals
           </button>
@@ -226,13 +224,6 @@ export default function Payouts() {
               {loading ? "Saving..." : "Save payout info"}
             </button>
           </>
-        )}
-
-        {/* ================= WITHDRAWALS TAB ================= */}
-        {activeTab === "withdrawals" && (
-          <div className="bg-white border rounded-xl p-6 text-center text-gray-500">
-            Withdrawals feature coming soon
-          </div>
         )}
 
       </div>
