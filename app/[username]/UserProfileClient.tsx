@@ -20,6 +20,8 @@ interface Profile {
   youtube_url?: string | null;
   instagram_url?: string | null;
   x_url?: string | null;
+  linkedin_url?: string | null;  // ← added
+  reddit_url?: string | null;    // ← added
 }
 
 interface Product {
@@ -50,6 +52,8 @@ function UploadHint({ label }: { label: string }) {
   );
 }
 
+// ── Platform Icons ─────────────────────────────────────────────────────────────
+
 function YoutubeIcon({ size = 18 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor">
@@ -70,6 +74,22 @@ function XIcon({ size = 18 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor">
       <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.746l7.73-8.835L1.254 2.25H8.08l4.253 5.622zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+    </svg>
+  );
+}
+
+function LinkedinIcon({ size = 18 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor">
+      <path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z" />
+    </svg>
+  );
+}
+
+function RedditIcon({ size = 18 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor">
+      <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.01 4.744c.688 0 1.25.561 1.25 1.249a1.25 1.25 0 0 1-2.498.056l-2.597-.547-.8 3.747c1.824.07 3.48.632 4.674 1.488.308-.309.73-.491 1.207-.491.968 0 1.754.786 1.754 1.754 0 .716-.435 1.333-1.056 1.597.032.222.049.449.049.678 0 2.737-3.129 4.965-6.993 4.965-3.864 0-6.993-2.228-6.993-4.965 0-.213.017-.421.041-.626a1.756 1.756 0 0 1-1.103-1.648c0-.968.786-1.754 1.754-1.754.463 0 .883.18 1.189.471 1.187-.844 2.819-1.397 4.611-1.477l.871-4.081c.045-.21.23-.362.443-.362l2.991.632c.08-.37.408-.651.803-.651z" />
     </svg>
   );
 }
@@ -173,23 +193,37 @@ function AvatarPhoto({ profile, isOwner, pending, inputRef, onChange }: {
 // ── Social Links Modal ────────────────────────────────────────────────────────
 function SocialLinksModal({ profile, onClose, onSave }: {
   profile: Profile; onClose: () => void;
-  onSave: (links: { youtube_url: string; instagram_url: string; x_url: string }) => Promise<void>;
+  onSave: (links: {
+    youtube_url: string; instagram_url: string; x_url: string;
+    linkedin_url: string; reddit_url: string;
+  }) => Promise<void>;
 }) {
-  const [youtube, setYoutube] = useState(profile.youtube_url ?? "");
+  const [youtube, setYoutube]     = useState(profile.youtube_url ?? "");
   const [instagram, setInstagram] = useState(profile.instagram_url ?? "");
-  const [x, setX] = useState(profile.x_url ?? "");
-  const [saving, setSaving] = useState(false);
+  const [x, setX]                 = useState(profile.x_url ?? "");
+  const [linkedin, setLinkedin]   = useState(profile.linkedin_url ?? "");   // ← added
+  const [reddit, setReddit]       = useState(profile.reddit_url ?? "");     // ← added
+  const [saving, setSaving]       = useState(false);
 
   async function handleSave() {
     setSaving(true);
-    try { await onSave({ youtube_url: youtube, instagram_url: instagram, x_url: x }); onClose(); }
-    finally { setSaving(false); }
+    try {
+      await onSave({
+        youtube_url: youtube, instagram_url: instagram, x_url: x,
+        linkedin_url: linkedin, reddit_url: reddit,               // ← added
+      });
+      onClose();
+    } finally {
+      setSaving(false);
+    }
   }
 
   const fields = [
-    { label: "YouTube",     icon: <YoutubeIcon size={16} />,   color: "text-red-500",  value: youtube,   setValue: setYoutube,   placeholder: "https://youtube.com/@yourchannel" },
-    { label: "Instagram",   icon: <InstagramIcon size={16} />, color: "text-pink-500", value: instagram, setValue: setInstagram, placeholder: "https://instagram.com/yourusername" },
-    { label: "X / Twitter", icon: <XIcon size={16} />,         color: "text-gray-800", value: x,         setValue: setX,         placeholder: "https://x.com/yourusername" },
+    { label: "YouTube",     icon: <YoutubeIcon size={16} />,   color: "text-red-500",    value: youtube,   setValue: setYoutube,   placeholder: "https://youtube.com/@yourchannel" },
+    { label: "Instagram",   icon: <InstagramIcon size={16} />, color: "text-pink-500",   value: instagram, setValue: setInstagram, placeholder: "https://instagram.com/yourusername" },
+    { label: "X / Twitter", icon: <XIcon size={16} />,         color: "text-gray-800",   value: x,         setValue: setX,         placeholder: "https://x.com/yourusername" },
+    { label: "LinkedIn",    icon: <LinkedinIcon size={16} />,  color: "text-blue-600",   value: linkedin,  setValue: setLinkedin,  placeholder: "https://linkedin.com/in/yourusername" },  // ← added
+    { label: "Reddit",      icon: <RedditIcon size={16} />,    color: "text-orange-500", value: reddit,    setValue: setReddit,    placeholder: "https://reddit.com/user/yourusername" },   // ← added
   ];
 
   return (
@@ -204,7 +238,7 @@ function SocialLinksModal({ profile, onClose, onSave }: {
             <X size={16} />
           </button>
         </div>
-        <div className="px-5 py-5 flex flex-col gap-4">
+        <div className="px-5 py-5 flex flex-col gap-4 max-h-[60vh] overflow-y-auto">
           {fields.map(({ label, icon, color, value, setValue, placeholder }) => (
             <div key={label}>
               <label className="flex items-center gap-2 text-xs font-semibold text-gray-500 uppercase tracking-widest mb-1.5">
@@ -228,7 +262,7 @@ function SocialLinksModal({ profile, onClose, onSave }: {
             </div>
           ))}
         </div>
-        <div className="px-5 pb-5 flex justify-end gap-2">
+        <div className="px-5 pb-5 flex justify-end gap-2 border-t border-gray-100 pt-4">
           <button onClick={onClose} className="text-sm text-gray-500 hover:text-gray-800 px-4 py-2 rounded-xl hover:bg-gray-100 transition-colors">
             Cancel
           </button>
@@ -254,23 +288,37 @@ function SocialIconsRow({ profile, isOwner, onEditClick }: {
     {
       key: "youtube",
       url: profile.youtube_url,
-      icon: <YoutubeIcon size={24} />,
+      icon: <YoutubeIcon size={22} />,
       label: "YouTube",
       activeClass: "text-red-500 hover:bg-red-50 hover:border-red-200",
     },
     {
       key: "instagram",
       url: profile.instagram_url,
-      icon: <InstagramIcon size={24} />,
+      icon: <InstagramIcon size={22} />,
       label: "Instagram",
       activeClass: "text-pink-500 hover:bg-pink-50 hover:border-pink-200",
     },
     {
       key: "x",
       url: profile.x_url,
-      icon: <XIcon size={22} />,
+      icon: <XIcon size={20} />,
       label: "X / Twitter",
       activeClass: "text-gray-800 hover:bg-gray-100 hover:border-gray-300",
+    },
+    {
+      key: "linkedin",
+      url: profile.linkedin_url,           // ← added
+      icon: <LinkedinIcon size={22} />,
+      label: "LinkedIn",
+      activeClass: "text-blue-600 hover:bg-blue-50 hover:border-blue-200",
+    },
+    {
+      key: "reddit",
+      url: profile.reddit_url,             // ← added
+      icon: <RedditIcon size={22} />,
+      label: "Reddit",
+      activeClass: "text-orange-500 hover:bg-orange-50 hover:border-orange-200",
     },
   ];
 
@@ -279,7 +327,7 @@ function SocialIconsRow({ profile, isOwner, onEditClick }: {
   if (!isOwner && !hasAnyLink) return null;
 
   return (
-    <div className="flex items-center justify-center gap-3 mt-4">
+    <div className="flex items-center justify-center flex-wrap gap-3 mt-4">
       {savedLinks.map(({ key, url, icon, label, activeClass }) => {
         if (url) {
           return (
@@ -490,7 +538,7 @@ export default function UserProfileClient({
   const [showShare, setShowShare] = useState(false);
   const [showSocialEdit, setShowSocialEdit] = useState(false);
 
-  const coverInputRef = useRef<HTMLInputElement>(null);
+  const coverInputRef  = useRef<HTMLInputElement>(null);
   const avatarInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -510,7 +558,9 @@ export default function UserProfileClient({
   useEffect(() => {
     const channel = supabase
       .channel(`profile:${profile.username}`)
-      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "profiles", filter: `username=eq.${profile.username}` },
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "profiles", filter: `username=eq.${profile.username}` },
         (payload) => {
           const updated = payload.new as Profile;
           setProfile((p) => ({
@@ -522,8 +572,11 @@ export default function UserProfileClient({
             youtube_url:   updated.youtube_url   !== undefined ? updated.youtube_url   : p.youtube_url,
             instagram_url: updated.instagram_url !== undefined ? updated.instagram_url : p.instagram_url,
             x_url:         updated.x_url         !== undefined ? updated.x_url         : p.x_url,
+            linkedin_url:  updated.linkedin_url  !== undefined ? updated.linkedin_url  : p.linkedin_url,  // ← added
+            reddit_url:    updated.reddit_url    !== undefined ? updated.reddit_url    : p.reddit_url,    // ← added
           }));
-        })
+        },
+      )
       .subscribe();
     return () => { supabase.removeChannel(channel); };
   }, [profile.username]);
@@ -531,11 +584,14 @@ export default function UserProfileClient({
   useEffect(() => {
     const channel = supabase
       .channel(`products:${profile.id}`)
-      .on("postgres_changes", { event: "INSERT", schema: "public", table: "videos", filter: `creator_id=eq.${profile.id}` },
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "videos", filter: `creator_id=eq.${profile.id}` },
         (payload) => {
           const newProduct = payload.new as Product;
           setProducts((prev) => [newProduct, ...prev]);
-        })
+        },
+      )
       .subscribe();
     return () => { supabase.removeChannel(channel); };
   }, [profile.id]);
@@ -578,11 +634,17 @@ export default function UserProfileClient({
     }
   }
 
-  async function handleSocialSave(links: { youtube_url: string; instagram_url: string; x_url: string }) {
+  // ← updated to include linkedin_url and reddit_url
+  async function handleSocialSave(links: {
+    youtube_url: string; instagram_url: string; x_url: string;
+    linkedin_url: string; reddit_url: string;
+  }) {
     const payload = {
       youtube_url:   links.youtube_url   || null,
       instagram_url: links.instagram_url || null,
       x_url:         links.x_url         || null,
+      linkedin_url:  links.linkedin_url  || null,  // ← added
+      reddit_url:    links.reddit_url    || null,   // ← added
     };
     await supabase.from("profiles").update(payload).eq("username", profile.username);
     setProfile((p) => ({ ...p, ...payload }));
@@ -592,7 +654,11 @@ export default function UserProfileClient({
     <div className="min-h-screen bg-[#f4f4f0]">
       {showShare && <ShareModal profile={profile} onClose={() => setShowShare(false)} />}
       {showSocialEdit && isOwner && (
-        <SocialLinksModal profile={profile} onClose={() => setShowSocialEdit(false)} onSave={handleSocialSave} />
+        <SocialLinksModal
+          profile={profile}
+          onClose={() => setShowSocialEdit(false)}
+          onSave={handleSocialSave}
+        />
       )}
 
       {/* Cover */}
@@ -633,20 +699,14 @@ export default function UserProfileClient({
           </p>
         )}
 
-        {/* ── Name + handle + social icons — stacked directly under avatar ── */}
+        {/* Name + handle + social icons */}
         <div className="mt-4 text-center">
-
-          {/* Full name — bold, prominent, right under the avatar */}
           <h1 className="text-2xl md:text-3xl font-bold text-gray-900 tracking-tight leading-tight">
             {profile.full_name ?? profile.username}
           </h1>
-
-          {/* @username — softer, one line below */}
           <p className="mt-1 text-sm text-gray-400 font-medium tracking-wide">
             @{profile.username}
           </p>
-
-          {/* Social icons — larger (w-11 h-11, icon size 24), only saved platforms */}
           <SocialIconsRow
             profile={profile}
             isOwner={isOwner}
