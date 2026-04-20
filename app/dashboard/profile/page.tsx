@@ -274,9 +274,6 @@ export default function Profile() {
   return (
     <div className="min-h-screen bg-[#f9f9f8]">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
-
-        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-8">Account settings</h1>
-
         <div className="flex gap-6 items-start">
 
           {/* ── Left sidebar nav ── */}
