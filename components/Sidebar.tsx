@@ -49,7 +49,7 @@ export default function Sidebar() {
   const sidebarItems = [
     { name: "Home", icon: "🏠", link: "/dashboard" },
     { name: "Payouts", icon: "🏦", link: "/dashboard/payouts" },
-    { name: "Requests", icon: "📩", link: "/dashboard/Requests_from_Brands" },
+    { name: "Requests_from_Brands", icon: "📩", link: "/dashboard/Requests_from_Brands" },
     { name: "Profile", icon: "👤", link: "/dashboard/profile" },
     ...(username
       ? [{ name: "View My Page", icon: "🌐", link: `/${username}` }]
