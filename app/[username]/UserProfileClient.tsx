@@ -20,8 +20,8 @@ interface Profile {
   youtube_url?: string | null;
   instagram_url?: string | null;
   x_url?: string | null;
-  linkedin_url?: string | null;  // ← added
-  reddit_url?: string | null;    // ← added
+  linkedin_url?: string | null;
+  reddit_url?: string | null;
 }
 
 interface Product {
@@ -201,8 +201,8 @@ function SocialLinksModal({ profile, onClose, onSave }: {
   const [youtube, setYoutube]     = useState(profile.youtube_url ?? "");
   const [instagram, setInstagram] = useState(profile.instagram_url ?? "");
   const [x, setX]                 = useState(profile.x_url ?? "");
-  const [linkedin, setLinkedin]   = useState(profile.linkedin_url ?? "");   // ← added
-  const [reddit, setReddit]       = useState(profile.reddit_url ?? "");     // ← added
+  const [linkedin, setLinkedin]   = useState(profile.linkedin_url ?? "");
+  const [reddit, setReddit]       = useState(profile.reddit_url ?? "");
   const [saving, setSaving]       = useState(false);
 
   async function handleSave() {
@@ -210,7 +210,7 @@ function SocialLinksModal({ profile, onClose, onSave }: {
     try {
       await onSave({
         youtube_url: youtube, instagram_url: instagram, x_url: x,
-        linkedin_url: linkedin, reddit_url: reddit,               // ← added
+        linkedin_url: linkedin, reddit_url: reddit,
       });
       onClose();
     } finally {
@@ -222,8 +222,8 @@ function SocialLinksModal({ profile, onClose, onSave }: {
     { label: "YouTube",     icon: <YoutubeIcon size={16} />,   color: "text-red-500",    value: youtube,   setValue: setYoutube,   placeholder: "https://youtube.com/@yourchannel" },
     { label: "Instagram",   icon: <InstagramIcon size={16} />, color: "text-pink-500",   value: instagram, setValue: setInstagram, placeholder: "https://instagram.com/yourusername" },
     { label: "X / Twitter", icon: <XIcon size={16} />,         color: "text-gray-800",   value: x,         setValue: setX,         placeholder: "https://x.com/yourusername" },
-    { label: "LinkedIn",    icon: <LinkedinIcon size={16} />,  color: "text-blue-600",   value: linkedin,  setValue: setLinkedin,  placeholder: "https://linkedin.com/in/yourusername" },  // ← added
-    { label: "Reddit",      icon: <RedditIcon size={16} />,    color: "text-orange-500", value: reddit,    setValue: setReddit,    placeholder: "https://reddit.com/user/yourusername" },   // ← added
+    { label: "LinkedIn",    icon: <LinkedinIcon size={16} />,  color: "text-blue-600",   value: linkedin,  setValue: setLinkedin,  placeholder: "https://linkedin.com/in/yourusername" },
+    { label: "Reddit",      icon: <RedditIcon size={16} />,    color: "text-orange-500", value: reddit,    setValue: setReddit,    placeholder: "https://reddit.com/user/yourusername" },
   ];
 
   return (
@@ -308,14 +308,14 @@ function SocialIconsRow({ profile, isOwner, onEditClick }: {
     },
     {
       key: "linkedin",
-      url: profile.linkedin_url,           // ← added
+      url: profile.linkedin_url,
       icon: <LinkedinIcon size={22} />,
       label: "LinkedIn",
       activeClass: "text-blue-600 hover:bg-blue-50 hover:border-blue-200",
     },
     {
       key: "reddit",
-      url: profile.reddit_url,             // ← added
+      url: profile.reddit_url,
       icon: <RedditIcon size={22} />,
       label: "Reddit",
       activeClass: "text-orange-500 hover:bg-orange-50 hover:border-orange-200",
@@ -541,6 +541,25 @@ export default function UserProfileClient({
   const coverInputRef  = useRef<HTMLInputElement>(null);
   const avatarInputRef = useRef<HTMLInputElement>(null);
 
+  // ── FIX: Re-fetch the full profile on mount to ensure all columns are present,
+  //         including linkedin_url and reddit_url which may be missing if the
+  //         server-side query doesn't select them explicitly.
+  useEffect(() => {
+    const fetchProfile = async () => {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select(
+          "id, username, full_name, cover_url, avatar_url, bio, post_count, youtube_url, instagram_url, x_url, linkedin_url, reddit_url"
+        )
+        .eq("id", initialProfile.id)
+        .single();
+      if (!error && data) {
+        setProfile(data as Profile);
+      }
+    };
+    fetchProfile();
+  }, [initialProfile.id]);
+
   useEffect(() => {
     const fetchProducts = async () => {
       setProductsLoading(true);
@@ -562,19 +581,10 @@ export default function UserProfileClient({
         "postgres_changes",
         { event: "UPDATE", schema: "public", table: "profiles", filter: `username=eq.${profile.username}` },
         (payload) => {
-          const updated = payload.new as Profile;
-          setProfile((p) => ({
-            ...p,
-            avatar_url:    updated.avatar_url    ?? p.avatar_url,
-            cover_url:     updated.cover_url     ?? p.cover_url,
-            full_name:     updated.full_name     ?? p.full_name,
-            bio:           updated.bio           ?? p.bio,
-            youtube_url:   updated.youtube_url   !== undefined ? updated.youtube_url   : p.youtube_url,
-            instagram_url: updated.instagram_url !== undefined ? updated.instagram_url : p.instagram_url,
-            x_url:         updated.x_url         !== undefined ? updated.x_url         : p.x_url,
-            linkedin_url:  updated.linkedin_url  !== undefined ? updated.linkedin_url  : p.linkedin_url,  // ← added
-            reddit_url:    updated.reddit_url    !== undefined ? updated.reddit_url    : p.reddit_url,    // ← added
-          }));
+          // ── FIX: Use Object.assign pattern so ALL columns from payload.new
+          //         overwrite the current state, including null values for
+          //         linkedin_url / reddit_url when they're cleared.
+          setProfile((p) => ({ ...p, ...(payload.new as Partial<Profile>) }));
         },
       )
       .subscribe();
@@ -634,7 +644,6 @@ export default function UserProfileClient({
     }
   }
 
-  // ← updated to include linkedin_url and reddit_url
   async function handleSocialSave(links: {
     youtube_url: string; instagram_url: string; x_url: string;
     linkedin_url: string; reddit_url: string;
@@ -643,10 +652,15 @@ export default function UserProfileClient({
       youtube_url:   links.youtube_url   || null,
       instagram_url: links.instagram_url || null,
       x_url:         links.x_url         || null,
-      linkedin_url:  links.linkedin_url  || null,  // ← added
-      reddit_url:    links.reddit_url    || null,   // ← added
+      linkedin_url:  links.linkedin_url  || null,
+      reddit_url:    links.reddit_url    || null,
     };
-    await supabase.from("profiles").update(payload).eq("username", profile.username);
+    const { error } = await supabase
+      .from("profiles")
+      .update(payload)
+      .eq("username", profile.username);
+    if (error) throw error;
+    // ── FIX: Optimistically update local state immediately after save
     setProfile((p) => ({ ...p, ...payload }));
   }
 
