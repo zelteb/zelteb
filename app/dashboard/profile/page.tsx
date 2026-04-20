@@ -17,9 +17,7 @@ import {
 // ─── Sidebar nav items ───────────────────────────────────────────────────────
 const NAV_ITEMS = [
   { key: "edit-profile",    label: "Edit profile",     icon: UserCircle  },
-  { key: "account-security",label: "Account security", icon: ShieldCheck },
-  { key: "orders",          label: "Orders",            icon: ShoppingBag },
-  { key: "notifications",   label: "Notifications",     icon: Bell        },
+  { key: "account-security",label: "Verify social media", icon: ShieldCheck },
 ] as const;
 
 type NavKey = (typeof NAV_ITEMS)[number]["key"];
@@ -88,20 +86,12 @@ function SocialInput({
 function AccountSecurityPanel() {
   return (
     <div className="bg-white border border-gray-200 rounded-2xl p-6 space-y-4">
-      <h2 className="text-base font-bold text-gray-900">Account Security</h2>
+      <h2 className="text-base font-bold text-gray-900">Verify social media</h2>
       <p className="text-sm text-gray-500">Password and two-factor authentication settings will appear here.</p>
     </div>
   );
 }
 
-function OrdersPanel() {
-  return (
-    <div className="bg-white border border-gray-200 rounded-2xl p-6 space-y-4">
-      <h2 className="text-base font-bold text-gray-900">Orders</h2>
-      <p className="text-sm text-gray-500">Your purchase history will appear here.</p>
-    </div>
-  );
-}
 
 function NotificationsPanel() {
   return (
@@ -432,8 +422,6 @@ export default function Profile() {
             )}
 
             {activeNav === "account-security" && <AccountSecurityPanel />}
-            {activeNav === "orders"           && <OrdersPanel />}
-            {activeNav === "notifications"    && <NotificationsPanel />}
           </div>
         </div>
       </div>
