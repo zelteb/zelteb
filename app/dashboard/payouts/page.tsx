@@ -1,9 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter, usePathname } from "next/navigation";
 
 export default function Payouts() {
-  const [activeTab, setActiveTab] = useState<"payout" | "withdrawals">("payout");
+  const router = useRouter();
+  const pathname = usePathname();
+
+  // Determine active tab based on the URL path
+  const activeTab = pathname.includes("/withdrawals") ? "withdrawals" : "payout";
 
   const [account_holder, setAccountHolder] = useState("");
   const [ifsc, setIfsc] = useState("");
@@ -26,7 +31,6 @@ export default function Payouts() {
 
       if (json?.data) {
         const d = json.data;
-
         setAccountHolder(d.account_holder || "");
         setIfsc(d.ifsc || "");
         setUpiId(d.upi_id || "");
@@ -38,7 +42,6 @@ export default function Payouts() {
           setHasExistingAccount(false);
           setMaskedAccount("");
         }
-
         setAccountNumber("");
         setConfirmAccount("");
       }
@@ -55,14 +58,12 @@ export default function Payouts() {
 
   const handleSave = async () => {
     setMessage("");
-
     if (!account_holder || !ifsc) {
       setMessageType("error");
       return setMessage("Fill all required fields in Bank Account section");
     }
 
-    const isUpdatingAccountNumber =
-      account_number.length > 0 || confirm_account.length > 0;
+    const isUpdatingAccountNumber = account_number.length > 0 || confirm_account.length > 0;
 
     if (isUpdatingAccountNumber) {
       if (!account_number || !confirm_account) {
@@ -80,16 +81,8 @@ export default function Payouts() {
 
     try {
       setLoading(true);
-
-      const body: Record<string, string> = {
-        account_holder,
-        ifsc,
-        upi_id,
-      };
-
-      if (isUpdatingAccountNumber) {
-        body.account_number = account_number;
-      }
+      const body: Record<string, string> = { account_holder, ifsc, upi_id };
+      if (isUpdatingAccountNumber) body.account_number = account_number;
 
       const res = await fetch("/api/payouts/save", {
         method: "POST",
@@ -98,7 +91,6 @@ export default function Payouts() {
       });
 
       const data = await res.json();
-
       if (!res.ok) {
         setMessageType("error");
         setMessage(data?.error || "Failed to save");
@@ -115,8 +107,7 @@ export default function Payouts() {
     }
   };
 
-  const inputClass =
-    "w-full border border-gray-300 rounded-xl px-4 py-3 text-base sm:text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-black";
+  const inputClass = "w-full border border-gray-300 rounded-xl px-4 py-3 text-base sm:text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-black";
 
   if (fetching) {
     return (
@@ -129,112 +120,85 @@ export default function Payouts() {
   return (
     <div className="min-h-screen bg-[#f9f9f8]">
       <div className="max-w-2xl mx-auto px-4 py-8 space-y-4">
-
         <h1 className="text-2xl font-bold">Payout</h1>
 
-        {/* 🔥 SUB SIDEBAR (TABS) */}
+        {/* Navigation Tabs */}
         <div className="flex gap-2 bg-gray-100 p-1 rounded-xl w-fit">
           <button
-            onClick={() => setActiveTab("payout")}
-            className={`px-4 py-2 rounded-lg text-sm ${
-              activeTab === "payout"
-                ? "bg-white shadow font-medium"
-                : "text-gray-500"
+            onClick={() => router.push("/dashboard/payout")}
+            className={`px-4 py-2 rounded-lg text-sm transition-all ${
+              activeTab === "payout" ? "bg-white shadow font-medium" : "text-gray-500 hover:text-black"
             }`}
           >
             Payout
           </button>
 
           <button
-            onClick={() => setActiveTab("withdrawals")}
-            className={`px-4 py-2 rounded-lg text-sm ${
-              activeTab === "withdrawals"
-                ? "bg-white shadow font-medium"
-                : "text-gray-500"
+            onClick={() => router.push("/dashboard/payout/withdrawals")}
+            className={`px-4 py-2 rounded-lg text-sm transition-all ${
+              activeTab === "withdrawals" ? "bg-white shadow font-medium" : "text-gray-500 hover:text-black"
             }`}
           >
             Withdrawals
           </button>
         </div>
 
-        {/* ================= Payout TAB ================= */}
-        {activeTab === "payout" && (
-          <>
-            {/* UPI */}
-            <div className="bg-white border rounded-xl p-4">
-              <p className="font-semibold mb-2">UPI</p>
-              <input
-                value={upi_id}
-                onChange={(e) => setUpiId(e.target.value)}
-                placeholder="yourname@upi"
-                className={inputClass}
-              />
-            </div>
-
-            {/* Bank */}
-            <div className="bg-white border rounded-xl p-4 space-y-3">
-              <p className="font-semibold">Bank Account</p>
-
-              <input
-                value={account_holder}
-                onChange={(e) => setAccountHolder(e.target.value)}
-                placeholder="Account holder"
-                className={inputClass}
-              />
-
-              <input
-                value={ifsc}
-                onChange={(e) => setIfsc(e.target.value.toUpperCase())}
-                placeholder="IFSC"
-                className={inputClass}
-              />
-
-              <input
-                value={account_number}
-                onChange={(e) => setAccountNumber(e.target.value)}
-                placeholder={
-                  hasExistingAccount
-                    ? `Change (current: ${maskedAccount})`
-                    : "Account number"
-                }
-                className={inputClass}
-              />
-
-              <input
-                value={confirm_account}
-                onChange={(e) => setConfirmAccount(e.target.value)}
-                placeholder="Confirm account number"
-                className={inputClass}
-              />
-            </div>
-
-            {message && (
-              <div className={`p-3 rounded text-sm ${
-                messageType === "success"
-                  ? "bg-green-50 text-green-700"
-                  : "bg-red-50 text-red-600"
-              }`}>
-                {message}
-              </div>
-            )}
-
-            <button
-              onClick={handleSave}
-              disabled={loading}
-              className="bg-black text-white px-6 py-3 rounded-xl w-full"
-            >
-              {loading ? "Saving..." : "Save payout info"}
-            </button>
-          </>
-        )}
-
-        {/* ================= WITHDRAWALS TAB ================= */}
-        {activeTab === "withdrawals" && (
-          <div className="bg-white border rounded-xl p-6 text-center text-gray-500">
-            Withdrawals feature coming soon
+        {/* Content Area */}
+        <div className="mt-4">
+          {/* UPI Section */}
+          <div className="bg-white border rounded-xl p-4 mb-4">
+            <p className="font-semibold mb-2">UPI</p>
+            <input
+              value={upi_id}
+              onChange={(e) => setUpiId(e.target.value)}
+              placeholder="yourname@upi"
+              className={inputClass}
+            />
           </div>
-        )}
 
+          {/* Bank Section */}
+          <div className="bg-white border rounded-xl p-4 space-y-3">
+            <p className="font-semibold">Bank Account</p>
+            <input
+              value={account_holder}
+              onChange={(e) => setAccountHolder(e.target.value)}
+              placeholder="Account holder"
+              className={inputClass}
+            />
+            <input
+              value={ifsc}
+              onChange={(e) => setIfsc(e.target.value.toUpperCase())}
+              placeholder="IFSC"
+              className={inputClass}
+            />
+            <input
+              value={account_number}
+              onChange={(e) => setAccountNumber(e.target.value)}
+              placeholder={hasExistingAccount ? `Change (current: ${maskedAccount})` : "Account number"}
+              className={inputClass}
+            />
+            <input
+              value={confirm_account}
+              onChange={(e) => setConfirmAccount(e.target.value)}
+              placeholder="Confirm account number"
+              className={inputClass}
+            />
+          </div>
+
+          {message && (
+            <div className={`mt-4 p-3 rounded text-sm ${messageType === "success" ? "bg-green-50 text-green-700" : "bg-red-50 text-red-600"}`}>
+              {message}
+            </div>
+          )}
+
+          <button
+            onClick={handleSave}
+            disabled={loading}
+            className="mt-6 bg-black text-white px-6 py-3 rounded-xl w-full hover:bg-gray-800 transition-colors disabled:bg-gray-400"
+          >
+            {loading ? "Saving..." : "Save payout info"}
+          </button>
+        </div>
       </div>
     </div>
   );
