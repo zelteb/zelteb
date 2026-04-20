@@ -37,7 +37,7 @@ export async function POST(req: Request) {
     // Fetch existing row to preserve account_number_encrypted if not updating
     const { data: existing } = await supabase
       .from("payouts")
-      .select("account_number_encrypted")
+      .select("account_number_encrypted") 
       .eq("user_id", user.id)
       .single();
 
@@ -54,13 +54,16 @@ export async function POST(req: Request) {
 
     const { error } = await supabase
       .from("payouts")
-      .upsert({
-        user_id: user.id,
-        account_holder: body.account_holder,
-        ifsc: body.ifsc,
-        upi_id: body.upi_id || null,
-        account_number_encrypted,
-      });
+      .upsert(
+        {
+          user_id: user.id,
+          account_holder: body.account_holder,
+          ifsc: body.ifsc,
+          upi_id: body.upi_id || null,
+          account_number_encrypted,
+        },
+        { onConflict: "user_id" }
+      );
 
     if (error) {
       return Response.json({ error: error.message }, { status: 500 });
