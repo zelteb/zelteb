@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 
 export default function Payouts() {
+  const [activeTab, setActiveTab] = useState<"payout" | "withdrawals">("payout");
+
   const [account_holder, setAccountHolder] = useState("");
   const [ifsc, setIfsc] = useState("");
   const [account_number, setAccountNumber] = useState("");
@@ -114,7 +116,7 @@ export default function Payouts() {
   };
 
   const inputClass =
-    "w-full border border-gray-300 rounded-xl px-4 py-3 text-base sm:text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-black transition-shadow";
+    "w-full border border-gray-300 rounded-xl px-4 py-3 text-base sm:text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-black";
 
   if (fetching) {
     return (
@@ -128,76 +130,111 @@ export default function Payouts() {
     <div className="min-h-screen bg-[#f9f9f8]">
       <div className="max-w-2xl mx-auto px-4 py-8 space-y-4">
 
-        <h1 className="text-2xl font-bold">Payout method</h1>
+        <h1 className="text-2xl font-bold">Payout</h1>
 
-        {/* UPI */}
-        <div className="bg-white border rounded-xl p-4">
-          <p className="font-semibold mb-2">UPI</p>
+        {/* 🔥 SUB SIDEBAR (TABS) */}
+        <div className="flex gap-2 bg-gray-100 p-1 rounded-xl w-fit">
+          <button
+            onClick={() => setActiveTab("payout")}
+            className={`px-4 py-2 rounded-lg text-sm ${
+              activeTab === "payout"
+                ? "bg-white shadow font-medium"
+                : "text-gray-500"
+            }`}
+          >
+            Payout
+          </button>
 
-          <input
-            value={upi_id}
-            onChange={(e) => setUpiId(e.target.value)}
-            placeholder="yourname@upi"
-            className={inputClass}
-          />
+          <button
+            onClick={() => setActiveTab("withdrawals")}
+            className={`px-4 py-2 rounded-lg text-sm ${
+              activeTab === "withdrawals"
+                ? "bg-white shadow font-medium"
+                : "text-gray-500"
+            }`}
+          >
+            Withdrawals
+          </button>
         </div>
 
-        {/* Bank */}
-        <div className="bg-white border rounded-xl p-4 space-y-3">
-          <p className="font-semibold">Bank Account</p>
+        {/* ================= Payout TAB ================= */}
+        {activeTab === "payout" && (
+          <>
+            {/* UPI */}
+            <div className="bg-white border rounded-xl p-4">
+              <p className="font-semibold mb-2">UPI</p>
+              <input
+                value={upi_id}
+                onChange={(e) => setUpiId(e.target.value)}
+                placeholder="yourname@upi"
+                className={inputClass}
+              />
+            </div>
 
-          <input
-            value={account_holder}
-            onChange={(e) => setAccountHolder(e.target.value)}
-            placeholder="Account holder"
-            className={inputClass}
-          />
+            {/* Bank */}
+            <div className="bg-white border rounded-xl p-4 space-y-3">
+              <p className="font-semibold">Bank Account</p>
 
-          <input
-            value={ifsc}
-            onChange={(e) => setIfsc(e.target.value.toUpperCase())}
-            placeholder="IFSC"
-            className={inputClass}
-          />
+              <input
+                value={account_holder}
+                onChange={(e) => setAccountHolder(e.target.value)}
+                placeholder="Account holder"
+                className={inputClass}
+              />
 
-          <input
-            value={account_number}
-            onChange={(e) => setAccountNumber(e.target.value)}
-            placeholder={
-              hasExistingAccount
-                ? `Change (current: ${maskedAccount})`
-                : "Account number"
-            }
-            className={inputClass}
-          />
+              <input
+                value={ifsc}
+                onChange={(e) => setIfsc(e.target.value.toUpperCase())}
+                placeholder="IFSC"
+                className={inputClass}
+              />
 
-          <input
-            value={confirm_account}
-            onChange={(e) => setConfirmAccount(e.target.value)}
-            placeholder="Confirm account number"
-            className={inputClass}
-          />
-        </div>
+              <input
+                value={account_number}
+                onChange={(e) => setAccountNumber(e.target.value)}
+                placeholder={
+                  hasExistingAccount
+                    ? `Change (current: ${maskedAccount})`
+                    : "Account number"
+                }
+                className={inputClass}
+              />
 
-        {/* Message */}
-        {message && (
-          <div className={`p-3 rounded text-sm ${
-            messageType === "success"
-              ? "bg-green-50 text-green-700"
-              : "bg-red-50 text-red-600"
-          }`}>
-            {message}
+              <input
+                value={confirm_account}
+                onChange={(e) => setConfirmAccount(e.target.value)}
+                placeholder="Confirm account number"
+                className={inputClass}
+              />
+            </div>
+
+            {message && (
+              <div className={`p-3 rounded text-sm ${
+                messageType === "success"
+                  ? "bg-green-50 text-green-700"
+                  : "bg-red-50 text-red-600"
+              }`}>
+                {message}
+              </div>
+            )}
+
+            <button
+              onClick={handleSave}
+              disabled={loading}
+              className="bg-black text-white px-6 py-3 rounded-xl w-full"
+            >
+              {loading ? "Saving..." : "Save payout info"}
+            </button>
+          </>
+        )}
+
+        {/* ================= WITHDRAWALS TAB ================= */}
+        {activeTab === "withdrawals" && (
+          <div className="bg-white border rounded-xl p-6 text-center text-gray-500">
+            Withdrawals feature coming soon
           </div>
         )}
 
-        {/* Button */}
-        <button
-          onClick={handleSave}
-          disabled={loading}
-          className="bg-black text-white px-6 py-3 rounded-xl w-full"
-        >
-          {loading ? "Saving..." : "Save payout info"}
-        </button>
       </div>
     </div>
   );
