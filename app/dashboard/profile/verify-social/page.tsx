@@ -73,9 +73,21 @@ const PLATFORMS = [
     bg: "bg-orange-50",
     border: "border-orange-300",
   },
+  {
+    key: "medium",
+    label: "Medium",
+    icon: (
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M13.54 12a6.8 6.8 0 01-6.77 6.82A6.8 6.8 0 010 12a6.8 6.8 0 016.77-6.82A6.8 6.8 0 0113.54 12zM20.96 12c0 3.54-1.51 6.42-3.38 6.42-1.87 0-3.39-2.88-3.39-6.42s1.52-6.42 3.39-6.42 3.38 2.88 3.38 6.42M24 12c0 3.17-.53 5.75-1.19 5.75-.66 0-1.19-2.58-1.19-5.75s.53-5.75 1.19-5.75C23.47 6.25 24 8.83 24 12z"/>
+      </svg>
+    ),
+    color: "text-gray-700",
+    bg: "bg-gray-50",
+    border: "border-gray-400",
+  },
 ] as const;
 
-type PlatformKey = "instagram" | "youtube" | "x" | "linkedin" | "reddit";
+type PlatformKey = "instagram" | "youtube" | "x" | "linkedin" | "reddit" | "medium";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 function extractHandle(value: string, platform: string): string {
@@ -86,6 +98,7 @@ function extractHandle(value: string, platform: string): string {
     x:         /(?:(?:twitter|x)\.com\/)?@?([A-Za-z0-9_]+)\/?$/,
     linkedin:  /(?:linkedin\.com\/in\/)?([A-Za-z0-9_-]+)\/?$/,
     reddit:    /(?:reddit\.com\/user\/)?([A-Za-z0-9_-]+)\/?$/,
+    medium:    /(?:medium\.com\/@?)?([A-Za-z0-9_.-]+)\/?$/,
   };
   const match = value.match(patterns[platform]);
   return match ? match[1] : value;
@@ -102,33 +115,42 @@ function buildUrl(handle: string, platform: string): string | null {
     x:         "https://x.com/",
     linkedin:  "https://linkedin.com/in/",
     reddit:    "https://reddit.com/user/",
+    medium:    "https://medium.com/@",
   };
   return bases[platform] + clean;
 }
 
 // ─── Social input component ───────────────────────────────────────────────────
 function SocialInput({
-  icon, prefix, value, onChange, placeholder, bgColor, textColor,
+  icon, prefix, value, onChange, placeholder, bgColor, textColor, isPending,
 }: {
   icon: React.ReactNode; prefix: string; value: string;
   onChange: (v: string) => void; placeholder: string;
-  bgColor: string; textColor: string;
+  bgColor: string; textColor: string; isPending?: boolean;
 }) {
   return (
-    <div className="flex rounded-xl border border-gray-300 overflow-hidden focus-within:ring-2 focus-within:ring-black transition-shadow">
-      <div className={`flex items-center gap-1.5 px-3 ${bgColor} border-r border-gray-300 shrink-0`}>
-        <span className={textColor}>{icon}</span>
-        <span className={`text-xs font-medium ${textColor} hidden sm:inline`}>{prefix}</span>
+    <div className="flex items-center gap-2">
+      <div className="flex-1 flex rounded-xl border border-gray-300 overflow-hidden focus-within:ring-2 focus-within:ring-black transition-shadow">
+        <div className={`flex items-center gap-1.5 px-3 ${bgColor} border-r border-gray-300 shrink-0`}>
+          <span className={textColor}>{icon}</span>
+          <span className={`text-xs font-medium ${textColor} hidden sm:inline`}>{prefix}</span>
+        </div>
+        <input
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder={placeholder}
+          autoCapitalize="none"
+          autoCorrect="off"
+          spellCheck={false}
+          className="flex-1 px-3 py-3 text-base sm:text-sm text-gray-900 placeholder-gray-400 focus:outline-none bg-white min-w-0"
+        />
       </div>
-      <input
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder={placeholder}
-        autoCapitalize="none"
-        autoCorrect="off"
-        spellCheck={false}
-        className="flex-1 px-3 py-3 text-base sm:text-sm text-gray-900 placeholder-gray-400 focus:outline-none bg-white min-w-0"
-      />
+      {isPending && (
+        <span className="shrink-0 inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-amber-100 border border-amber-300 text-amber-700 text-xs font-semibold whitespace-nowrap">
+          <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+          Pending
+        </span>
+      )}
     </div>
   );
 }
@@ -137,9 +159,11 @@ function SocialInput({
 function VerifyPlatformModal({
   onClose,
   savedHandles,
+  onVerified,
 }: {
   onClose: () => void;
   savedHandles: Record<PlatformKey, string>;
+  onVerified: (platform: PlatformKey) => void;
 }) {
   const [selected, setSelected] = useState<PlatformKey | null>(null);
   const [error, setError] = useState("");
@@ -156,9 +180,9 @@ function VerifyPlatformModal({
       );
       return;
     }
-    // Proceed with verification — open the profile URL in a new tab
     const url = buildUrl(savedHandles[selected], selected);
     if (url) window.open(url, "_blank");
+    onVerified(selected);
     onClose();
   };
 
@@ -196,11 +220,10 @@ function VerifyPlatformModal({
                   }
                 `}
               >
-                {/* Checkmark badge */}
                 {isSelected && (
                   <span className={`absolute top-2 right-2 w-4 h-4 rounded-full flex items-center justify-center ${platform.bg}`}>
                     <svg width="10" height="10" viewBox="0 0 12 12" fill="none">
-                      <path d="M2 6l3 3 5-5" stroke={platform.color.replace("text-", "").includes("rose") ? "#f43f5e" : platform.color.includes("red") ? "#dc2626" : platform.color.includes("blue") ? "#2563eb" : platform.color.includes("orange") ? "#ea580c" : "#374151"} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+                      <path d="M2 6l3 3 5-5" stroke={platform.color.includes("rose") ? "#f43f5e" : platform.color.includes("red") ? "#dc2626" : platform.color.includes("blue") ? "#2563eb" : platform.color.includes("orange") ? "#ea580c" : "#374151"} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
                     </svg>
                   </span>
                 )}
@@ -210,22 +233,18 @@ function VerifyPlatformModal({
                 <span className={`text-xs font-medium ${isSelected ? "text-gray-900" : "text-gray-600"}`}>
                   {platform.label}
                 </span>
-                {/* Dot indicator — green if link saved, gray if not */}
                 <span className={`w-1.5 h-1.5 rounded-full ${hasLink ? "bg-green-400" : "bg-gray-300"}`} />
               </button>
             );
           })}
         </div>
 
-        {/* Error message */}
         {error && (
           <div className="mx-4 mb-3 px-3 py-2.5 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-700 leading-relaxed">
             {error}
           </div>
         )}
 
-
-        {/* Continue button */}
         <div className="px-4 pb-4">
           <button
             onClick={handleContinue}
@@ -248,12 +267,14 @@ export default function VerifySocial() {
   const [saving, setSaving]   = useState(false);
   const [saved, setSaved]     = useState(false);
   const [showModal, setShowModal] = useState(false);
+  const [pendingPlatforms, setPendingPlatforms] = useState<Set<PlatformKey>>(new Set());
 
   const [instagram, setInstagram] = useState("");
   const [youtube, setYoutube]     = useState("");
   const [twitter, setTwitter]     = useState("");
   const [linkedin, setLinkedin]   = useState("");
   const [reddit, setReddit]       = useState("");
+  const [medium, setMedium]       = useState("");
 
   useEffect(() => {
     const load = async () => {
@@ -270,6 +291,7 @@ export default function VerifySocial() {
         setTwitter(extractHandle(profile.x_url || "", "x"));
         setLinkedin(extractHandle(profile.linkedin_url || "", "linkedin"));
         setReddit(extractHandle(profile.reddit_url || "", "reddit"));
+        setMedium(extractHandle(profile.medium_url || "", "medium"));
       }
       setLoading(false);
     };
@@ -285,6 +307,7 @@ export default function VerifySocial() {
         x_url:         buildUrl(twitter, "x"),
         linkedin_url:  buildUrl(linkedin, "linkedin"),
         reddit_url:    buildUrl(reddit, "reddit"),
+        medium_url:    buildUrl(medium, "medium"),
         updated_at:    new Date().toISOString(),
       }).eq("id", user.id);
       if (error) throw error;
@@ -298,13 +321,17 @@ export default function VerifySocial() {
 
   const handleNavClick = (route: string) => router.push(route);
 
-  // Current saved handles map for modal
+  const handleVerified = (platform: PlatformKey) => {
+    setPendingPlatforms((prev) => new Set(prev).add(platform));
+  };
+
   const savedHandles: Record<PlatformKey, string> = {
     instagram,
     youtube,
     x: twitter,
     linkedin,
     reddit,
+    medium,
   };
 
   if (loading) {
@@ -321,6 +348,7 @@ export default function VerifySocial() {
         <VerifyPlatformModal
           onClose={() => setShowModal(false)}
           savedHandles={savedHandles}
+          onVerified={handleVerified}
         />
       )}
 
@@ -398,6 +426,7 @@ export default function VerifySocial() {
                 placeholder="handle"
                 bgColor="bg-rose-50"
                 textColor="text-rose-500"
+                isPending={pendingPlatforms.has("instagram")}
               />
 
               <SocialInput
@@ -408,6 +437,7 @@ export default function VerifySocial() {
                 placeholder="username"
                 bgColor="bg-blue-50"
                 textColor="text-blue-600"
+                isPending={pendingPlatforms.has("linkedin")}
               />
 
               <SocialInput
@@ -418,6 +448,7 @@ export default function VerifySocial() {
                 placeholder="username"
                 bgColor="bg-orange-50"
                 textColor="text-orange-600"
+                isPending={pendingPlatforms.has("reddit")}
               />
 
               <SocialInput
@@ -428,6 +459,7 @@ export default function VerifySocial() {
                 placeholder="channel"
                 bgColor="bg-red-50"
                 textColor="text-red-600"
+                isPending={pendingPlatforms.has("youtube")}
               />
 
               <SocialInput
@@ -438,6 +470,18 @@ export default function VerifySocial() {
                 placeholder="handle"
                 bgColor="bg-gray-100"
                 textColor="text-gray-800"
+                isPending={pendingPlatforms.has("x")}
+              />
+
+              <SocialInput
+                icon={<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M13.54 12a6.8 6.8 0 01-6.77 6.82A6.8 6.8 0 010 12a6.8 6.8 0 016.77-6.82A6.8 6.8 0 0113.54 12zM20.96 12c0 3.54-1.51 6.42-3.38 6.42-1.87 0-3.39-2.88-3.39-6.42s1.52-6.42 3.39-6.42 3.38 2.88 3.38 6.42M24 12c0 3.17-.53 5.75-1.19 5.75-.66 0-1.19-2.58-1.19-5.75s.53-5.75 1.19-5.75C23.47 6.25 24 8.83 24 12z"/></svg>}
+                prefix="medium.com/@"
+                value={medium}
+                onChange={setMedium}
+                placeholder="username"
+                bgColor="bg-gray-50"
+                textColor="text-gray-700"
+                isPending={pendingPlatforms.has("medium")}
               />
             </div>
 
