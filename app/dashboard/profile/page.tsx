@@ -20,6 +20,23 @@ const NAV_ITEMS = [
 
 type NavKey = (typeof NAV_ITEMS)[number]["key"];
 
+// ─── Influencer types ─────────────────────────────────────────────────────────
+const INFLUENCER_TYPES = [
+  { value: "travel",      label: "✈️  Travel" },
+  { value: "food",        label: "🍜  Food" },
+  { value: "entertainment", label: "🎬  Entertainment" },
+  { value: "fashion",     label: "👗  Fashion" },
+  { value: "beauty",      label: "💄  Beauty" },
+  { value: "fitness",     label: "💪  Fitness" },
+  { value: "gaming",      label: "🎮  Gaming" },
+  { value: "tech",        label: "💻  Tech" },
+  { value: "education",   label: "📚  Education / Skills" },
+  { value: "finance",     label: "📈  Finance" },
+  { value: "other",       label: "🌟  Other" },
+] as const;
+
+type InfluencerType = (typeof INFLUENCER_TYPES)[number]["value"] | "";
+
 // ─── Shared input style ───────────────────────────────────────────────────────
 const inputClass =
   "w-full border border-gray-300 rounded-xl px-4 py-3 text-base sm:text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-black transition-shadow";
@@ -32,19 +49,20 @@ export default function Profile() {
 
   const [activeNav, setActiveNav] = useState<NavKey>("edit-profile");
 
-  const [user, setUser]                   = useState<any>(null);
-  const [username, setUsername]           = useState("");
-  const [fullName, setFullName]           = useState("");
-  const [bio, setBio]                     = useState("");
-  const [avatarUrl, setAvatarUrl]         = useState<string | null>(null);
-  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  const [user, setUser]                       = useState<any>(null);
+  const [username, setUsername]               = useState("");
+  const [fullName, setFullName]               = useState("");
+  const [bio, setBio]                         = useState("");
+  const [influencerType, setInfluencerType]   = useState<InfluencerType>("");
+  const [avatarUrl, setAvatarUrl]             = useState<string | null>(null);
+  const [avatarPreview, setAvatarPreview]     = useState<string | null>(null);
   const [avatarUploading, setAvatarUploading] = useState(false);
-  const [coverUrl, setCoverUrl]           = useState<string | null>(null);
+  const [coverUrl, setCoverUrl]               = useState<string | null>(null);
   const [coverUploading, setCoverUploading]   = useState(false);
-  const [loading, setLoading]             = useState(true);
-  const [saving, setSaving]               = useState(false);
-  const [saved, setSaved]                 = useState(false);
-  const [usernameError, setUsernameError] = useState("");
+  const [loading, setLoading]                 = useState(true);
+  const [saving, setSaving]                   = useState(false);
+  const [saved, setSaved]                     = useState(false);
+  const [usernameError, setUsernameError]     = useState("");
 
   useEffect(() => {
     const load = async () => {
@@ -61,6 +79,7 @@ export default function Profile() {
         setUsername(profile.username || "");
         setFullName(profile.full_name || "");
         setBio(profile.bio || "");
+        setInfluencerType((profile.influencer_type as InfluencerType) || "");
         setAvatarUrl(profile.avatar_url || null);
         setCoverUrl(profile.cover_url || null);
       }
@@ -135,10 +154,11 @@ export default function Profile() {
     setSaving(true);
     try {
       const { error } = await supabase.from("profiles").update({
-        username:   username.trim().toLowerCase(),
-        full_name:  fullName.trim(),
+        username:        username.trim().toLowerCase(),
+        full_name:       fullName.trim(),
         bio,
-        updated_at: new Date().toISOString(),
+        influencer_type: influencerType || null,
+        updated_at:      new Date().toISOString(),
       }).eq("id", user.id);
 
       if (error) {
@@ -295,18 +315,69 @@ export default function Profile() {
             {/* Account Details */}
             <div className="bg-white border border-gray-200 rounded-2xl p-5 space-y-5">
               <p className="text-sm font-bold text-gray-900">Account Details</p>
+
+              {/* Full Name */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1.5">Full Name</label>
-                <input value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="Eg: Basil Biju" className={inputClass} />
+                <input
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                  placeholder="Eg: Basil Biju"
+                  className={inputClass}
+                />
               </div>
+
+              {/* Username */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1.5">Username</label>
-                <input value={username} onChange={(e) => setUsername(e.target.value)} className={`${inputClass} ${usernameError ? "border-red-400 focus:ring-red-200" : ""}`} />
+                <input
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  className={`${inputClass} ${usernameError ? "border-red-400 focus:ring-red-200" : ""}`}
+                />
                 {usernameError && <p className="text-red-500 text-xs mt-1.5">{usernameError}</p>}
               </div>
+
+              {/* Influencer Type */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  What kind of influencer are you?
+                </label>
+                <div className="flex flex-wrap gap-2">
+                  {INFLUENCER_TYPES.map((type) => (
+                    <button
+                      key={type.value}
+                      type="button"
+                      onClick={() =>
+                        setInfluencerType(
+                          influencerType === type.value ? "" : type.value
+                        )
+                      }
+                      className={`px-3.5 py-2 rounded-xl text-sm font-medium border transition-all ${
+                        influencerType === type.value
+                          ? "bg-gray-900 text-white border-gray-900"
+                          : "bg-white text-gray-600 border-gray-200 hover:border-gray-400 hover:text-gray-900"
+                      }`}
+                    >
+                      {type.label}
+                    </button>
+                  ))}
+                </div>
+                {influencerType && (
+                  <p className="text-xs text-gray-400 mt-2">
+                    Click again to deselect
+                  </p>
+                )}
+              </div>
+
+              {/* Bio */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1.5">Bio</label>
-                <textarea value={bio} onChange={(e) => setBio(e.target.value)} className="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm h-28 resize-none focus:ring-2 focus:ring-black outline-none" />
+                <textarea
+                  value={bio}
+                  onChange={(e) => setBio(e.target.value)}
+                  className="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm h-28 resize-none focus:ring-2 focus:ring-black outline-none"
+                />
               </div>
             </div>
 
