@@ -137,9 +137,13 @@ function SocialInput({
 function VerifyPlatformModal({
   onClose,
   savedHandles,
+  pendingPlatforms,
+  onVerify,
 }: {
   onClose: () => void;
   savedHandles: Record<PlatformKey, string>;
+  pendingPlatforms: Set<PlatformKey>;
+  onVerify: (platform: PlatformKey) => void;
 }) {
   const [selected, setSelected] = useState<PlatformKey | null>(null);
   const [error, setError] = useState("");
@@ -156,9 +160,9 @@ function VerifyPlatformModal({
       );
       return;
     }
-    // Proceed with verification — open the profile URL in a new tab
     const url = buildUrl(savedHandles[selected], selected);
     if (url) window.open(url, "_blank");
+    onVerify(selected);
     onClose();
   };
 
@@ -181,6 +185,7 @@ function VerifyPlatformModal({
           {PLATFORMS.map((platform) => {
             const hasLink = !!savedHandles[platform.key as PlatformKey];
             const isSelected = selected === platform.key;
+            const isPending = pendingPlatforms.has(platform.key as PlatformKey);
             return (
               <button
                 key={platform.key}
@@ -189,29 +194,55 @@ function VerifyPlatformModal({
                   setError("");
                 }}
                 className={`
-                  relative flex flex-col items-center justify-center gap-2 py-4 px-3 rounded-xl border-2 transition-all
+                  relative flex items-center gap-2 py-3 px-3 rounded-xl border-2 transition-all text-left
                   ${isSelected
                     ? `${platform.border} ${platform.bg}`
                     : "border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50"
                   }
                 `}
               >
-                {/* Checkmark badge */}
-                {isSelected && (
-                  <span className={`absolute top-2 right-2 w-4 h-4 rounded-full flex items-center justify-center ${platform.bg}`}>
-                    <svg width="10" height="10" viewBox="0 0 12 12" fill="none">
-                      <path d="M2 6l3 3 5-5" stroke={platform.color.replace("text-", "").includes("rose") ? "#f43f5e" : platform.color.includes("red") ? "#dc2626" : platform.color.includes("blue") ? "#2563eb" : platform.color.includes("orange") ? "#ea580c" : "#374151"} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
-                    </svg>
-                  </span>
-                )}
+                {/* LEFT: Pending badge or dot */}
+                <div className="flex flex-col items-center justify-center shrink-0 w-5">
+                  {isPending ? (
+                    <span className="w-2 h-2 rounded-full bg-amber-400 shrink-0" title="Pending" />
+                  ) : (
+                    <span className={`w-1.5 h-1.5 rounded-full ${hasLink ? "bg-green-400" : "bg-gray-300"}`} />
+                  )}
+                </div>
+
+                {/* Icon + Label */}
                 <span className={isSelected ? platform.color : "text-gray-500"}>
                   {platform.icon}
                 </span>
-                <span className={`text-xs font-medium ${isSelected ? "text-gray-900" : "text-gray-600"}`}>
-                  {platform.label}
-                </span>
-                {/* Dot indicator — green if link saved, gray if not */}
-                <span className={`w-1.5 h-1.5 rounded-full ${hasLink ? "bg-green-400" : "bg-gray-300"}`} />
+                <div className="flex flex-col min-w-0">
+                  <span className={`text-xs font-medium ${isSelected ? "text-gray-900" : "text-gray-600"}`}>
+                    {platform.label}
+                  </span>
+                  {isPending && (
+                    <span className="text-[10px] text-amber-500 font-medium leading-tight">Pending</span>
+                  )}
+                </div>
+
+                {/* Checkmark badge top-right */}
+                {isSelected && (
+                  <span className={`absolute top-2 right-2 w-4 h-4 rounded-full flex items-center justify-center ${platform.bg}`}>
+                    <svg width="10" height="10" viewBox="0 0 12 12" fill="none">
+                      <path
+                        d="M2 6l3 3 5-5"
+                        stroke={
+                          platform.color.includes("rose") ? "#f43f5e"
+                          : platform.color.includes("red") ? "#dc2626"
+                          : platform.color.includes("blue") ? "#2563eb"
+                          : platform.color.includes("orange") ? "#ea580c"
+                          : "#374151"
+                        }
+                        strokeWidth="1.8"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
+                  </span>
+                )}
               </button>
             );
           })}
@@ -223,7 +254,6 @@ function VerifyPlatformModal({
             {error}
           </div>
         )}
-
 
         {/* Continue button */}
         <div className="px-4 pb-4">
@@ -248,6 +278,9 @@ export default function VerifySocial() {
   const [saving, setSaving]   = useState(false);
   const [saved, setSaved]     = useState(false);
   const [showModal, setShowModal] = useState(false);
+
+  // Track which platforms have been submitted for verification (pending)
+  const [pendingPlatforms, setPendingPlatforms] = useState<Set<PlatformKey>>(new Set());
 
   const [instagram, setInstagram] = useState("");
   const [youtube, setYoutube]     = useState("");
@@ -298,7 +331,10 @@ export default function VerifySocial() {
 
   const handleNavClick = (route: string) => router.push(route);
 
-  // Current saved handles map for modal
+  const handleVerify = (platform: PlatformKey) => {
+    setPendingPlatforms((prev) => new Set(prev).add(platform));
+  };
+
   const savedHandles: Record<PlatformKey, string> = {
     instagram,
     youtube,
@@ -321,6 +357,8 @@ export default function VerifySocial() {
         <VerifyPlatformModal
           onClose={() => setShowModal(false)}
           savedHandles={savedHandles}
+          pendingPlatforms={pendingPlatforms}
+          onVerify={handleVerify}
         />
       )}
 
@@ -388,6 +426,16 @@ export default function VerifySocial() {
                   <ShieldCheck size={13} />
                   Verify
                 </button>
+              </div>
+
+              {/* ── Instructions block ── */}
+              <div className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 space-y-1.5">
+                <p className="text-sm text-gray-700">
+                  <span className="font-semibold text-gray-900">1.</span> Please share your bio link for LinkedIn. Go back and fill in your LinkedIn handle first.
+                </p>
+                <p className="text-sm text-gray-700">
+                  <span className="font-semibold text-gray-900">2.</span> Make sure you created a username in <span className="font-medium text-gray-900">"edit profile"</span>.
+                </p>
               </div>
 
               <SocialInput
@@ -460,5 +508,3 @@ export default function VerifySocial() {
     </div>
   );
 }
-
-
