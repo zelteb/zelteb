@@ -13,6 +13,9 @@ import {
   ExternalLink,
   AlertCircle,
   XCircle,
+  Copy,
+  Check,
+  Link2Off,
 } from "lucide-react";
 
 // ─── Platform config ──────────────────────────────────────────────────────────
@@ -131,10 +134,14 @@ export default function VerifySocialPage() {
   const router = useRouter();
 
   const [user, setUser] = useState<any>(null);
+  const [username, setUsername] = useState<string>("");
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [existingRequests, setExistingRequests] = useState<ExistingRequest[]>([]);
+  const [copiedLink, setCopiedLink] = useState(false);
+  const [delinkingId, setDelinkingId] = useState<string | null>(null);
+  const [confirmDelinkId, setConfirmDelinkId] = useState<string | null>(null);
 
   // Form state
   const [selectedPlatform, setSelectedPlatform] = useState<PlatformValue | null>(null);
@@ -143,11 +150,28 @@ export default function VerifySocialPage() {
   const [useCustomUrl, setUseCustomUrl] = useState(false);
   const [error, setError] = useState("");
 
+  // Base URL for the app — adjust domain as needed
+  const APP_BASE_URL =
+    typeof window !== "undefined"
+      ? `${window.location.protocol}//${window.location.host}`
+      : "https://yourapp.com";
+
+  const profilePageUrl = username ? `${APP_BASE_URL}/u/${username}` : null;
+
   useEffect(() => {
     const load = async () => {
       const { data: auth } = await supabase.auth.getUser();
       if (!auth.user) { router.push("/"); return; }
       setUser(auth.user);
+
+      // Fetch profile to get username
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("username")
+        .eq("id", auth.user.id)
+        .single();
+
+      if (profile?.username) setUsername(profile.username);
 
       // Fetch existing requests for this user
       const { data } = await supabase
@@ -164,9 +188,39 @@ export default function VerifySocialPage() {
 
   const selectedMeta = PLATFORMS.find((p) => p.value === selectedPlatform);
 
+  const handleCopyLink = async () => {
+    if (!profilePageUrl) return;
+    await navigator.clipboard.writeText(profilePageUrl);
+    setCopiedLink(true);
+    setTimeout(() => setCopiedLink(false), 2500);
+  };
+
+  const handleDelink = async (reqId: string) => {
+    setDelinkingId(reqId);
+    try {
+      const { error: delError } = await supabase
+        .from("verification_requests")
+        .delete()
+        .eq("id", reqId)
+        .eq("user_id", user.id);
+
+      if (delError) throw delError;
+
+      setExistingRequests((prev) => prev.filter((r) => r.id !== reqId));
+    } catch (err: any) {
+      alert("Failed to delink: " + err.message);
+    }
+    setDelinkingId(null);
+    setConfirmDelinkId(null);
+  };
+
   const handleSubmit = async () => {
     setError("");
 
+    if (!username) {
+      setError("You need to set a username in Edit Profile before verifying.");
+      return;
+    }
     if (!selectedPlatform) {
       setError("Please select a platform.");
       return;
@@ -188,9 +242,10 @@ export default function VerifySocialPage() {
     }
 
     const cleanHandle = handle.trim().replace(/^@/, "");
-    const profileUrl = useCustomUrl && customUrl.trim()
-      ? customUrl.trim()
-      : `${selectedMeta!.urlPrefix}${cleanHandle}`;
+    const profileUrl =
+      useCustomUrl && customUrl.trim()
+        ? customUrl.trim()
+        : `${selectedMeta!.urlPrefix}${cleanHandle}`;
 
     setSubmitting(true);
     try {
@@ -251,7 +306,7 @@ export default function VerifySocialPage() {
 
         <div className="flex gap-6 items-start">
 
-          {/* ── Left sidebar (mirrors profile page style) ── */}
+          {/* ── Left sidebar ── */}
           <aside className="hidden md:flex flex-col w-56 shrink-0 bg-white border border-gray-200 rounded-2xl p-2 sticky top-8">
             <button
               onClick={() => router.push("/dashboard/profile")}
@@ -273,19 +328,110 @@ export default function VerifySocialPage() {
           {/* ── Right content ── */}
           <div className="flex-1 min-w-0 space-y-4 pb-24 sm:pb-12">
 
-            {/* Header */}
+            {/* ── Header with instructions ── */}
             <div className="bg-white border border-gray-200 rounded-2xl p-5">
-              <div className="flex items-center gap-2 mb-1">
+              <div className="flex items-center gap-2 mb-3">
                 <ShieldCheck size={18} className="text-orange-500" />
                 <h1 className="text-base font-bold text-gray-900">Verify Social Media</h1>
               </div>
-              <p className="text-sm text-gray-400">
-                Submit your social media profile for verification. Our team will review
-                and approve your request within 1–2 business days.
+
+              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2.5">
+                How to get verified
               </p>
+              <ol className="space-y-2.5">
+                <li className="flex items-start gap-3">
+                  <span className="flex-shrink-0 w-5 h-5 rounded-full bg-orange-100 text-orange-600 text-[11px] font-bold flex items-center justify-center mt-0.5">
+                    1
+                  </span>
+                  <div className="text-sm text-gray-600 leading-relaxed">
+                    Make sure you have set a username in{" "}
+                    <button
+                      onClick={() => router.push("/dashboard/profile")}
+                      className="text-gray-900 font-semibold underline underline-offset-2 hover:text-orange-500 transition-colors"
+                    >
+                      Edit Profile
+                    </button>
+                    . Your username is required to generate your profile link.
+                  </div>
+                </li>
+                <li className="flex items-start gap-3">
+                  <span className="flex-shrink-0 w-5 h-5 rounded-full bg-orange-100 text-orange-600 text-[11px] font-bold flex items-center justify-center mt-0.5">
+                    2
+                  </span>
+                  <div className="text-sm text-gray-600 leading-relaxed">
+                    Copy your profile page link below and paste it into the bio of the social
+                    media account you want to verify.
+                  </div>
+                </li>
+                <li className="flex items-start gap-3">
+                  <span className="flex-shrink-0 w-5 h-5 rounded-full bg-orange-100 text-orange-600 text-[11px] font-bold flex items-center justify-center mt-0.5">
+                    3
+                  </span>
+                  <div className="text-sm text-gray-600 leading-relaxed">
+                    Submit your handle below. Our team will review and approve your request
+                    within 1–2 business days.
+                  </div>
+                </li>
+              </ol>
+
+              {/* ── Profile link box ── */}
+              <div className="mt-4 pt-4 border-t border-gray-100">
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
+                  Your Profile Link
+                </p>
+                {profilePageUrl ? (
+                  <div className="flex items-center gap-2">
+                    <div className="flex-1 flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-xl px-3.5 py-2.5 min-w-0">
+                      <a
+                        href={profilePageUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-sm text-gray-700 font-medium truncate hover:text-orange-500 transition-colors flex items-center gap-1.5 min-w-0"
+                      >
+                        <span className="truncate">{profilePageUrl}</span>
+                        <ExternalLink size={12} className="shrink-0 text-gray-400" />
+                      </a>
+                    </div>
+                    <button
+                      onClick={handleCopyLink}
+                      className={`flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl text-sm font-semibold border transition-all shrink-0 ${
+                        copiedLink
+                          ? "bg-green-50 border-green-200 text-green-600"
+                          : "bg-white border-gray-200 text-gray-700 hover:border-gray-400 hover:text-gray-900 active:scale-95"
+                      }`}
+                    >
+                      {copiedLink ? (
+                        <>
+                          <Check size={13} />
+                          Copied
+                        </>
+                      ) : (
+                        <>
+                          <Copy size={13} />
+                          Copy
+                        </>
+                      )}
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2.5 bg-amber-50 border border-amber-100 rounded-xl px-3.5 py-2.5">
+                    <AlertCircle size={14} className="text-amber-500 shrink-0" />
+                    <p className="text-xs text-amber-700">
+                      No username set yet.{" "}
+                      <button
+                        onClick={() => router.push("/dashboard/profile")}
+                        className="font-semibold underline underline-offset-2 hover:text-amber-900"
+                      >
+                        Set one in Edit Profile
+                      </button>{" "}
+                      to generate your link.
+                    </p>
+                  </div>
+                )}
+              </div>
             </div>
 
-            {/* Existing requests */}
+            {/* ── Existing requests ── */}
             {existingRequests.length > 0 && (
               <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden">
                 <div className="px-5 py-3.5 border-b border-gray-100">
@@ -294,13 +440,15 @@ export default function VerifySocialPage() {
                 <div className="divide-y divide-gray-100">
                   {existingRequests.map((req) => {
                     const meta = PLATFORMS.find((p) => p.value === req.platform);
+                    const isDelinking = delinkingId === req.id;
+                    const isConfirming = confirmDelinkId === req.id;
                     return (
-                      <div key={req.id} className="flex items-center justify-between px-5 py-3.5">
-                        <div className="flex items-center gap-3">
-                          <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${meta?.bg ?? "bg-gray-100"} ${meta?.color ?? "text-gray-600"}`}>
+                      <div key={req.id} className="flex items-center justify-between px-5 py-3.5 gap-3">
+                        <div className="flex items-center gap-3 min-w-0">
+                          <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${meta?.bg ?? "bg-gray-100"} ${meta?.color ?? "text-gray-600"}`}>
                             {meta?.icon}
                           </div>
-                          <div>
+                          <div className="min-w-0">
                             <p className="text-sm font-semibold text-gray-900">
                               {meta?.label ?? req.platform}
                             </p>
@@ -315,7 +463,7 @@ export default function VerifySocialPage() {
                             </a>
                           </div>
                         </div>
-                        <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-2 shrink-0">
                           <StatusBadge status={req.status} />
                           <p className="text-[10px] text-gray-400 hidden sm:block">
                             {new Date(req.created_at).toLocaleDateString("en-US", {
@@ -324,6 +472,37 @@ export default function VerifySocialPage() {
                               year: "numeric",
                             })}
                           </p>
+
+                          {/* Delink button — only for approved */}
+                          {req.status === "approved" && (
+                            isConfirming ? (
+                              <div className="flex items-center gap-1.5">
+                                <span className="text-xs text-gray-500">Remove?</span>
+                                <button
+                                  onClick={() => handleDelink(req.id)}
+                                  disabled={isDelinking}
+                                  className="text-xs font-semibold text-red-500 hover:text-red-700 transition-colors disabled:opacity-50"
+                                >
+                                  {isDelinking ? <Loader2 size={12} className="animate-spin" /> : "Yes"}
+                                </button>
+                                <button
+                                  onClick={() => setConfirmDelinkId(null)}
+                                  className="text-xs font-semibold text-gray-400 hover:text-gray-700 transition-colors"
+                                >
+                                  Cancel
+                                </button>
+                              </div>
+                            ) : (
+                              <button
+                                onClick={() => setConfirmDelinkId(req.id)}
+                                title="Delink this account"
+                                className="flex items-center gap-1 px-2 py-1 rounded-lg text-xs text-gray-400 border border-gray-200 hover:border-red-200 hover:text-red-500 hover:bg-red-50 transition-all"
+                              >
+                                <Link2Off size={12} />
+                                <span className="hidden sm:inline">Delink</span>
+                              </button>
+                            )
+                          )}
                         </div>
                       </div>
                     );
@@ -332,7 +511,7 @@ export default function VerifySocialPage() {
               </div>
             )}
 
-            {/* Success banner */}
+            {/* ── Success banner ── */}
             {submitted && (
               <div className="flex items-center gap-3 bg-green-50 border border-green-200 rounded-2xl px-5 py-4">
                 <CheckCircle2 size={18} className="text-green-500 shrink-0" />
@@ -343,7 +522,7 @@ export default function VerifySocialPage() {
               </div>
             )}
 
-            {/* Submission form */}
+            {/* ── Submission form ── */}
             <div className="bg-white border border-gray-200 rounded-2xl p-5 space-y-5">
               <p className="text-sm font-bold text-gray-900">Add New Verification</p>
 
@@ -355,7 +534,6 @@ export default function VerifySocialPage() {
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                   {PLATFORMS.map((platform) => {
                     const isSelected = selectedPlatform === platform.value;
-                    // Disable if already has a non-rejected request
                     const isDisabled = existingRequests.some(
                       (r) => r.platform === platform.value && r.status !== "rejected"
                     );
@@ -394,7 +572,7 @@ export default function VerifySocialPage() {
                 </div>
               </div>
 
-              {/* Handle input (shown after platform selected) */}
+              {/* Handle input */}
               {selectedPlatform && selectedMeta && (
                 <div className="space-y-4 border-t border-gray-100 pt-5">
                   <div>
@@ -478,7 +656,7 @@ export default function VerifySocialPage() {
               </div>
             </div>
 
-            {/* Info box */}
+            {/* ── Info box ── */}
             <div className="bg-amber-50 border border-amber-100 rounded-2xl px-5 py-4 flex gap-3">
               <AlertCircle size={16} className="text-amber-500 mt-0.5 shrink-0" />
               <div>
