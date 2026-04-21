@@ -224,10 +224,6 @@ function VerifyPlatformModal({
           </div>
         )}
 
-        {/* Helper text */}
-        <p className="px-4 pb-3 text-xs text-gray-400 text-center">
-          Green dot = handle saved. Select a platform to verify.
-        </p>
 
         {/* Continue button */}
         <div className="px-4 pb-4">

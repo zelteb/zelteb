@@ -376,7 +376,7 @@ export default function Home() {
               <Link href="/terms" className="hover:text-gray-400">Terms of Service</Link>
               <Link href="/priv" className="hover:text-gray-400">Privacy Policy</Link>
               <Link href="/faq" className="hover:text-gray-400">FAQ section</Link>
-              <Link href="/refund" className="hover:text-gray-400">Refund Policy</Link>
+              <Link href="/Zelteb Employes" className="hover:text-gray-400">Zelteb Employes</Link>
             </div>
           </div>
         </div>
