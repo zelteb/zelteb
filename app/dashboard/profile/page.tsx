@@ -101,7 +101,7 @@ function AccountSecurityPanel({
       <div className="bg-white border border-gray-200 rounded-2xl p-5 space-y-5">
         <div>
           <p className="text-sm font-bold text-gray-900">Social Links</p>
-          <p className="text-xs text-gray-400 mt-1">Add your social media handles to verify your presence across platforms.</p>
+          <p className="text-xs text-gray-400 mt-1">Only verified handles will be in profile page.</p>
         </div>
 
         <SocialInput
