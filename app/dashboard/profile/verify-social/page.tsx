@@ -431,10 +431,11 @@ export default function VerifySocial() {
               {/* ── Instructions block ── */}
               <div className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 space-y-1.5">
                 <p className="text-sm text-gray-700">
-                  <span className="font-semibold text-gray-900">1.</span> Please share your bio link for LinkedIn. Go back and fill in your LinkedIn handle first.
+                   <span className="font-semibold text-gray-900">1.</span> Make sure you created a username in <span className="font-medium text-gray-900">"edit profile"</span>.
                 </p>
+                  
                 <p className="text-sm text-gray-700">
-                  <span className="font-semibold text-gray-900">2.</span> Make sure you created a username in <span className="font-medium text-gray-900">"edit profile"</span>.
+                 <span className="font-semibold text-gray-900"></span>After that you can apply for Verify
                 </p>
               </div>
 
