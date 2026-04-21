@@ -22,6 +22,7 @@ interface Profile {
   x_url?: string | null;
   linkedin_url?: string | null;
   reddit_url?: string | null;
+  influencer_type?: string | null;
 }
 
 interface Product {
@@ -33,6 +34,21 @@ interface Product {
   product_type: "video" | "digital";
   created_at: string;
 }
+
+// ─── Influencer type display map ──────────────────────────────────────────────
+const INFLUENCER_LABELS: Record<string, string> = {
+  travel:        "✈️  Travel Influencer",
+  food:          "🍜  Food Influencer",
+  entertainment: "🎬  Entertainment Influencer",
+  fashion:       "👗  Fashion Influencer",
+  beauty:        "💄  Beauty Influencer",
+  fitness:       "💪  Fitness Influencer",
+  gaming:        "🎮  Gaming Influencer",
+  tech:          "💻  Tech Influencer",
+  education:     "📚  Education & Skills",
+  finance:       "📈  Finance Influencer",
+  other:         "🌟  Influencer",
+};
 
 async function uploadImage(file: File, bucket: string, path: string): Promise<string> {
   const { error } = await supabase.storage.from(bucket).upload(path, file, {
@@ -285,41 +301,11 @@ function SocialIconsRow({ profile, isOwner, onEditClick }: {
   profile: Profile; isOwner: boolean; onEditClick: () => void;
 }) {
   const savedLinks = [
-    {
-      key: "youtube",
-      url: profile.youtube_url,
-      icon: <YoutubeIcon size={22} />,
-      label: "YouTube",
-      activeClass: "text-red-500 hover:bg-red-50 hover:border-red-200",
-    },
-    {
-      key: "instagram",
-      url: profile.instagram_url,
-      icon: <InstagramIcon size={22} />,
-      label: "Instagram",
-      activeClass: "text-pink-500 hover:bg-pink-50 hover:border-pink-200",
-    },
-    {
-      key: "x",
-      url: profile.x_url,
-      icon: <XIcon size={20} />,
-      label: "X / Twitter",
-      activeClass: "text-gray-800 hover:bg-gray-100 hover:border-gray-300",
-    },
-    {
-      key: "linkedin",
-      url: profile.linkedin_url,
-      icon: <LinkedinIcon size={22} />,
-      label: "LinkedIn",
-      activeClass: "text-blue-600 hover:bg-blue-50 hover:border-blue-200",
-    },
-    {
-      key: "reddit",
-      url: profile.reddit_url,
-      icon: <RedditIcon size={22} />,
-      label: "Reddit",
-      activeClass: "text-orange-500 hover:bg-orange-50 hover:border-orange-200",
-    },
+    { key: "youtube",   url: profile.youtube_url,   icon: <YoutubeIcon size={22} />,   label: "YouTube",   activeClass: "text-red-500 hover:bg-red-50 hover:border-red-200" },
+    { key: "instagram", url: profile.instagram_url, icon: <InstagramIcon size={22} />, label: "Instagram", activeClass: "text-pink-500 hover:bg-pink-50 hover:border-pink-200" },
+    { key: "x",         url: profile.x_url,         icon: <XIcon size={20} />,         label: "X / Twitter", activeClass: "text-gray-800 hover:bg-gray-100 hover:border-gray-300" },
+    { key: "linkedin",  url: profile.linkedin_url,  icon: <LinkedinIcon size={22} />,  label: "LinkedIn",  activeClass: "text-blue-600 hover:bg-blue-50 hover:border-blue-200" },
+    { key: "reddit",    url: profile.reddit_url,    icon: <RedditIcon size={22} />,    label: "Reddit",    activeClass: "text-orange-500 hover:bg-orange-50 hover:border-orange-200" },
   ];
 
   const hasAnyLink = savedLinks.some((l) => !!l.url);
@@ -343,7 +329,6 @@ function SocialIconsRow({ profile, isOwner, onEditClick }: {
             </a>
           );
         }
-
         if (isOwner) {
           return (
             <button
@@ -356,7 +341,6 @@ function SocialIconsRow({ profile, isOwner, onEditClick }: {
             </button>
           );
         }
-
         return null;
       })}
 
@@ -541,15 +525,12 @@ export default function UserProfileClient({
   const coverInputRef  = useRef<HTMLInputElement>(null);
   const avatarInputRef = useRef<HTMLInputElement>(null);
 
-  // ── FIX: Re-fetch the full profile on mount to ensure all columns are present,
-  //         including linkedin_url and reddit_url which may be missing if the
-  //         server-side query doesn't select them explicitly.
   useEffect(() => {
     const fetchProfile = async () => {
       const { data, error } = await supabase
         .from("profiles")
         .select(
-          "id, username, full_name, cover_url, avatar_url, bio, post_count, youtube_url, instagram_url, x_url, linkedin_url, reddit_url"
+          "id, username, full_name, cover_url, avatar_url, bio, post_count, youtube_url, instagram_url, x_url, linkedin_url, reddit_url, influencer_type"
         )
         .eq("id", initialProfile.id)
         .single();
@@ -581,9 +562,6 @@ export default function UserProfileClient({
         "postgres_changes",
         { event: "UPDATE", schema: "public", table: "profiles", filter: `username=eq.${profile.username}` },
         (payload) => {
-          // ── FIX: Use Object.assign pattern so ALL columns from payload.new
-          //         overwrite the current state, including null values for
-          //         linkedin_url / reddit_url when they're cleared.
           setProfile((p) => ({ ...p, ...(payload.new as Partial<Profile>) }));
         },
       )
@@ -660,9 +638,12 @@ export default function UserProfileClient({
       .update(payload)
       .eq("username", profile.username);
     if (error) throw error;
-    // ── FIX: Optimistically update local state immediately after save
     setProfile((p) => ({ ...p, ...payload }));
   }
+
+  const influencerLabel = profile.influencer_type
+    ? INFLUENCER_LABELS[profile.influencer_type] ?? null
+    : null;
 
   return (
     <div className="min-h-screen bg-[#f4f4f0]">
@@ -687,7 +668,7 @@ export default function UserProfileClient({
       {/* Profile header */}
       <div className="max-w-2xl mx-auto px-4">
 
-        {/* Avatar row — floats up over the cover */}
+        {/* Avatar row */}
         <div className="flex items-end justify-between -mt-16 md:-mt-20 relative z-10">
           <div className="w-16" />
           <AvatarPhoto
@@ -713,14 +694,29 @@ export default function UserProfileClient({
           </p>
         )}
 
-        {/* Name + handle + social icons */}
+        {/* Name + influencer type + social icons */}
         <div className="mt-4 text-center">
           <h1 className="text-2xl md:text-3xl font-bold text-gray-900 tracking-tight leading-tight">
             {profile.full_name ?? profile.username}
           </h1>
-          <p className="mt-1 text-sm text-gray-400 font-medium tracking-wide">
-            @{profile.username}
-          </p>
+
+          {/* Influencer type badge — replaces @username */}
+          {influencerLabel ? (
+            <p className="mt-1.5 text-sm text-gray-500 font-medium">
+              {influencerLabel}
+            </p>
+          ) : (
+            /* Fallback: show nothing if no type set, or show a subtle prompt for owner */
+            isOwner && (
+              <Link
+                href="/dashboard/profile"
+                className="mt-1.5 inline-block text-xs text-gray-400 hover:text-amber-500 transition-colors"
+              >
+                + Set your influencer type
+              </Link>
+            )
+          )}
+
           <SocialIconsRow
             profile={profile}
             isOwner={isOwner}
