@@ -87,7 +87,6 @@ interface VerificationRequest {
   profile_url: string;
   status: VerificationStatus;
   created_at: string;
-  // joined from profiles
   username: string;
   full_name: string;
   avatar_url: string | null;
@@ -146,7 +145,6 @@ function RequestRow({
     >
       {/* ── Col 1: User profile ── */}
       <div className="flex items-center gap-3 w-[260px] shrink-0">
-        {/* Avatar */}
         <div className="w-9 h-9 rounded-xl bg-gray-200 overflow-hidden border border-gray-100 shrink-0">
           {req.avatar_url ? (
             <Image
@@ -176,7 +174,10 @@ function RequestRow({
             <span className="text-sm font-semibold text-gray-900 truncate group-hover:underline">
               {req.full_name || req.username}
             </span>
-            <ExternalLink size={11} className="text-gray-400 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
+            <ExternalLink
+              size={11}
+              className="text-gray-400 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
+            />
           </a>
           <p className="text-xs text-gray-400 truncate">@{req.username}</p>
           {req.influencer_type && (
@@ -199,7 +200,10 @@ function RequestRow({
           <span className={`text-xs font-medium ${meta.color} truncate max-w-[160px]`}>
             @{req.handle}
           </span>
-          <ExternalLink size={10} className={`${meta.color} shrink-0 opacity-0 group-hover:opacity-100 transition-opacity`} />
+          <ExternalLink
+            size={10}
+            className={`${meta.color} shrink-0 opacity-0 group-hover:opacity-100 transition-opacity`}
+          />
         </a>
         <p className="text-[10px] text-gray-400 mt-1">
           {new Date(req.created_at).toLocaleDateString("en-US", {
@@ -260,8 +264,8 @@ function RequestRow({
   );
 }
 
-// ─── Main admin page ──────────────────────────────────────────────────────────
-export default function AdminVerifyPage() {
+// ─── Main page ────────────────────────────────────────────────────────────────
+export default function ZeltebEmployeesPage() {
   const router = useRouter();
   const [requests, setRequests] = useState<VerificationRequest[]>([]);
   const [loading, setLoading] = useState(true);
@@ -270,17 +274,8 @@ export default function AdminVerifyPage() {
 
   useEffect(() => {
     const load = async () => {
-      // Check admin
       const { data: auth } = await supabase.auth.getUser();
       if (!auth.user) { router.push("/"); return; }
-
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("is_admin")
-        .eq("id", auth.user.id)
-        .single();
-
-      if (!profile?.is_admin) { router.push("/dashboard"); return; }
 
       // Fetch verification requests joined with profile data
       const { data, error } = await supabase
@@ -383,7 +378,9 @@ export default function AdminVerifyPage() {
             <ShieldCheck size={20} className="text-orange-500" />
             <h1 className="text-xl font-bold text-gray-900">Verification Requests</h1>
           </div>
-          <p className="text-sm text-gray-400">Review and manage social media verification submissions.</p>
+          <p className="text-sm text-gray-400">
+            Review and manage social media verification submissions.
+          </p>
         </div>
 
         {/* ── Stat cards ── */}
@@ -421,7 +418,6 @@ export default function AdminVerifyPage() {
             <span className="text-xs text-gray-400 font-medium">Filter:</span>
           </div>
 
-          {/* Status filter */}
           {(["all", "pending", "approved", "rejected"] as FilterType[]).map((f) => (
             <button
               key={f}
@@ -438,11 +434,10 @@ export default function AdminVerifyPage() {
                   : "bg-white text-gray-600 border-gray-200 hover:bg-gray-50"
               }`}
             >
-              {f} {f !== "all" && `(${counts[f]})`}
+              {f} {f !== "all" && `(${counts[f as keyof typeof counts]})`}
             </button>
           ))}
 
-          {/* Platform filter */}
           {platforms.length > 1 && (
             <div className="flex items-center gap-1.5 ml-2">
               <span className="text-xs text-gray-300">|</span>
@@ -465,16 +460,22 @@ export default function AdminVerifyPage() {
         {/* ── Table ── */}
         <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden">
 
-          {/* Table header */}
+          {/* Header row */}
           <div className="flex items-center gap-3 px-4 py-3 bg-gray-50 border-b border-gray-200">
             <div className="w-[260px] shrink-0">
-              <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">User</span>
+              <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                User
+              </span>
             </div>
             <div className="flex-1">
-              <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Platform Handle</span>
+              <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                Platform Handle
+              </span>
             </div>
             <div className="shrink-0 w-[140px] text-right">
-              <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Action / Status</span>
+              <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                Action / Status
+              </span>
             </div>
           </div>
 
@@ -496,7 +497,6 @@ export default function AdminVerifyPage() {
           )}
         </div>
 
-        {/* Footer count */}
         {filtered.length > 0 && (
           <p className="text-xs text-gray-400 mt-3 text-right">
             Showing {filtered.length} of {requests.length} requests
