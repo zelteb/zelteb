@@ -125,13 +125,16 @@ function RequestRow({
   req,
   onAccept,
   onReject,
+  updating,
 }: {
   req: VerificationRequest;
   onAccept: (id: string) => void;
   onReject: (id: string) => void;
+  updating: string | null;
 }) {
   const meta = PLATFORM_META[req.platform] ?? PLATFORM_META["x"];
   const profileLink = `/u/${req.username}`;
+  const isUpdating = updating === req.id;
 
   return (
     <div
@@ -216,7 +219,9 @@ function RequestRow({
 
       {/* ── Col 3: Accept / Deny + status ── */}
       <div className="flex items-center gap-2 shrink-0">
-        {req.status === "pending" ? (
+        {isUpdating ? (
+          <Loader2 size={18} className="text-gray-400 animate-spin" />
+        ) : req.status === "pending" ? (
           <>
             <button
               onClick={() => onAccept(req.id)}
@@ -271,55 +276,78 @@ export default function ZeltebEmployeesPage() {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<FilterType>("all");
   const [platformFilter, setPlatformFilter] = useState<string>("all");
+  const [updating, setUpdating] = useState<string | null>(null);
+  const [fetchError, setFetchError] = useState<string | null>(null);
 
   useEffect(() => {
     const load = async () => {
       const { data: auth } = await supabase.auth.getUser();
       if (!auth.user) { router.push("/"); return; }
 
-      // Fetch verification requests joined with profile data
-      const { data, error } = await supabase
+      // ── Step 1: fetch all verification requests ──────────────────────────
+      const { data: verifications, error: verErr } = await supabase
         .from("verification_requests")
-        .select(`
-          id,
-          user_id,
-          platform,
-          handle,
-          profile_url,
-          status,
-          created_at,
-          profiles!inner (
-            username,
-            full_name,
-            avatar_url,
-            influencer_type
-          )
-        `)
+        .select("id, user_id, platform, handle, profile_url, status, created_at")
         .order("created_at", { ascending: false });
 
-      if (!error && data) {
-        const mapped: VerificationRequest[] = data.map((row: any) => ({
+      if (verErr) {
+        console.error("Error fetching verification_requests:", verErr.message);
+        setFetchError(verErr.message);
+        setLoading(false);
+        return;
+      }
+
+      if (!verifications || verifications.length === 0) {
+        setRequests([]);
+        setLoading(false);
+        return;
+      }
+
+      // ── Step 2: collect unique user_ids and fetch their profiles ─────────
+      const userIds = [...new Set(verifications.map((v) => v.user_id))];
+
+      const { data: profiles, error: profErr } = await supabase
+        .from("profiles")
+        .select("id, username, full_name, avatar_url, influencer_type")
+        .in("id", userIds);
+
+      if (profErr) {
+        console.error("Error fetching profiles:", profErr.message);
+        setFetchError(profErr.message);
+        setLoading(false);
+        return;
+      }
+
+      // ── Step 3: merge in-memory ──────────────────────────────────────────
+      const profileMap: Record<string, any> = {};
+      (profiles ?? []).forEach((p) => { profileMap[p.id] = p; });
+
+      const mapped: VerificationRequest[] = verifications.map((row) => {
+        const profile = profileMap[row.user_id] ?? {};
+        return {
           id: row.id,
           user_id: row.user_id,
           platform: row.platform,
           handle: row.handle,
           profile_url: row.profile_url,
-          status: row.status,
+          status: row.status as VerificationStatus,
           created_at: row.created_at,
-          username: row.profiles.username,
-          full_name: row.profiles.full_name,
-          avatar_url: row.profiles.avatar_url,
-          influencer_type: row.profiles.influencer_type,
-        }));
-        setRequests(mapped);
-      }
+          username: profile.username ?? "unknown",
+          full_name: profile.full_name ?? "",
+          avatar_url: profile.avatar_url ?? null,
+          influencer_type: profile.influencer_type ?? null,
+        };
+      });
 
+      setRequests(mapped);
       setLoading(false);
     };
+
     load();
   }, [router]);
 
   const handleAccept = async (id: string) => {
+    setUpdating(id);
     const { error } = await supabase
       .from("verification_requests")
       .update({ status: "approved", reviewed_at: new Date().toISOString() })
@@ -329,10 +357,14 @@ export default function ZeltebEmployeesPage() {
       setRequests((prev) =>
         prev.map((r) => (r.id === id ? { ...r, status: "approved" } : r))
       );
+    } else {
+      console.error("Accept error:", error.message);
     }
+    setUpdating(null);
   };
 
   const handleReject = async (id: string) => {
+    setUpdating(id);
     const { error } = await supabase
       .from("verification_requests")
       .update({ status: "rejected", reviewed_at: new Date().toISOString() })
@@ -342,7 +374,10 @@ export default function ZeltebEmployeesPage() {
       setRequests((prev) =>
         prev.map((r) => (r.id === id ? { ...r, status: "rejected" } : r))
       );
+    } else {
+      console.error("Reject error:", error.message);
     }
+    setUpdating(null);
   };
 
   const counts = {
@@ -382,6 +417,17 @@ export default function ZeltebEmployeesPage() {
             Review and manage social media verification submissions.
           </p>
         </div>
+
+        {/* ── Fetch error ── */}
+        {fetchError && (
+          <div className="mb-4 bg-red-50 border border-red-200 rounded-2xl px-5 py-4 text-sm text-red-600">
+            <strong>Error loading data:</strong> {fetchError}
+            <br />
+            <span className="text-xs text-red-400">
+              Make sure RLS policies allow admins to read all verification_requests. See the SQL setup instructions.
+            </span>
+          </div>
+        )}
 
         {/* ── Stat cards ── */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
@@ -492,6 +538,7 @@ export default function ZeltebEmployeesPage() {
                 req={req}
                 onAccept={handleAccept}
                 onReject={handleReject}
+                updating={updating}
               />
             ))
           )}
