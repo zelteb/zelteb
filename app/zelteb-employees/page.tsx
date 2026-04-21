@@ -279,6 +279,56 @@ export default function ZeltebEmployeesPage() {
   const [updating, setUpdating] = useState<string | null>(null);
   const [fetchError, setFetchError] = useState<string | null>(null);
 
+  // ── PASSWORD GATE: DELETE FROM HERE ──────────────────────────────────────────
+  const [unlocked, setUnlocked] = useState(false);
+  const [pwInput, setPwInput] = useState("");
+  const [pwError, setPwError] = useState(false);
+
+  if (!unlocked) {
+    return (
+      <div className="min-h-screen bg-[#f9f9f8] flex items-center justify-center px-4">
+        <div className="bg-white border border-gray-200 rounded-2xl px-8 py-10 w-full max-w-sm shadow-sm">
+          <div className="flex items-center gap-2 mb-1">
+            <ShieldCheck size={20} className="text-orange-500" />
+            <h2 className="text-lg font-bold text-gray-900">Admin Access</h2>
+          </div>
+          <p className="text-sm text-gray-400 mb-6">Enter the password to continue.</p>
+
+          <input
+            type="password"
+            value={pwInput}
+            onChange={(e) => { setPwInput(e.target.value); setPwError(false); }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                if (pwInput === "aslama") { setUnlocked(true); }
+                else { setPwError(true); setPwInput(""); }
+              }
+            }}
+            placeholder="Password"
+            className={`w-full px-4 py-2.5 rounded-xl border text-sm focus:outline-none focus:ring-2 focus:ring-black transition ${
+              pwError ? "border-red-300 bg-red-50" : "border-gray-200 bg-gray-50"
+            }`}
+            autoFocus
+          />
+          {pwError && (
+            <p className="text-xs text-red-500 mt-2">Incorrect password. Try again.</p>
+          )}
+
+          <button
+            onClick={() => {
+              if (pwInput === "aslama") { setUnlocked(true); }
+              else { setPwError(true); setPwInput(""); }
+            }}
+            className="mt-4 w-full py-2.5 bg-gray-900 hover:bg-gray-800 text-white text-sm font-semibold rounded-xl transition-colors"
+          >
+            Unlock
+          </button>
+        </div>
+      </div>
+    );
+  }
+  // ── PASSWORD GATE: DELETE TO HERE ────────────────────────────────────────────
+
   useEffect(() => {
     const load = async () => {
       const { data: auth } = await supabase.auth.getUser();
