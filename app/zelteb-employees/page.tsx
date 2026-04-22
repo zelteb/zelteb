@@ -13,7 +13,111 @@ import {
   Clock,
   Users,
   Filter,
+  Lock,
+  Eye,
+  EyeOff,
 } from "lucide-react";
+
+// ─── Passcode Gate ─────────────────────────────────────────────────────────────
+const SECRET_CODE = "aslama";
+
+function PasscodeGate({ onSuccess }: { onSuccess: () => void }) {
+  const [code, setCode] = useState("");
+  const [showCode, setShowCode] = useState(false);
+  const [error, setError] = useState(false);
+  const [shake, setShake] = useState(false);
+
+  const handleSubmit = () => {
+    if (code === SECRET_CODE) {
+      onSuccess();
+    } else {
+      setError(true);
+      setShake(true);
+      setTimeout(() => setShake(false), 500);
+      setTimeout(() => setError(false), 2000);
+      setCode("");
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") handleSubmit();
+  };
+
+  return (
+    <div className="min-h-screen bg-[#f9f9f8] flex items-center justify-center px-4">
+      <div
+        className={`bg-white border border-gray-200 rounded-2xl px-8 py-10 w-full max-w-sm shadow-sm transition-transform ${
+          shake ? "animate-shake" : ""
+        }`}
+        style={shake ? { animation: "shake 0.4s ease" } : {}}
+      >
+        {/* Icon */}
+        <div className="flex justify-center mb-5">
+          <div className="w-14 h-14 rounded-2xl bg-orange-50 border border-orange-100 flex items-center justify-center">
+            <Lock size={24} className="text-orange-500" />
+          </div>
+        </div>
+
+        {/* Title */}
+        <h1 className="text-lg font-bold text-gray-900 text-center mb-1">
+          Employee Access
+        </h1>
+        <p className="text-sm text-gray-400 text-center mb-6">
+          Enter your access code to continue
+        </p>
+
+        {/* Input */}
+        <div className="relative mb-3">
+          <input
+            type={showCode ? "text" : "password"}
+            value={code}
+            onChange={(e) => setCode(e.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder="Enter access code"
+            autoFocus
+            className={`w-full px-4 py-3 pr-11 rounded-xl border text-sm font-mono tracking-widest outline-none transition-all ${
+              error
+                ? "border-red-300 bg-red-50 text-red-600 placeholder-red-300"
+                : "border-gray-200 bg-gray-50 text-gray-900 focus:border-gray-400 focus:bg-white"
+            }`}
+          />
+          <button
+            type="button"
+            onClick={() => setShowCode((v) => !v)}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+          >
+            {showCode ? <EyeOff size={16} /> : <Eye size={16} />}
+          </button>
+        </div>
+
+        {/* Error */}
+        {error && (
+          <p className="text-xs text-red-500 text-center mb-3 font-medium">
+            Incorrect code. Try again.
+          </p>
+        )}
+
+        {/* Button */}
+        <button
+          onClick={handleSubmit}
+          className="w-full py-3 rounded-xl bg-gray-900 text-white text-sm font-semibold hover:bg-gray-800 active:scale-95 transition-all"
+        >
+          Unlock
+        </button>
+      </div>
+
+      <style>{`
+        @keyframes shake {
+          0%, 100% { transform: translateX(0); }
+          20% { transform: translateX(-8px); }
+          40% { transform: translateX(8px); }
+          60% { transform: translateX(-6px); }
+          80% { transform: translateX(6px); }
+        }
+      `}</style>
+    </div>
+  );
+}
 
 // ─── Platform config ──────────────────────────────────────────────────────────
 const PLATFORM_META: Record<
@@ -272,26 +376,29 @@ function RequestRow({
 // ─── Main page ────────────────────────────────────────────────────────────────
 export default function ZeltebEmployeesPage() {
   const router = useRouter();
+  const [unlocked, setUnlocked] = useState(false);
   const [requests, setRequests] = useState<VerificationRequest[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [filter, setFilter] = useState<FilterType>("all");
   const [platformFilter, setPlatformFilter] = useState<string>("all");
   const [updating, setUpdating] = useState<string | null>(null);
   const [fetchError, setFetchError] = useState<string | null>(null);
 
+  // Load data only after passcode is entered
   useEffect(() => {
+    if (!unlocked) return;
+
     const load = async () => {
+      setLoading(true);
       const { data: auth } = await supabase.auth.getUser();
       if (!auth.user) { router.push("/"); return; }
 
-      // ── Step 1: fetch all verification requests ──────────────────────────
       const { data: verifications, error: verErr } = await supabase
         .from("verification_requests")
         .select("id, user_id, platform, handle, profile_url, status, created_at")
         .order("created_at", { ascending: false });
 
       if (verErr) {
-        console.error("Error fetching verification_requests:", verErr.message);
         setFetchError(verErr.message);
         setLoading(false);
         return;
@@ -303,7 +410,6 @@ export default function ZeltebEmployeesPage() {
         return;
       }
 
-      // ── Step 2: collect unique user_ids and fetch their profiles ─────────
       const userIds = [...new Set(verifications.map((v) => v.user_id))];
 
       const { data: profiles, error: profErr } = await supabase
@@ -312,13 +418,11 @@ export default function ZeltebEmployeesPage() {
         .in("id", userIds);
 
       if (profErr) {
-        console.error("Error fetching profiles:", profErr.message);
         setFetchError(profErr.message);
         setLoading(false);
         return;
       }
 
-      // ── Step 3: merge in-memory ──────────────────────────────────────────
       const profileMap: Record<string, any> = {};
       (profiles ?? []).forEach((p) => { profileMap[p.id] = p; });
 
@@ -344,7 +448,7 @@ export default function ZeltebEmployeesPage() {
     };
 
     load();
-  }, [router]);
+  }, [unlocked, router]);
 
   const handleAccept = async (id: string) => {
     setUpdating(id);
@@ -379,6 +483,11 @@ export default function ZeltebEmployeesPage() {
     }
     setUpdating(null);
   };
+
+  // ── Show passcode gate first ──
+  if (!unlocked) {
+    return <PasscodeGate onSuccess={() => setUnlocked(true)} />;
+  }
 
   const counts = {
     all: requests.length,
@@ -424,7 +533,7 @@ export default function ZeltebEmployeesPage() {
             <strong>Error loading data:</strong> {fetchError}
             <br />
             <span className="text-xs text-red-400">
-              Make sure RLS policies allow admins to read all verification_requests. See the SQL setup instructions.
+              Make sure RLS policies allow admins to read all verification_requests.
             </span>
           </div>
         )}
