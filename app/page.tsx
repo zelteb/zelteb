@@ -6,18 +6,30 @@ import { supabase } from "@/lib/supabase";
 
 export default function Home() {
   const [user, setUser] = useState<any>(null);
-  const [menuOpen, setMenuOpen] = useState(false);
+const [menuOpen, setMenuOpen] = useState(false);
+const [userRole, setUserRole] = useState<"brand" | "influencer" | null>(null);
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => {
-      setUser(data.user);
-    });
+ supabase.auth.getUser().then(async ({ data }) => {
+  setUser(data.user);
+  if (data.user) {
+    const { data: brand } = await supabase
+      .from("brands")
+      .select("id")
+      .eq("user_id", data.user.id)
+      .single();
+    setUserRole(brand ? "brand" : "influencer");
+  }
+});
 
-    const { data: listener } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
-        setUser(session?.user ?? null);
-      }
-    );
+const { data: listener } = supabase.auth.onAuthStateChange(
+  async (_event, session) => {
+    setUser(session?.user ?? null);
+    if (!session?.user) {
+      setUserRole(null);
+    }
+  }
+);
 
     return () => listener.subscription.unsubscribe();
   }, []);
@@ -81,15 +93,15 @@ export default function Home() {
           </nav>
 
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-            {user ? (
-              <Link href="/dashboard" className="px-6 py-2.5 rounded-full bg-black text-white text-sm font-bold hover:bg-gray-800 transition-all">
-                Dashboard
-              </Link>
-            ) : (
-              <Link href="/login" className="px-6 py-2.5 rounded-full bg-black text-white text-sm font-bold hover:bg-gray-800 transition-all">
-                Login
-              </Link>
-            )}
+{user ? (
+<Link href={userRole === "brand" ? "/brand/dashboard" : "/dashboard"} className="px-6 py-2.5 rounded-full bg-black text-white text-sm font-bold hover:bg-gray-800 transition-all">
+  Dashboard
+</Link>
+) : (
+  <Link href="/login" className="px-6 py-2.5 rounded-full bg-black text-white text-sm font-bold hover:bg-gray-800 transition-all">
+    Login
+  </Link>
+)}
             {/* Hamburger */}
             <button className="hamburger" onClick={() => setMenuOpen(!menuOpen)} aria-label="Menu">
               <span style={{ width: 22, height: 2, background: "#000", borderRadius: 2, display: "block", transition: "all 0.2s", transform: menuOpen ? "rotate(45deg) translate(5px, 5px)" : "none" }} />
@@ -128,9 +140,9 @@ export default function Home() {
 
         <div className="hero-btns mt-12 flex justify-center gap-4 flex-wrap">
           {user ? (
-            <Link href="/dashboard" className="px-10 py-4 bg-black text-white rounded-2xl text-lg font-bold hover:bg-gray-800 transition-all">
-              Go to dashboard
-            </Link>
+           <Link href={userRole === "brand" ? "/brand/dashboard" : "/dashboard"} className="px-10 py-4 bg-black text-white rounded-2xl text-lg font-bold hover:bg-gray-800 transition-all">
+  Go to dashboard
+</Link>
           ) : (
             <Link href="/login" className="px-10 py-4 bg-black text-white rounded-2xl text-lg font-bold hover:bg-gray-800 transition-all">
               Start selling free
@@ -337,9 +349,9 @@ export default function Home() {
           Join 450+ creators already earning on Zelteb. Free to start, no credit card needed.
         </p>
         {user ? (
-          <Link href="/dashboard" className="inline-block px-12 py-5 bg-black text-white rounded-2xl text-xl font-bold hover:bg-gray-800 transition-all">
-            Go to dashboard
-          </Link>
+          <Link href={userRole === "brand" ? "/brand/dashboard" : "/dashboard"} className="inline-block px-12 py-5 bg-black text-white rounded-2xl text-xl font-bold hover:bg-gray-800 transition-all">
+  Go to dashboard
+</Link>
         ) : (
           <Link href="/login" className="inline-block px-12 py-5 bg-black text-white rounded-2xl text-xl font-bold hover:bg-gray-800 transition-all">
             Start selling for free
