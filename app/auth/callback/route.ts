@@ -47,7 +47,7 @@ export async function GET(request: NextRequest) {
           { user_id, email, full_name, avatar_url },
           { onConflict: "user_id" }
         );
-        return NextResponse.redirect(new URL("/influencer/dashboard", requestUrl.origin));
+        return NextResponse.redirect(new URL("/dashboard", requestUrl.origin));
       }
     }
   }

@@ -27,7 +27,7 @@ function LoginContent() {
         .select("id")
         .eq("user_id", data.user.id)
         .single();
-      if (influencer) { router.push("/influencer/dashboard"); return; }
+      if (influencer) { router.push("/dashboard"); return; }
     });
   }, []);
 
