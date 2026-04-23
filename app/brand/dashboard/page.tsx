@@ -23,11 +23,11 @@ function BrandSidebar() {
   };
 
   const navItems = [
-    { name: "Dashboard", icon: "🏠", link: "/brand/dashboard" },
-    { name: "Find Creators", icon: "🔍", link: "/brand/dashboard/creators" },
-    { name: "My Campaigns", icon: "📣", link: "/brand/dashboard/campaigns" },
-    { name: "payments", icon: "💬", link: "/brand/dashboard/payments" },
-    { name: "profile", icon: "⚙️", link: "/brand/dashboard/profile" },
+    { name: "Dashboard",      icon: "🏠", link: "/brand/dashboard" },
+    { name: "Find Creators",  icon: "🔍", link: "/brand/dashboard/creators" },
+    { name: "My Campaigns",   icon: "📣", link: "/brand/dashboard/campaigns" },
+    { name: "Payments",       icon: "💳", link: "/brand/payments" },
+    { name: "Profile",        icon: "⚙️", link: "/brand/profile" },
   ];
 
   return (
@@ -104,10 +104,10 @@ export default function BrandDashboard() {
           {/* Stats */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
             {[
-              { label: "Active Campaigns", value: "0" },
-              { label: "Creators Contacted", value: "0" },
-              { label: "Pending Requests", value: "0" },
-              { label: "Total Spend", value: "₹0" },
+              { label: "Active Campaigns",    value: "0" },
+              { label: "Creators Contacted",  value: "0" },
+              { label: "Pending Requests",    value: "0" },
+              { label: "Total Spend",         value: "₹0" },
             ].map((s) => (
               <div key={s.label} className="bg-white border border-gray-100 rounded-2xl p-6">
                 <div className="text-3xl font-black tracking-tighter">{s.value}</div>
