@@ -9,8 +9,9 @@ import { useEffect, useState, Suspense } from "react";
 
 function LoginContent() {
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const [loading, setLoading] = useState<"brand" | "influencer" | null>(null);
+ const searchParams = useSearchParams();
+const preselectedRole = searchParams.get("role") as "brand" | "influencer" | null;
+const [loading, setLoading] = useState<"brand" | "influencer" | null>(null);
 
   useEffect(() => {
     supabase.auth.getUser().then(async ({ data }) => {
@@ -89,7 +90,7 @@ function LoginContent() {
 
         <div className="cards">
           {/* BRAND CARD */}
-          <div className="card" style={{ animationDelay: "0ms" }}>
+          <div className="card" style={{ animationDelay: "0ms", borderColor: preselectedRole === "brand" ? "#111" : undefined, boxShadow: preselectedRole === "brand" ? "0 8px 32px rgba(0,0,0,0.10)" : undefined }}>
             <div className="card-icon card-icon-brand">🏢</div>
             <div>
               <div className="card-label">For businesses</div>
@@ -113,7 +114,7 @@ function LoginContent() {
           </div>
 
           {/* INFLUENCER CARD */}
-          <div className="card" style={{ animationDelay: "80ms" }}>
+          <div className="card" style={{ animationDelay: "80ms", borderColor: preselectedRole === "influencer" ? "#111" : undefined, boxShadow: preselectedRole === "influencer" ? "0 8px 32px rgba(0,0,0,0.10)" : undefined }}>
             <div className="card-icon card-icon-inf">✨</div>
             <div>
               <div className="card-label">For creators</div>

@@ -139,19 +139,27 @@ const { data: listener } = supabase.auth.onAuthStateChange(
         </p>
 
         <div className="hero-btns mt-12 flex justify-center gap-4 flex-wrap">
-          {user ? (
-           <Link href={userRole === "brand" ? "/brand/dashboard" : "/dashboard"} className="px-10 py-4 bg-black text-white rounded-2xl text-lg font-bold hover:bg-gray-800 transition-all">
-  Go to dashboard
-</Link>
-          ) : (
-            <Link href="/login" className="px-10 py-4 bg-black text-white rounded-2xl text-lg font-bold hover:bg-gray-800 transition-all">
-              Start selling free
-            </Link>
-          )}
-          <Link href="/discover" className="px-10 py-4 border-2 border-gray-200 rounded-2xl text-lg font-bold hover:border-gray-400 transition-all">
-            Browse products
-          </Link>
-        </div>
+  {user ? (
+    <Link href={userRole === "brand" ? "/brand/dashboard" : "/dashboard"} className="px-10 py-4 bg-black text-white rounded-2xl text-lg font-bold hover:bg-gray-800 transition-all">
+      Go to dashboard
+    </Link>
+  ) : (
+    <>
+      <Link
+        href="/login?role=brand"
+        className="flex items-center gap-3 px-8 py-4 bg-white border-2 border-gray-200 rounded-2xl text-lg font-bold hover:border-gray-900 transition-all"
+      >
+        Sign up as a Brand <span>→</span>
+      </Link>
+      <Link
+        href="/login?role=influencer"
+        className="flex items-center gap-3 px-8 py-4 bg-[#f5ff4e] border-2 border-[#f5ff4e] rounded-2xl text-lg font-bold hover:bg-[#eeff00] hover:border-[#eeff00] transition-all text-black"
+      >
+        Sign up as a Creator <span>→</span>
+      </Link>
+    </>
+  )}
+</div>
 
         {/* SEARCH */}
         <div className="mt-8 flex justify-center px-4">
