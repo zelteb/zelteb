@@ -16,27 +16,133 @@ import {
   Lock,
   Eye,
   EyeOff,
+  Ban,
 } from "lucide-react";
 
 // ─── Passcode Gate ─────────────────────────────────────────────────────────────
 const SECRET_CODE = "aslama";
+const MAX_ATTEMPTS = 3;
+const LOCKOUT_DURATION_MS = 24 * 60 * 60 * 1000; // 24 hours
+const STORAGE_KEY = "zelteb_employee_gate";
+
+interface GateState {
+  attempts: number;       // attempts used today
+  lockedUntil: number;    // epoch ms, 0 = not locked
+  dayStart: number;       // epoch ms of the day these attempts belong to
+}
+
+function getTodayStart(): number {
+  const now = new Date();
+  now.setHours(0, 0, 0, 0);
+  return now.getTime();
+}
+
+function loadGateState(): GateState {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) throw new Error("empty");
+    const parsed: GateState = JSON.parse(raw);
+    // If stored day is different from today, reset attempts (but keep lockout)
+    if (parsed.dayStart !== getTodayStart()) {
+      // New day — fresh attempts, but lockout might still be active
+      return {
+        attempts: 0,
+        lockedUntil: parsed.lockedUntil,
+        dayStart: getTodayStart(),
+      };
+    }
+    return parsed;
+  } catch {
+    return { attempts: 0, lockedUntil: 0, dayStart: getTodayStart() };
+  }
+}
+
+function saveGateState(state: GateState) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+}
+
+function formatCountdown(ms: number): string {
+  if (ms <= 0) return "0s";
+  const totalSec = Math.ceil(ms / 1000);
+  const h = Math.floor(totalSec / 3600);
+  const m = Math.floor((totalSec % 3600) / 60);
+  const s = totalSec % 60;
+  if (h > 0) return `${h}h ${m}m`;
+  if (m > 0) return `${m}m ${s}s`;
+  return `${s}s`;
+}
 
 function PasscodeGate({ onSuccess }: { onSuccess: () => void }) {
   const [code, setCode] = useState("");
   const [showCode, setShowCode] = useState(false);
-  const [error, setError] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [shake, setShake] = useState(false);
+  const [gateState, setGateState] = useState<GateState>(() => loadGateState());
+  const [now, setNow] = useState(Date.now());
+
+  // Tick timer every second for countdown
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const currentNow = Date.now();
+      setNow(currentNow);
+
+      // Auto-unlock when lockout expires
+      setGateState((prev) => {
+        if (prev.lockedUntil > 0 && currentNow >= prev.lockedUntil) {
+          const updated: GateState = {
+            attempts: 0,
+            lockedUntil: 0,
+            dayStart: getTodayStart(),
+          };
+          saveGateState(updated);
+          return updated;
+        }
+        return prev;
+      });
+    }, 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const isLocked = gateState.lockedUntil > 0 && now < gateState.lockedUntil;
+  const attemptsLeft = MAX_ATTEMPTS - gateState.attempts;
+  const timeLeft = gateState.lockedUntil - now;
 
   const handleSubmit = () => {
+    if (isLocked) return;
+
     if (code === SECRET_CODE) {
       onSuccess();
-    } else {
-      setError(true);
-      setShake(true);
-      setTimeout(() => setShake(false), 500);
-      setTimeout(() => setError(false), 2000);
-      setCode("");
+      return;
     }
+
+    // Wrong password
+    const newAttempts = gateState.attempts + 1;
+    const willLock = newAttempts >= MAX_ATTEMPTS;
+
+    const updated: GateState = {
+      attempts: newAttempts,
+      lockedUntil: willLock ? Date.now() + LOCKOUT_DURATION_MS : gateState.lockedUntil,
+      dayStart: getTodayStart(),
+    };
+
+    saveGateState(updated);
+    setGateState(updated);
+    setCode("");
+
+    if (willLock) {
+      setError("Too many failed attempts. Access blocked for 24 hours.");
+    } else {
+      const remaining = MAX_ATTEMPTS - newAttempts;
+      setError(
+        remaining === 1
+          ? "Incorrect code. 1 attempt remaining."
+          : `Incorrect code. ${remaining} attempts remaining.`
+      );
+    }
+
+    setShake(true);
+    setTimeout(() => setShake(false), 500);
+    setTimeout(() => setError(null), 4000);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -46,64 +152,113 @@ function PasscodeGate({ onSuccess }: { onSuccess: () => void }) {
   return (
     <div className="min-h-screen bg-[#f9f9f8] flex items-center justify-center px-4">
       <div
-        className={`bg-white border border-gray-200 rounded-2xl px-8 py-10 w-full max-w-sm shadow-sm transition-transform ${
-          shake ? "animate-shake" : ""
-        }`}
+        className="bg-white border border-gray-200 rounded-2xl px-8 py-10 w-full max-w-sm shadow-sm transition-transform"
         style={shake ? { animation: "shake 0.4s ease" } : {}}
       >
         {/* Icon */}
         <div className="flex justify-center mb-5">
-          <div className="w-14 h-14 rounded-2xl bg-orange-50 border border-orange-100 flex items-center justify-center">
-            <Lock size={24} className="text-orange-500" />
+          <div
+            className={`w-14 h-14 rounded-2xl flex items-center justify-center border ${
+              isLocked
+                ? "bg-red-50 border-red-100"
+                : "bg-orange-50 border-orange-100"
+            }`}
+          >
+            {isLocked ? (
+              <Ban size={24} className="text-red-500" />
+            ) : (
+              <Lock size={24} className="text-orange-500" />
+            )}
           </div>
         </div>
 
         {/* Title */}
         <h1 className="text-lg font-bold text-gray-900 text-center mb-1">
-          Employee Access
+          {isLocked ? "Access Blocked" : "Employee Access"}
         </h1>
-        <p className="text-sm text-gray-400 text-center mb-6">
-          Enter your access code to continue
-        </p>
 
-        {/* Input */}
-        <div className="relative mb-3">
-          <input
-            type={showCode ? "text" : "password"}
-            value={code}
-            onChange={(e) => setCode(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder="Enter access code"
-            autoFocus
-            className={`w-full px-4 py-3 pr-11 rounded-xl border text-sm font-mono tracking-widest outline-none transition-all ${
-              error
-                ? "border-red-300 bg-red-50 text-red-600 placeholder-red-300"
-                : "border-gray-200 bg-gray-50 text-gray-900 focus:border-gray-400 focus:bg-white"
-            }`}
-          />
-          <button
-            type="button"
-            onClick={() => setShowCode((v) => !v)}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
-          >
-            {showCode ? <EyeOff size={16} /> : <Eye size={16} />}
-          </button>
-        </div>
+        {isLocked ? (
+          /* ── Locked state ── */
+          <div className="text-center">
+            <p className="text-sm text-gray-400 mb-4">
+              Too many failed attempts. Try again in:
+            </p>
+            <div className="bg-red-50 border border-red-200 rounded-xl px-5 py-4 mb-4">
+              <p className="text-3xl font-bold text-red-500 font-mono tabular-nums">
+                {formatCountdown(timeLeft)}
+              </p>
+              <p className="text-xs text-red-400 mt-1">remaining</p>
+            </div>
+            <p className="text-xs text-gray-400">
+              After the lockout expires, you&apos;ll get {MAX_ATTEMPTS} fresh attempts.
+            </p>
+          </div>
+        ) : (
+          /* ── Normal state ── */
+          <>
+            <p className="text-sm text-gray-400 text-center mb-6">
+              Enter your access code to continue
+            </p>
 
-        {/* Error */}
-        {error && (
-          <p className="text-xs text-red-500 text-center mb-3 font-medium">
-            Incorrect code. Try again.
-          </p>
+            {/* Attempts left indicator */}
+            {gateState.attempts > 0 && (
+              <div className="flex justify-center gap-1.5 mb-4">
+                {Array.from({ length: MAX_ATTEMPTS }).map((_, i) => (
+                  <div
+                    key={i}
+                    className={`w-2 h-2 rounded-full transition-colors ${
+                      i < gateState.attempts ? "bg-red-400" : "bg-gray-200"
+                    }`}
+                  />
+                ))}
+                <span className="text-xs text-gray-400 ml-1">
+                  {attemptsLeft} attempt{attemptsLeft !== 1 ? "s" : ""} left
+                </span>
+              </div>
+            )}
+
+            {/* Input */}
+            <div className="relative mb-3">
+              <input
+                type={showCode ? "text" : "password"}
+                value={code}
+                onChange={(e) => setCode(e.target.value)}
+                onKeyDown={handleKeyDown}
+                placeholder="Enter access code"
+                autoFocus
+                disabled={isLocked}
+                className={`w-full px-4 py-3 pr-11 rounded-xl border text-sm font-mono tracking-widest outline-none transition-all ${
+                  error
+                    ? "border-red-300 bg-red-50 text-red-600 placeholder-red-300"
+                    : "border-gray-200 bg-gray-50 text-gray-900 focus:border-gray-400 focus:bg-white"
+                }`}
+              />
+              <button
+                type="button"
+                onClick={() => setShowCode((v) => !v)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                {showCode ? <EyeOff size={16} /> : <Eye size={16} />}
+              </button>
+            </div>
+
+            {/* Error */}
+            {error && (
+              <p className="text-xs text-red-500 text-center mb-3 font-medium">
+                {error}
+              </p>
+            )}
+
+            {/* Button */}
+            <button
+              onClick={handleSubmit}
+              disabled={isLocked}
+              className="w-full py-3 rounded-xl bg-gray-900 text-white text-sm font-semibold hover:bg-gray-800 active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Unlock
+            </button>
+          </>
         )}
-
-        {/* Button */}
-        <button
-          onClick={handleSubmit}
-          className="w-full py-3 rounded-xl bg-gray-900 text-white text-sm font-semibold hover:bg-gray-800 active:scale-95 transition-all"
-        >
-          Unlock
-        </button>
       </div>
 
       <style>{`
