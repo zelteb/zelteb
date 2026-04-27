@@ -9,14 +9,14 @@ import { useEffect, useState, Suspense } from "react";
 
 function LoginContent() {
   const router = useRouter();
- const searchParams = useSearchParams();
-const preselectedRole = searchParams.get("role") as "brand" | "influencer" | null;
-const [loading, setLoading] = useState<"brand" | "influencer" | null>(null);
+  const searchParams = useSearchParams();
+  const isNewUser = searchParams.get("new") === "true";
+  const preselectedRole = searchParams.get("role") as "brand" | "influencer" | null;
+  const [loading, setLoading] = useState<"brand" | "influencer" | "login" | null>(null);
 
   useEffect(() => {
     supabase.auth.getUser().then(async ({ data }) => {
       if (!data.user) return;
-      // Check which table they belong to and redirect
       const { data: brand } = await supabase
         .from("brands")
         .select("id")
@@ -42,6 +42,81 @@ const [loading, setLoading] = useState<"brand" | "influencer" | null>(null);
     setLoading(null);
   };
 
+  // Login button (no role) — callback will detect returning vs new
+  const loginNoRole = async () => {
+    setLoading("login");
+    const callbackUrl = `${window.location.origin}/auth/callback`;
+    await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: { redirectTo: callbackUrl },
+    });
+    setLoading(null);
+  };
+
+  // If NOT a new user and no preselected role → show simple login screen
+  if (!isNewUser && !preselectedRole) {
+    return (
+      <>
+        <style>{`
+          * { box-sizing: border-box; margin: 0; padding: 0; }
+          .login-root { min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #f5f5f4; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; position: relative; overflow: hidden; padding: 24px; }
+          .blob { position: absolute; border-radius: 50%; filter: blur(90px); opacity: 0.3; pointer-events: none; }
+          .blob-1 { width: 400px; height: 400px; background: #c7d9ff; top: -120px; left: -80px; animation: drift 12s ease-in-out infinite alternate; }
+          .blob-2 { width: 300px; height: 300px; background: #ffd6e8; bottom: -80px; right: -60px; animation: drift 9s ease-in-out infinite alternate-reverse; }
+          @keyframes drift { 0% { transform: translate(0,0) scale(1); } 100% { transform: translate(25px,18px) scale(1.06); } }
+          .simple-card { background: #fff; border: 1.5px solid #e7e7e5; border-radius: 20px; padding: 48px 40px; display: flex; flex-direction: column; align-items: center; gap: 20px; width: 100%; max-width: 400px; position: relative; z-index: 1; animation: fadeUp 0.5s cubic-bezier(0.22,1,0.36,1) both; }
+          @keyframes fadeUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+          .login-btn { width: 100%; display: flex; align-items: center; justify-content: center; gap: 10px; padding: 14px 20px; background: #111; border: none; border-radius: 10px; font-size: 15px; font-weight: 600; color: #fff; cursor: pointer; font-family: inherit; transition: background 0.2s; }
+          .login-btn:hover { background: #333; }
+          .login-btn:disabled { opacity: 0.55; cursor: not-allowed; }
+          .spinner { width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.4); border-top-color: #fff; border-radius: 50%; animation: spin 0.7s linear infinite; }
+          @keyframes spin { to { transform: rotate(360deg); } }
+          .footer-note { margin-top: 24px; font-size: 12px; color: #bbb; text-align: center; line-height: 1.6; position: relative; z-index: 1; }
+          .footer-note a { color: #999; text-decoration: underline; text-underline-offset: 2px; }
+          .new-user-link { font-size: 13px; color: #888; text-align: center; }
+          .new-user-link a { color: #111; font-weight: 600; text-decoration: underline; text-underline-offset: 2px; }
+        `}</style>
+
+        <div className="login-root">
+          <div className="blob blob-1" />
+          <div className="blob blob-2" />
+
+          <div className="simple-card">
+            <Link href="/" style={{ textDecoration: "none" }}>
+              <span style={{ fontSize: 28, fontWeight: 900, letterSpacing: "-1px", color: "#111" }}>Zelteb</span>
+            </Link>
+            <div style={{ textAlign: "center" }}>
+              <div style={{ fontSize: 20, fontWeight: 800, color: "#111", marginBottom: 6 }}>Welcome back</div>
+              <div style={{ fontSize: 14, color: "#888" }}>Sign in to continue to your dashboard</div>
+            </div>
+            <button
+              className="login-btn"
+              onClick={loginNoRole}
+              disabled={loading !== null}
+            >
+              {loading === "login" ? (
+                <div className="spinner" />
+              ) : (
+                <GoogleIcon />
+              )}
+              <span>{loading === "login" ? "Signing in..." : "Continue with Google"}</span>
+            </button>
+            <div className="new-user-link">
+              New to Zelteb?{" "}
+              <a href="/login?new=true">Create an account</a>
+            </div>
+          </div>
+
+          <p className="footer-note">
+            By continuing, you agree to our{" "}
+            <a href="/terms">Terms of Service</a> and <a href="/priv">Privacy Policy</a>.
+          </p>
+        </div>
+      </>
+    );
+  }
+
+  // New user or came from sign-up buttons → show role selection
   return (
     <>
       <style>{`
@@ -104,11 +179,7 @@ const [loading, setLoading] = useState<"brand" | "influencer" | null>(null);
               onClick={() => loginWith("brand")}
               disabled={loading !== null}
             >
-              {loading === "brand" ? (
-                <div className="spinner" />
-              ) : (
-                <GoogleIcon />
-              )}
+              {loading === "brand" ? <div className="spinner" /> : <GoogleIcon />}
               <span>{loading === "brand" ? "Signing in..." : "Continue as Brand"}</span>
             </button>
           </div>
@@ -128,11 +199,7 @@ const [loading, setLoading] = useState<"brand" | "influencer" | null>(null);
               onClick={() => loginWith("influencer")}
               disabled={loading !== null}
             >
-              {loading === "influencer" ? (
-                <div className="spinner spinner-dark" />
-              ) : (
-                <GoogleIcon dark />
-              )}
+              {loading === "influencer" ? <div className="spinner spinner-dark" /> : <GoogleIcon dark />}
               <span>{loading === "influencer" ? "Signing in..." : "Continue as Influencer"}</span>
             </button>
           </div>

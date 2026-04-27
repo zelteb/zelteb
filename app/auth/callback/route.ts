@@ -6,7 +6,7 @@ import type { NextRequest } from "next/server";
 export async function GET(request: NextRequest) {
   const requestUrl = new URL(request.url);
   const code = requestUrl.searchParams.get("code");
-  const role = requestUrl.searchParams.get("role"); // "brand" | "influencer"
+  const role = requestUrl.searchParams.get("role"); // "brand" | "influencer" | null (for login button)
 
   if (code) {
     const cookieStore = await cookies();
@@ -33,8 +33,8 @@ export async function GET(request: NextRequest) {
       const full_name = user_metadata?.full_name ?? null;
       const avatar_url = user_metadata?.avatar_url ?? null;
 
+      // Came from "Sign up as Brand" button — create/upsert and redirect
       if (role === "brand") {
-        // Upsert so repeat logins don't error
         await supabase.from("brands").upsert(
           { user_id, email, full_name, avatar_url },
           { onConflict: "user_id" }
@@ -42,6 +42,7 @@ export async function GET(request: NextRequest) {
         return NextResponse.redirect(new URL("/brand/dashboard", requestUrl.origin));
       }
 
+      // Came from "Sign up as Creator" button — create/upsert and redirect
       if (role === "influencer") {
         await supabase.from("influencers").upsert(
           { user_id, email, full_name, avatar_url },
@@ -49,6 +50,30 @@ export async function GET(request: NextRequest) {
         );
         return NextResponse.redirect(new URL("/dashboard", requestUrl.origin));
       }
+
+      // Came from "Login" button (no role) — check if returning user
+      const { data: brand } = await supabase
+        .from("brands")
+        .select("id")
+        .eq("user_id", user_id)
+        .single();
+
+      if (brand) {
+        return NextResponse.redirect(new URL("/brand/dashboard", requestUrl.origin));
+      }
+
+      const { data: influencer } = await supabase
+        .from("influencers")
+        .select("id")
+        .eq("user_id", user_id)
+        .single();
+
+      if (influencer) {
+        return NextResponse.redirect(new URL("/dashboard", requestUrl.origin));
+      }
+
+      // New user with no role — send to login to pick a role
+      return NextResponse.redirect(new URL("/login?new=true", requestUrl.origin));
     }
   }
 
