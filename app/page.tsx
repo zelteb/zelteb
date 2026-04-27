@@ -6,33 +6,45 @@ import { supabase } from "@/lib/supabase";
 
 export default function Home() {
   const [user, setUser] = useState<any>(null);
-const [menuOpen, setMenuOpen] = useState(false);
-const [userRole, setUserRole] = useState<"brand" | "influencer" | null>(null);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [userRole, setUserRole] = useState<"brand" | "influencer" | null>(null);
+  const [loading, setLoading] = useState<"brand" | "influencer" | null>(null);
 
   useEffect(() => {
- supabase.auth.getUser().then(async ({ data }) => {
-  setUser(data.user);
-  if (data.user) {
-    const { data: brand } = await supabase
-      .from("brands")
-      .select("id")
-      .eq("user_id", data.user.id)
-      .single();
-    setUserRole(brand ? "brand" : "influencer");
-  }
-});
+    supabase.auth.getUser().then(async ({ data }) => {
+      setUser(data.user);
+      if (data.user) {
+        const { data: brand } = await supabase
+          .from("brands")
+          .select("id")
+          .eq("user_id", data.user.id)
+          .single();
+        setUserRole(brand ? "brand" : "influencer");
+      }
+    });
 
-const { data: listener } = supabase.auth.onAuthStateChange(
-  async (_event, session) => {
-    setUser(session?.user ?? null);
-    if (!session?.user) {
-      setUserRole(null);
-    }
-  }
-);
+    const { data: listener } = supabase.auth.onAuthStateChange(
+      async (_event, session) => {
+        setUser(session?.user ?? null);
+        if (!session?.user) {
+          setUserRole(null);
+        }
+      }
+    );
 
     return () => listener.subscription.unsubscribe();
   }, []);
+
+  // Direct OAuth sign-in — no redirect to /login page
+  const signUpWith = async (role: "brand" | "influencer") => {
+    setLoading(role);
+    const callbackUrl = `${window.location.origin}/auth/callback?role=${role}`;
+    await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: { redirectTo: callbackUrl },
+    });
+    setLoading(null);
+  };
 
   return (
     <div className="bg-white min-h-screen font-sans text-black">
@@ -41,7 +53,7 @@ const { data: listener } = supabase.auth.onAuthStateChange(
           .hero-h1 { font-size: 56px !important; line-height: 0.92 !important; }
           .hero-p { font-size: 18px !important; }
           .hero-btns { flex-direction: column !important; align-items: stretch !important; }
-          .hero-btns a { text-align: center !important; }
+          .hero-btns button { text-align: center !important; width: 100% !important; }
           .hero-search { max-width: 100% !important; }
           .stats-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 16px 0 !important; }
           .stats-grid > div { border-right: none !important; border-bottom: 1px solid #f3f4f6 !important; padding-bottom: 16px !important; }
@@ -72,6 +84,11 @@ const { data: listener } = supabase.auth.onAuthStateChange(
         @media (max-width: 768px) {
           .hamburger { display: flex; flex-direction: column; gap: 5px; }
         }
+        .signup-btn { display: flex; align-items: center; justify-content: center; gap: 12px; cursor: pointer; border: none; font-family: inherit; transition: all 0.2s; }
+        .signup-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+        .spinner { width: 18px; height: 18px; border: 2px solid rgba(0,0,0,0.2); border-top-color: #000; border-radius: 50%; animation: spin 0.7s linear infinite; flex-shrink: 0; }
+        .spinner-white { border-color: rgba(255,255,255,0.3); border-top-color: #fff; }
+        @keyframes spin { to { transform: rotate(360deg); } }
       `}</style>
 
       {/* JSON-LD */}
@@ -93,15 +110,15 @@ const { data: listener } = supabase.auth.onAuthStateChange(
           </nav>
 
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-{user ? (
-<Link href={userRole === "brand" ? "/brand/dashboard" : "/dashboard"} className="px-6 py-2.5 rounded-full bg-black text-white text-sm font-bold hover:bg-gray-800 transition-all">
-  Dashboard
-</Link>
-) : (
-  <Link href="/login" className="px-6 py-2.5 rounded-full bg-black text-white text-sm font-bold hover:bg-gray-800 transition-all">
-    Login
-  </Link>
-)}
+            {user ? (
+              <Link href={userRole === "brand" ? "/brand/dashboard" : "/dashboard"} className="px-6 py-2.5 rounded-full bg-black text-white text-sm font-bold hover:bg-gray-800 transition-all">
+                Dashboard
+              </Link>
+            ) : (
+              <Link href="/login" className="px-6 py-2.5 rounded-full bg-black text-white text-sm font-bold hover:bg-gray-800 transition-all">
+                Login
+              </Link>
+            )}
             {/* Hamburger */}
             <button className="hamburger" onClick={() => setMenuOpen(!menuOpen)} aria-label="Menu">
               <span style={{ width: 22, height: 2, background: "#000", borderRadius: 2, display: "block", transition: "all 0.2s", transform: menuOpen ? "rotate(45deg) translate(5px, 5px)" : "none" }} />
@@ -139,27 +156,44 @@ const { data: listener } = supabase.auth.onAuthStateChange(
         </p>
 
         <div className="hero-btns mt-12 flex justify-center gap-4 flex-wrap">
-  {user ? (
-    <Link href={userRole === "brand" ? "/brand/dashboard" : "/dashboard"} className="px-10 py-4 bg-black text-white rounded-2xl text-lg font-bold hover:bg-gray-800 transition-all">
-      Go to dashboard
-    </Link>
-  ) : (
-    <>
-      <Link
-        href="/login?role=brand"
-        className="flex items-center gap-3 px-8 py-4 bg-white border-2 border-gray-200 rounded-2xl text-lg font-bold hover:border-gray-900 transition-all"
-      >
-        Sign up as a Brand <span>→</span>
-      </Link>
-      <Link
-        href="/login?role=influencer"
-        className="flex items-center gap-3 px-8 py-4 bg-[#f5ff4e] border-2 border-[#f5ff4e] rounded-2xl text-lg font-bold hover:bg-[#eeff00] hover:border-[#eeff00] transition-all text-black"
-      >
-        Sign up as a Creator <span>→</span>
-      </Link>
-    </>
-  )}
-</div>
+          {user ? (
+            <Link href={userRole === "brand" ? "/brand/dashboard" : "/dashboard"} className="px-10 py-4 bg-black text-white rounded-2xl text-lg font-bold hover:bg-gray-800 transition-all">
+              Go to dashboard
+            </Link>
+          ) : (
+            <>
+              {/* Sign up as Brand — directly triggers Google OAuth for brand role */}
+              <button
+                onClick={() => signUpWith("brand")}
+                disabled={loading !== null}
+                className="signup-btn px-8 py-4 bg-white border-2 border-gray-200 rounded-2xl text-lg font-bold hover:border-gray-900 transition-all"
+              >
+                {loading === "brand" ? (
+                  <div className="spinner" />
+                ) : (
+                  <GoogleIcon />
+                )}
+                <span>{loading === "brand" ? "Signing in..." : "Sign up as a Brand"}</span>
+                {loading !== "brand" && <span>→</span>}
+              </button>
+
+              {/* Sign up as Creator — directly triggers Google OAuth for influencer role */}
+              <button
+                onClick={() => signUpWith("influencer")}
+                disabled={loading !== null}
+                className="signup-btn px-8 py-4 bg-[#f5ff4e] border-2 border-[#f5ff4e] rounded-2xl text-lg font-bold hover:bg-[#eeff00] hover:border-[#eeff00] transition-all text-black"
+              >
+                {loading === "influencer" ? (
+                  <div className="spinner" />
+                ) : (
+                  <GoogleIcon />
+                )}
+                <span>{loading === "influencer" ? "Signing in..." : "Sign up as a Creator"}</span>
+                {loading !== "influencer" && <span>→</span>}
+              </button>
+            </>
+          )}
+        </div>
 
         {/* SEARCH */}
         <div className="mt-8 flex justify-center px-4">
@@ -358,12 +392,17 @@ const { data: listener } = supabase.auth.onAuthStateChange(
         </p>
         {user ? (
           <Link href={userRole === "brand" ? "/brand/dashboard" : "/dashboard"} className="inline-block px-12 py-5 bg-black text-white rounded-2xl text-xl font-bold hover:bg-gray-800 transition-all">
-  Go to dashboard
-</Link>
-        ) : (
-          <Link href="/login" className="inline-block px-12 py-5 bg-black text-white rounded-2xl text-xl font-bold hover:bg-gray-800 transition-all">
-            Start selling for free
+            Go to dashboard
           </Link>
+        ) : (
+          <button
+            onClick={() => signUpWith("influencer")}
+            disabled={loading !== null}
+            className="signup-btn inline-flex px-12 py-5 bg-black text-white rounded-2xl text-xl font-bold hover:bg-gray-800 transition-all"
+          >
+            {loading === "influencer" ? <div className="spinner spinner-white" /> : null}
+            <span>{loading === "influencer" ? "Signing in..." : "Start selling for free"}</span>
+          </button>
         )}
       </section>
 
@@ -396,14 +435,22 @@ const { data: listener } = supabase.auth.onAuthStateChange(
               <Link href="/terms" className="hover:text-gray-400">Terms of Service</Link>
               <Link href="/priv" className="hover:text-gray-400">Privacy Policy</Link>
               <Link href="/faq" className="hover:text-gray-400">FAQ section</Link>
-              <Link href="/zelteb-employees" className="hover:text-gray-400">
-  Zelteb Employees
-</Link>
+              <Link href="/zelteb-employees" className="hover:text-gray-400">Zelteb Employees</Link>
             </div>
           </div>
         </div>
       </footer>
-
     </div>
+  );
+}
+
+function GoogleIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" style={{ flexShrink: 0 }}>
+      <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+      <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+      <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/>
+      <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+    </svg>
   );
 }
