@@ -35,7 +35,6 @@ export default function Home() {
     return () => listener.subscription.unsubscribe();
   }, []);
 
-  // Direct OAuth sign-in — no redirect to /login page
   const signUpWith = async (role: "brand" | "influencer") => {
     setLoading(role);
     const callbackUrl = `${window.location.origin}/auth/callback?role=${role}`;
@@ -71,18 +70,9 @@ export default function Home() {
           .footer-email { flex-direction: column !important; }
           .footer-email input { border-radius: 6px 6px 0 0 !important; }
           .footer-email button { border-radius: 0 0 6px 6px !important; padding: 12px !important; }
-          .mobile-menu { display: flex !important; }
-          .desktop-nav { display: none !important; }
           .navbar-inner { padding: 16px 20px !important; }
           .section-px { padding-left: 20px !important; padding-right: 20px !important; }
           .hero-section { padding-top: 48px !important; padding-bottom: 40px !important; padding-left: 20px !important; padding-right: 20px !important; }
-        }
-        .mobile-menu { display: none; flex-direction: column; position: absolute; top: 100%; left: 0; right: 0; background: white; border-bottom: 1px solid #f3f4f6; padding: 16px 20px; gap: 16px; z-index: 100; }
-        .mobile-menu a { font-size: 16px; font-weight: 500; color: #374151; text-decoration: none; padding: 8px 0; border-bottom: 1px solid #f9fafb; }
-        .mobile-menu a:last-child { border-bottom: none; }
-        .hamburger { display: none; background: none; border: none; cursor: pointer; padding: 4px; }
-        @media (max-width: 768px) {
-          .hamburger { display: flex; flex-direction: column; gap: 5px; }
         }
         .signup-btn { display: flex; align-items: center; justify-content: center; gap: 12px; cursor: pointer; border: none; font-family: inherit; transition: all 0.2s; }
         .signup-btn:disabled { opacity: 0.6; cursor: not-allowed; }
@@ -97,45 +87,24 @@ export default function Home() {
 
       {/* NAVBAR */}
       <header className="sticky top-0 z-50 bg-white border-b border-gray-100" style={{ position: "sticky" }}>
-        <div className="navbar-inner max-w-7xl mx-auto flex items-center justify-between px-8 py-5" style={{ position: "relative" }}>
+        <div className="navbar-inner max-w-7xl mx-auto flex items-center justify-between px-8 py-5">
           <Link href="/" className="text-3xl font-black tracking-tighter">
             Zelteb
           </Link>
 
-          {/* Desktop nav */}
-          <nav className="desktop-nav hidden md:flex gap-10 text-[15px] font-medium text-gray-600">
-            <Link href="/discover" className="hover:text-black">Discover</Link>
+          {/* Desktop nav — Pricing only */}
+          <nav className="hidden md:flex gap-10 text-[15px] font-medium text-gray-600">
             <Link href="/pricing" className="hover:text-black">Pricing</Link>
-            <Link href="/purchased" className="hover:text-black">Purchased</Link>
           </nav>
 
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-            {user ? (
+            {user && (
               <Link href={userRole === "brand" ? "/brand/dashboard" : "/dashboard"} className="px-6 py-2.5 rounded-full bg-black text-white text-sm font-bold hover:bg-gray-800 transition-all">
                 Dashboard
               </Link>
-            ) : (
-              <Link href="/login" className="px-6 py-2.5 rounded-full bg-black text-white text-sm font-bold hover:bg-gray-800 transition-all">
-                Login
-              </Link>
             )}
-            {/* Hamburger */}
-            <button className="hamburger" onClick={() => setMenuOpen(!menuOpen)} aria-label="Menu">
-              <span style={{ width: 22, height: 2, background: "#000", borderRadius: 2, display: "block", transition: "all 0.2s", transform: menuOpen ? "rotate(45deg) translate(5px, 5px)" : "none" }} />
-              <span style={{ width: 22, height: 2, background: "#000", borderRadius: 2, display: "block", transition: "all 0.2s", opacity: menuOpen ? 0 : 1 }} />
-              <span style={{ width: 22, height: 2, background: "#000", borderRadius: 2, display: "block", transition: "all 0.2s", transform: menuOpen ? "rotate(-45deg) translate(5px, -5px)" : "none" }} />
-            </button>
           </div>
         </div>
-
-        {/* Mobile menu */}
-        {menuOpen && (
-          <div className="mobile-menu" style={{ display: "flex" }}>
-            <Link href="/discover" onClick={() => setMenuOpen(false)}>Discover</Link>
-            <Link href="/pricing" onClick={() => setMenuOpen(false)}>Pricing</Link>
-            <Link href="/purchased" onClick={() => setMenuOpen(false)}>Purchased</Link>
-          </div>
-        )}
       </header>
 
       {/* HERO */}
@@ -162,32 +131,22 @@ export default function Home() {
             </Link>
           ) : (
             <>
-              {/* Sign up as Brand — directly triggers Google OAuth for brand role */}
               <button
                 onClick={() => signUpWith("brand")}
                 disabled={loading !== null}
                 className="signup-btn px-8 py-4 bg-white border-2 border-gray-200 rounded-2xl text-lg font-bold hover:border-gray-900 transition-all"
               >
-                {loading === "brand" ? (
-                  <div className="spinner" />
-                ) : (
-                  <GoogleIcon />
-                )}
+                {loading === "brand" ? <div className="spinner" /> : <GoogleIcon />}
                 <span>{loading === "brand" ? "Signing in..." : "Sign up as a Brand"}</span>
                 {loading !== "brand" && <span>→</span>}
               </button>
 
-              {/* Sign up as Creator — directly triggers Google OAuth for influencer role */}
               <button
                 onClick={() => signUpWith("influencer")}
                 disabled={loading !== null}
                 className="signup-btn px-8 py-4 bg-[#f5ff4e] border-2 border-[#f5ff4e] rounded-2xl text-lg font-bold hover:bg-[#eeff00] hover:border-[#eeff00] transition-all text-black"
               >
-                {loading === "influencer" ? (
-                  <div className="spinner" />
-                ) : (
-                  <GoogleIcon />
-                )}
+                {loading === "influencer" ? <div className="spinner" /> : <GoogleIcon />}
                 <span>{loading === "influencer" ? "Signing in..." : "Sign up as a Creator"}</span>
                 {loading !== "influencer" && <span>→</span>}
               </button>
@@ -426,7 +385,6 @@ export default function Home() {
           </div>
           <div className="grid grid-cols-2 gap-x-20 gap-y-6 pt-2">
             <div className="flex flex-col space-y-5 text-lg font-medium">
-              <Link href="/discover" className="hover:text-gray-400">Discover</Link>
               <Link href="/pricing" className="hover:text-gray-400">Pricing</Link>
               <Link href="/about" className="hover:text-gray-400">About</Link>
             </div>
