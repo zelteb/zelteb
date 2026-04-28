@@ -60,203 +60,491 @@ export default function Home() {
   };
 
   return (
-    <div className="bg-[#0a0a0a] min-h-screen text-white overflow-x-hidden" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+    <div className="root" style={{ fontFamily: "'DM Sans', sans-serif" }}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,700;0,9..40,900;1,9..40,300;1,9..40,400&family=Fraunces:ital,opsz,wght@0,9..144,100;0,9..144,400;0,9..144,700;1,9..144,100;1,9..144,400;1,9..144,700&display=swap');
 
-        * { box-sizing: border-box; margin: 0; padding: 0; }
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
         :root {
-          --lime: #d4ff1e;
-          --lime-dim: #b8e000;
+          --black:   #0a0a0a;
+          --white:   #ffffff;
+          --off-white: #f5f5f3;
+          --gray-50: #fafafa;
+          --gray-100: #f0f0ee;
+          --gray-200: #e2e2df;
+          --gray-300: #c8c8c4;
+          --gray-400: #a0a09c;
+          --gray-500: #737370;
+          --gray-600: #4a4a47;
+          --gray-700: #2e2e2b;
+          --gray-800: #1a1a18;
+          --gray-900: #0f0f0d;
+
+          /* Accent: brand = blue, creator = amber */
+          --blue:     #1a56db;
+          --blue-bg:  #e8f0fe;
+          --blue-mid: #3b82f6;
+          --amber:    #d97706;
+          --amber-bg: #fef3c7;
+          --amber-mid:#f59e0b;
+
+          --border: rgba(0,0,0,0.10);
+          --border-dark: rgba(0,0,0,0.18);
+          --muted:  #737370;
+          --surface: #ffffff;
+          --surface2: #f5f5f3;
           --ink: #0a0a0a;
-          --surface: #111111;
-          --surface2: #1a1a1a;
-          --border: rgba(255,255,255,0.08);
-          --muted: rgba(255,255,255,0.45);
         }
+
+        .root { background: var(--white); min-height: 100vh; color: var(--black); overflow-x: hidden; }
 
         .brand-serif { font-family: 'Fraunces', serif; }
 
-        /* Animations */
         @keyframes fadeUp {
-          from { opacity: 0; transform: translateY(28px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-        @keyframes fadeIn {
-          from { opacity: 0; } to { opacity: 1; }
+          from { opacity: 0; transform: translateY(24px); }
+          to   { opacity: 1; transform: translateY(0); }
         }
         @keyframes ticker {
           from { transform: translateX(0); }
-          to { transform: translateX(-50%); }
+          to   { transform: translateX(-50%); }
         }
         @keyframes spin { to { transform: rotate(360deg); } }
-        @keyframes pulse-glow {
-          0%, 100% { box-shadow: 0 0 20px rgba(212,255,30,0.3); }
-          50% { box-shadow: 0 0 40px rgba(212,255,30,0.6); }
+        @keyframes blink {
+          0%,100% { opacity:1; } 50% { opacity:0.4; }
         }
 
-        .anim-1 { animation: fadeUp 0.7s cubic-bezier(0.16, 1, 0.3, 1) 0.1s both; }
-        .anim-2 { animation: fadeUp 0.7s cubic-bezier(0.16, 1, 0.3, 1) 0.25s both; }
-        .anim-3 { animation: fadeUp 0.7s cubic-bezier(0.16, 1, 0.3, 1) 0.4s both; }
-        .anim-4 { animation: fadeUp 0.7s cubic-bezier(0.16, 1, 0.3, 1) 0.55s both; }
-        .anim-5 { animation: fadeUp 0.7s cubic-bezier(0.16, 1, 0.3, 1) 0.7s both; }
+        .anim-1 { animation: fadeUp 0.65s cubic-bezier(0.16,1,0.3,1) 0.1s both; }
+        .anim-2 { animation: fadeUp 0.65s cubic-bezier(0.16,1,0.3,1) 0.22s both; }
+        .anim-3 { animation: fadeUp 0.65s cubic-bezier(0.16,1,0.3,1) 0.34s both; }
+        .anim-4 { animation: fadeUp 0.65s cubic-bezier(0.16,1,0.3,1) 0.46s both; }
+        .anim-5 { animation: fadeUp 0.65s cubic-bezier(0.16,1,0.3,1) 0.58s both; }
 
-        /* Navbar */
-        .nav { position: sticky; top: 0; z-index: 100; background: rgba(10,10,10,0.85); backdrop-filter: blur(20px); border-bottom: 1px solid var(--border); }
-        .nav-inner { max-width: 1200px; margin: 0 auto; padding: 18px 40px; display: flex; align-items: center; justify-content: space-between; }
-        .nav-logo { font-family: 'Fraunces', serif; font-size: 26px; font-weight: 700; color: white; text-decoration: none; letter-spacing: -0.5px; }
-        .nav-logo span { color: var(--lime); }
-        .nav-links { display: flex; gap: 32px; align-items: center; }
-        .nav-link { color: var(--muted); font-size: 14px; font-weight: 500; text-decoration: none; transition: color 0.2s; letter-spacing: 0.01em; }
-        .nav-link:hover { color: white; }
-        .nav-cta { padding: 9px 20px; background: var(--lime); color: var(--ink); border-radius: 100px; font-size: 13px; font-weight: 700; text-decoration: none; transition: all 0.2s; letter-spacing: 0.02em; }
-        .nav-cta:hover { background: white; transform: translateY(-1px); }
+        /* ── NAV ─────────────────────────────────── */
+        .nav {
+          position: sticky; top: 0; z-index: 100;
+          background: rgba(255,255,255,0.92);
+          backdrop-filter: blur(18px);
+          border-bottom: 1px solid var(--border);
+        }
+        .nav-inner {
+          max-width: 1200px; margin: 0 auto;
+          padding: 16px 40px;
+          display: flex; align-items: center; justify-content: space-between;
+        }
+        .nav-logo {
+          font-family: 'Fraunces', serif;
+          font-size: 24px; font-weight: 700;
+          color: var(--black); text-decoration: none; letter-spacing: -0.5px;
+        }
+        .nav-logo span { color: var(--gray-400); }
+        .nav-links { display: flex; gap: 28px; align-items: center; }
+        .nav-link {
+          color: var(--muted); font-size: 14px; font-weight: 500;
+          text-decoration: none; transition: color 0.15s;
+        }
+        .nav-link:hover { color: var(--black); }
+        .nav-cta {
+          padding: 8px 18px;
+          background: var(--black); color: var(--white);
+          border-radius: 100px; font-size: 13px; font-weight: 700;
+          text-decoration: none; transition: all 0.15s; letter-spacing: 0.01em;
+        }
+        .nav-cta:hover { background: var(--gray-700); }
 
-        /* Hero */
-        .hero { position: relative; min-height: 92vh; display: flex; align-items: center; overflow: hidden; }
-        .hero-glow { position: absolute; inset: 0; pointer-events: none; }
-        .hero-grid { position: absolute; inset: 0; background-image: linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px); background-size: 64px 64px; pointer-events: none; }
-        .hero-inner { position: relative; z-index: 2; max-width: 1200px; margin: 0 auto; padding: 80px 40px; }
-        .hero-tag { display: inline-flex; align-items: center; gap: 8px; padding: 7px 16px 7px 10px; background: var(--surface2); border: 1px solid var(--border); border-radius: 100px; font-size: 13px; font-weight: 500; color: var(--muted); margin-bottom: 36px; }
-        .hero-tag-dot { width: 6px; height: 6px; background: var(--lime); border-radius: 50%; animation: pulse-glow 2s infinite; }
-        .hero-h1 { font-family: 'Fraunces', serif; font-size: clamp(56px, 8vw, 110px); font-weight: 700; line-height: 0.9; letter-spacing: -3px; margin-bottom: 36px; }
-        .hero-h1 .italic { font-style: italic; color: var(--lime); }
-        .hero-sub { font-size: clamp(16px, 2vw, 19px); color: var(--muted); max-width: 520px; line-height: 1.65; margin-bottom: 52px; font-weight: 400; }
-        .hero-btns { display: flex; gap: 14px; flex-wrap: wrap; margin-bottom: 80px; }
-        .btn-primary { display: inline-flex; align-items: center; gap: 10px; padding: 16px 32px; background: var(--lime); color: var(--ink); border-radius: 14px; font-size: 15px; font-weight: 700; border: none; cursor: pointer; transition: all 0.2s; font-family: inherit; text-decoration: none; }
-        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(212,255,30,0.3); background: white; }
-        .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
-        .btn-secondary { display: inline-flex; align-items: center; gap: 10px; padding: 16px 32px; background: transparent; color: white; border-radius: 14px; font-size: 15px; font-weight: 600; border: 1px solid var(--border); cursor: pointer; transition: all 0.2s; font-family: inherit; text-decoration: none; }
-        .btn-secondary:hover { background: var(--surface2); border-color: rgba(255,255,255,0.2); transform: translateY(-2px); }
-        .btn-secondary:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+        /* ── HERO ─────────────────────────────────── */
+        .hero {
+          position: relative; min-height: 90vh;
+          display: flex; align-items: center; overflow: hidden;
+          background: var(--white);
+        }
+        .hero-grid {
+          position: absolute; inset: 0;
+          background-image:
+            linear-gradient(rgba(0,0,0,0.04) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(0,0,0,0.04) 1px, transparent 1px);
+          background-size: 60px 60px; pointer-events: none;
+        }
+        .hero-glow {
+          position: absolute; inset: 0; pointer-events: none;
+          transition: background 0.3s ease;
+        }
+        .hero-inner {
+          position: relative; z-index: 2;
+          max-width: 1200px; margin: 0 auto; padding: 80px 40px;
+        }
+        .hero-tag {
+          display: inline-flex; align-items: center; gap: 8px;
+          padding: 6px 14px 6px 10px;
+          background: var(--gray-100);
+          border: 1px solid var(--border);
+          border-radius: 100px; font-size: 13px; font-weight: 500;
+          color: var(--muted); margin-bottom: 32px;
+        }
+        .hero-tag-dot {
+          width: 6px; height: 6px;
+          background: var(--black); border-radius: 50%;
+          animation: blink 2.4s ease-in-out infinite;
+        }
+        .hero-h1 {
+          font-family: 'Fraunces', serif;
+          font-size: clamp(56px, 8vw, 108px);
+          font-weight: 700; line-height: 0.9;
+          letter-spacing: -3px; margin-bottom: 32px; color: var(--black);
+        }
+        .hero-h1 .italic { font-style: italic; color: var(--gray-400); }
+        .hero-sub {
+          font-size: clamp(16px, 1.8vw, 18px); color: var(--muted);
+          max-width: 500px; line-height: 1.65; margin-bottom: 48px; font-weight: 400;
+        }
+        .hero-btns { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 72px; }
 
-        /* Floating cards */
-        .hero-cards { display: flex; gap: 16px; flex-wrap: wrap; }
-        .hero-card { padding: 16px 20px; background: var(--surface); border: 1px solid var(--border); border-radius: 16px; display: flex; align-items: center; gap: 12px; }
-        .hero-card-avatar { width: 36px; height: 36px; border-radius: 50%; background: linear-gradient(135deg, #667eea, #764ba2); display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 700; flex-shrink: 0; }
-        .hero-card-text { font-size: 13px; font-weight: 600; }
+        .btn-primary {
+          display: inline-flex; align-items: center; gap: 9px;
+          padding: 14px 28px;
+          background: var(--black); color: var(--white);
+          border-radius: 12px; font-size: 14px; font-weight: 700;
+          border: none; cursor: pointer; transition: all 0.18s;
+          font-family: inherit; text-decoration: none;
+        }
+        .btn-primary:hover { background: var(--gray-700); transform: translateY(-1px); }
+        .btn-primary:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
+
+        .btn-secondary {
+          display: inline-flex; align-items: center; gap: 9px;
+          padding: 14px 28px;
+          background: var(--white); color: var(--black);
+          border-radius: 12px; font-size: 14px; font-weight: 600;
+          border: 1.5px solid var(--border-dark); cursor: pointer;
+          transition: all 0.18s; font-family: inherit; text-decoration: none;
+        }
+        .btn-secondary:hover { background: var(--gray-100); transform: translateY(-1px); }
+        .btn-secondary:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
+
+        /* floating profile cards */
+        .hero-cards { display: flex; gap: 12px; flex-wrap: wrap; }
+        .hero-card {
+          padding: 14px 18px;
+          background: var(--white);
+          border: 1px solid var(--border-dark);
+          border-radius: 14px;
+          display: flex; align-items: center; gap: 11px;
+          box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+        }
+        .hero-card-avatar {
+          width: 34px; height: 34px; border-radius: 50%;
+          display: flex; align-items: center; justify-content: center;
+          font-size: 13px; font-weight: 700; flex-shrink: 0; color: var(--white);
+        }
+        .hero-card-text { font-size: 13px; font-weight: 600; color: var(--black); }
         .hero-card-sub { font-size: 11px; color: var(--muted); margin-top: 2px; }
 
-        /* Ticker */
-        .ticker-wrap { overflow: hidden; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); padding: 14px 0; background: var(--surface); }
-        .ticker-inner { display: flex; gap: 0; width: max-content; animation: ticker 25s linear infinite; }
-        .ticker-item { white-space: nowrap; padding: 0 40px; font-size: 13px; font-weight: 600; color: var(--muted); letter-spacing: 0.08em; text-transform: uppercase; display: flex; align-items: center; gap: 16px; }
-        .ticker-dot { width: 4px; height: 4px; background: var(--lime); border-radius: 50%; flex-shrink: 0; }
+        /* ── TICKER ───────────────────────────────── */
+        .ticker-wrap {
+          overflow: hidden;
+          border-top: 1px solid var(--border);
+          border-bottom: 1px solid var(--border);
+          padding: 13px 0; background: var(--gray-100);
+        }
+        .ticker-inner {
+          display: flex; width: max-content;
+          animation: ticker 28s linear infinite;
+        }
+        .ticker-item {
+          white-space: nowrap; padding: 0 36px;
+          font-size: 12px; font-weight: 600;
+          color: var(--muted); letter-spacing: 0.09em;
+          text-transform: uppercase;
+          display: flex; align-items: center; gap: 14px;
+        }
+        .ticker-dot {
+          width: 3px; height: 3px;
+          background: var(--gray-400); border-radius: 50%; flex-shrink: 0;
+        }
 
-        /* Stats */
-        .stats-section { padding: 100px 40px; max-width: 1200px; margin: 0 auto; }
-        .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); border: 1px solid var(--border); border-radius: 24px; overflow: hidden; }
-        .stat-box { padding: 48px 40px; border-right: 1px solid var(--border); }
+        /* ── STATS ────────────────────────────────── */
+        .stats-section { padding: 96px 40px; max-width: 1200px; margin: 0 auto; }
+        .stats-grid {
+          display: grid; grid-template-columns: repeat(4, 1fr);
+          border: 1px solid var(--border-dark); border-radius: 20px; overflow: hidden;
+        }
+        .stat-box { padding: 44px 36px; border-right: 1px solid var(--border); }
         .stat-box:last-child { border-right: none; }
-        .stat-num { font-family: 'Fraunces', serif; font-size: clamp(40px, 5vw, 64px); font-weight: 700; line-height: 1; letter-spacing: -2px; }
-        .stat-num .accent { color: var(--lime); }
-        .stat-label { font-size: 13px; color: var(--muted); margin-top: 10px; font-weight: 500; }
+        .stat-num {
+          font-family: 'Fraunces', serif;
+          font-size: clamp(38px, 4.5vw, 60px);
+          font-weight: 700; line-height: 1; letter-spacing: -2px; color: var(--black);
+        }
+        .stat-num .accent { color: var(--gray-400); }
+        .stat-label { font-size: 13px; color: var(--muted); margin-top: 9px; font-weight: 500; }
 
-        /* How section */
-        .section { padding: 120px 40px; max-width: 1200px; margin: 0 auto; }
-        .section-label { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.12em; color: var(--lime); margin-bottom: 16px; }
-        .section-h2 { font-family: 'Fraunces', serif; font-size: clamp(36px, 5vw, 60px); font-weight: 700; line-height: 1.05; letter-spacing: -2px; margin-bottom: 16px; }
-        .section-h2 em { font-style: italic; color: var(--muted); }
-        .section-sub { font-size: 17px; color: var(--muted); max-width: 480px; line-height: 1.6; margin-bottom: 72px; }
+        /* ── SECTIONS ─────────────────────────────── */
+        .section { padding: 112px 40px; max-width: 1200px; margin: 0 auto; }
+        .section-label {
+          font-size: 11px; font-weight: 700;
+          text-transform: uppercase; letter-spacing: 0.14em;
+          color: var(--muted); margin-bottom: 14px;
+        }
+        .section-h2 {
+          font-family: 'Fraunces', serif;
+          font-size: clamp(34px, 5vw, 58px);
+          font-weight: 700; line-height: 1.05;
+          letter-spacing: -2px; margin-bottom: 14px; color: var(--black);
+        }
+        .section-h2 em { font-style: italic; color: var(--gray-400); }
+        .section-sub {
+          font-size: 16px; color: var(--muted);
+          max-width: 460px; line-height: 1.65; margin-bottom: 64px; font-weight: 400;
+        }
 
-        /* Dual path */
-        .dual-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-        .path-card { border: 1px solid var(--border); border-radius: 28px; padding: 52px 48px; background: var(--surface); position: relative; overflow: hidden; transition: border-color 0.3s; }
-        .path-card:hover { border-color: rgba(212,255,30,0.3); }
-        .path-card::before { content: ''; position: absolute; top: -80px; right: -80px; width: 200px; height: 200px; border-radius: 50%; background: var(--lime); opacity: 0.04; pointer-events: none; }
-        .path-pill { display: inline-block; padding: 6px 14px; border-radius: 100px; font-size: 12px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 32px; }
-        .path-pill.brand { background: rgba(212,255,30,0.12); color: var(--lime); border: 1px solid rgba(212,255,30,0.2); }
-        .path-pill.creator { background: rgba(255,255,255,0.06); color: white; border: 1px solid var(--border); }
-        .path-h3 { font-family: 'Fraunces', serif; font-size: 32px; font-weight: 700; letter-spacing: -1px; margin-bottom: 16px; line-height: 1.1; }
-        .path-desc { font-size: 15px; color: var(--muted); line-height: 1.65; margin-bottom: 40px; }
-        .path-steps { display: flex; flex-direction: column; gap: 16px; margin-bottom: 44px; }
-        .path-step { display: flex; align-items: flex-start; gap: 14px; }
-        .step-num { width: 26px; height: 26px; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; color: var(--muted); flex-shrink: 0; margin-top: 1px; }
-        .step-text { font-size: 14px; color: rgba(255,255,255,0.7); line-height: 1.5; }
-        .step-text strong { color: white; font-weight: 600; }
+        /* ── DUAL PATH ────────────────────────────── */
+        .dual-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
 
-        /* Features */
-        .features-bento { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
-        .feat-card { padding: 36px 32px; background: var(--surface); border: 1px solid var(--border); border-radius: 20px; transition: all 0.25s; }
-        .feat-card:hover { border-color: rgba(212,255,30,0.25); transform: translateY(-3px); }
-        .feat-icon { width: 44px; height: 44px; background: rgba(212,255,30,0.1); border-radius: 12px; display: flex; align-items: center; justify-content: center; margin-bottom: 20px; font-size: 20px; }
-        .feat-title { font-size: 16px; font-weight: 700; margin-bottom: 10px; }
+        .path-card {
+          border: 1px solid var(--border-dark);
+          border-radius: 24px; padding: 48px 44px;
+          background: var(--white); position: relative; overflow: hidden;
+          transition: box-shadow 0.25s;
+        }
+        .path-card:hover { box-shadow: 0 4px 24px rgba(0,0,0,0.08); }
+
+        /* brand card — subtle blue top border */
+        .path-card.brand-path { border-top: 3px solid var(--blue-mid); }
+        /* creator card — subtle amber top border */
+        .path-card.creator-path { border-top: 3px solid var(--amber-mid); }
+
+        .path-pill {
+          display: inline-block; padding: 5px 12px; border-radius: 100px;
+          font-size: 11px; font-weight: 700; letter-spacing: 0.09em;
+          text-transform: uppercase; margin-bottom: 28px;
+        }
+        .path-pill.brand {
+          background: var(--blue-bg); color: var(--blue); border: 1px solid rgba(59,130,246,0.2);
+        }
+        .path-pill.creator {
+          background: var(--amber-bg); color: var(--amber); border: 1px solid rgba(245,158,11,0.25);
+        }
+
+        .path-h3 {
+          font-family: 'Fraunces', serif;
+          font-size: 30px; font-weight: 700; letter-spacing: -0.8px;
+          margin-bottom: 14px; line-height: 1.1; color: var(--black);
+        }
+        .path-desc {
+          font-size: 14px; color: var(--muted);
+          line-height: 1.65; margin-bottom: 36px;
+        }
+        .path-steps { display: flex; flex-direction: column; gap: 14px; margin-bottom: 40px; }
+        .path-step { display: flex; align-items: flex-start; gap: 12px; }
+        .step-num {
+          width: 24px; height: 24px;
+          background: var(--gray-100); border: 1px solid var(--border);
+          border-radius: 7px;
+          display: flex; align-items: center; justify-content: center;
+          font-size: 10px; font-weight: 700; color: var(--muted);
+          flex-shrink: 0; margin-top: 1px;
+        }
+        .step-text { font-size: 14px; color: var(--gray-600); line-height: 1.55; }
+        .step-text strong { color: var(--black); font-weight: 600; }
+
+        /* ── FEATURES ─────────────────────────────── */
+        .features-bento { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+        .feat-card {
+          padding: 32px 28px;
+          background: var(--gray-50);
+          border: 1px solid var(--border);
+          border-radius: 18px; transition: all 0.22s;
+        }
+        .feat-card:hover {
+          background: var(--white); border-color: var(--border-dark);
+          box-shadow: 0 4px 18px rgba(0,0,0,0.07);
+          transform: translateY(-2px);
+        }
+        .feat-icon {
+          width: 40px; height: 40px;
+          background: var(--gray-100);
+          border-radius: 10px; display: flex; align-items: center;
+          justify-content: center; margin-bottom: 18px; font-size: 18px;
+        }
+        .feat-title { font-size: 15px; font-weight: 700; margin-bottom: 9px; color: var(--black); }
         .feat-desc { font-size: 13px; color: var(--muted); line-height: 1.6; }
 
-        /* Testimonials */
-        .test-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
-        .test-card { padding: 36px; background: var(--surface); border: 1px solid var(--border); border-radius: 24px; position: relative; }
-        .test-quote { font-family: 'Fraunces', serif; font-size: 42px; line-height: 1; color: var(--lime); margin-bottom: 16px; }
-        .test-text { font-size: 15px; color: rgba(255,255,255,0.75); line-height: 1.6; margin-bottom: 28px; font-weight: 400; }
-        .test-author { display: flex; align-items: center; gap: 12px; }
-        .test-avatar { width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 15px; flex-shrink: 0; }
-        .test-name { font-size: 14px; font-weight: 700; }
+        /* ── TESTIMONIALS ─────────────────────────── */
+        .test-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+        .test-card {
+          padding: 32px;
+          background: var(--white);
+          border: 1px solid var(--border-dark);
+          border-radius: 20px; position: relative;
+        }
+        .test-quote {
+          font-family: 'Fraunces', serif;
+          font-size: 40px; line-height: 1; color: var(--gray-300); margin-bottom: 14px;
+        }
+        .test-text {
+          font-size: 14px; color: var(--gray-600);
+          line-height: 1.65; margin-bottom: 24px; font-weight: 400;
+        }
+        .test-author { display: flex; align-items: center; gap: 11px; }
+        .test-avatar {
+          width: 38px; height: 38px; border-radius: 50%;
+          display: flex; align-items: center; justify-content: center;
+          font-weight: 700; font-size: 13px; flex-shrink: 0; color: var(--white);
+        }
+        .test-name { font-size: 13px; font-weight: 700; color: var(--black); }
         .test-role { font-size: 12px; color: var(--muted); margin-top: 2px; }
-        .stars { display: flex; gap: 3px; margin-bottom: 20px; }
+        .stars { display: flex; gap: 3px; margin-bottom: 18px; }
 
-        /* CTA */
-        .cta-section { margin: 0 40px 120px; border-radius: 32px; background: var(--lime); color: var(--ink); padding: 100px 80px; text-align: center; position: relative; overflow: hidden; }
-        .cta-section::before { content: ''; position: absolute; top: -100px; left: -100px; width: 400px; height: 400px; background: rgba(0,0,0,0.06); border-radius: 50%; pointer-events: none; }
-        .cta-section::after { content: ''; position: absolute; bottom: -80px; right: -80px; width: 300px; height: 300px; background: rgba(0,0,0,0.04); border-radius: 50%; pointer-events: none; }
-        .cta-h2 { font-family: 'Fraunces', serif; font-size: clamp(40px, 6vw, 72px); font-weight: 700; letter-spacing: -3px; line-height: 0.95; margin-bottom: 24px; position: relative; z-index: 1; }
-        .cta-sub { font-size: 18px; margin-bottom: 52px; opacity: 0.65; font-weight: 400; position: relative; z-index: 1; }
-        .cta-btns { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; position: relative; z-index: 1; }
-        .btn-cta-brand { padding: 16px 36px; background: var(--ink); color: white; border-radius: 14px; font-size: 15px; font-weight: 700; border: none; cursor: pointer; transition: all 0.2s; font-family: inherit; }
-        .btn-cta-brand:hover { background: #1a1a1a; transform: translateY(-2px); }
-        .btn-cta-creator { padding: 16px 36px; background: white; color: var(--ink); border-radius: 14px; font-size: 15px; font-weight: 700; border: none; cursor: pointer; transition: all 0.2s; font-family: inherit; }
-        .btn-cta-creator:hover { background: #f0f0f0; transform: translateY(-2px); }
+        /* ── CTA BLOCK ────────────────────────────── */
+        .cta-section {
+          margin: 0 40px 112px;
+          border-radius: 28px;
+          background: var(--black); color: var(--white);
+          padding: 96px 80px; text-align: center;
+          position: relative; overflow: hidden;
+        }
+        .cta-section::before {
+          content: ''; position: absolute;
+          top: -120px; left: -120px;
+          width: 360px; height: 360px;
+          border-radius: 50%; background: rgba(255,255,255,0.03);
+          pointer-events: none;
+        }
+        .cta-section::after {
+          content: ''; position: absolute;
+          bottom: -80px; right: -80px;
+          width: 280px; height: 280px;
+          border-radius: 50%; background: rgba(255,255,255,0.02);
+          pointer-events: none;
+        }
+        .cta-h2 {
+          font-family: 'Fraunces', serif;
+          font-size: clamp(38px, 6vw, 68px); font-weight: 700;
+          letter-spacing: -2.5px; line-height: 0.95;
+          margin-bottom: 20px; position: relative; z-index: 1; color: var(--white);
+        }
+        .cta-sub {
+          font-size: 17px; margin-bottom: 48px;
+          color: rgba(255,255,255,0.5); font-weight: 400;
+          position: relative; z-index: 1;
+        }
+        .cta-btns {
+          display: flex; gap: 12px;
+          justify-content: center; flex-wrap: wrap;
+          position: relative; z-index: 1;
+        }
+        .btn-cta-brand {
+          padding: 15px 32px; background: var(--white); color: var(--black);
+          border-radius: 12px; font-size: 14px; font-weight: 700;
+          border: none; cursor: pointer; transition: all 0.18s; font-family: inherit;
+        }
+        .btn-cta-brand:hover { background: var(--gray-200); transform: translateY(-1px); }
+        .btn-cta-creator {
+          padding: 15px 32px;
+          background: transparent; color: var(--white);
+          border-radius: 12px; font-size: 14px; font-weight: 700;
+          border: 1.5px solid rgba(255,255,255,0.25);
+          cursor: pointer; transition: all 0.18s; font-family: inherit;
+        }
+        .btn-cta-creator:hover {
+          background: rgba(255,255,255,0.07); transform: translateY(-1px);
+        }
 
-        /* Footer */
-        .footer { background: var(--surface); border-top: 1px solid var(--border); padding: 80px 40px 40px; }
+        /* ── FOOTER ───────────────────────────────── */
+        .footer {
+          background: var(--gray-100);
+          border-top: 1px solid var(--border);
+          padding: 72px 40px 40px;
+        }
         .footer-inner { max-width: 1200px; margin: 0 auto; }
-        .footer-top { display: grid; grid-template-columns: 1.5fr 1fr 1fr 1fr; gap: 60px; margin-bottom: 64px; }
-        .footer-brand { font-family: 'Fraunces', serif; font-size: 28px; font-weight: 700; margin-bottom: 14px; }
-        .footer-brand span { color: var(--lime); }
-        .footer-tagline { font-size: 14px; color: var(--muted); line-height: 1.6; max-width: 240px; margin-bottom: 28px; }
-        .footer-email-row { display: flex; gap: 0; background: var(--surface2); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
-        .footer-email-input { flex: 1; background: transparent; border: none; padding: 12px 16px; color: white; font-size: 13px; outline: none; font-family: inherit; }
+        .footer-top {
+          display: grid; grid-template-columns: 1.4fr 1fr 1fr 1fr;
+          gap: 56px; margin-bottom: 56px;
+        }
+        .footer-brand {
+          font-family: 'Fraunces', serif;
+          font-size: 26px; font-weight: 700; margin-bottom: 12px; color: var(--black);
+        }
+        .footer-brand span { color: var(--gray-400); }
+        .footer-tagline {
+          font-size: 13px; color: var(--muted);
+          line-height: 1.6; max-width: 230px; margin-bottom: 24px;
+        }
+        .footer-email-row {
+          display: flex;
+          background: var(--white);
+          border: 1px solid var(--border-dark);
+          border-radius: 10px; overflow: hidden;
+        }
+        .footer-email-input {
+          flex: 1; background: transparent; border: none;
+          padding: 11px 14px; color: var(--black); font-size: 13px;
+          outline: none; font-family: inherit;
+        }
         .footer-email-input::placeholder { color: var(--muted); }
-        .footer-email-btn { padding: 12px 16px; background: var(--lime); border: none; cursor: pointer; color: var(--ink); font-size: 16px; transition: background 0.2s; }
-        .footer-email-btn:hover { background: white; }
-        .footer-col-title { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); margin-bottom: 20px; }
-        .footer-links { display: flex; flex-direction: column; gap: 12px; }
-        .footer-link { font-size: 14px; color: rgba(255,255,255,0.6); text-decoration: none; transition: color 0.2s; }
-        .footer-link:hover { color: white; }
-        .footer-bottom { display: flex; align-items: center; justify-content: space-between; padding-top: 32px; border-top: 1px solid var(--border); }
+        .footer-email-btn {
+          padding: 11px 14px; background: var(--black);
+          border: none; cursor: pointer; color: var(--white);
+          font-size: 15px; transition: background 0.15s;
+        }
+        .footer-email-btn:hover { background: var(--gray-700); }
+        .footer-col-title {
+          font-size: 11px; font-weight: 700;
+          text-transform: uppercase; letter-spacing: 0.1em;
+          color: var(--muted); margin-bottom: 18px;
+        }
+        .footer-links { display: flex; flex-direction: column; gap: 11px; }
+        .footer-link {
+          font-size: 13px; color: var(--gray-600);
+          text-decoration: none; transition: color 0.15s;
+        }
+        .footer-link:hover { color: var(--black); }
+        .footer-bottom {
+          display: flex; align-items: center; justify-content: space-between;
+          padding-top: 28px; border-top: 1px solid var(--border);
+        }
         .footer-copy { font-size: 12px; color: var(--muted); }
 
-        /* Spinner */
-        .spinner { width: 16px; height: 16px; border: 2px solid rgba(0,0,0,0.2); border-top-color: #000; border-radius: 50%; animation: spin 0.7s linear infinite; flex-shrink: 0; }
-        .spinner-light { border-color: rgba(255,255,255,0.2); border-top-color: white; }
-
-        /* Divider */
+        /* divider */
         .divider { border: none; border-top: 1px solid var(--border); margin: 0; }
 
-        /* Mobile */
+        /* spinner */
+        .spinner {
+          width: 15px; height: 15px;
+          border: 2px solid rgba(255,255,255,0.25);
+          border-top-color: white; border-radius: 50%;
+          animation: spin 0.7s linear infinite; flex-shrink: 0;
+        }
+        .spinner-dark {
+          border-color: rgba(0,0,0,0.15);
+          border-top-color: var(--black);
+        }
+
+        /* ── RESPONSIVE ───────────────────────────── */
         @media (max-width: 900px) {
           .nav-links { display: none; }
-          .hero-h1 { letter-spacing: -2px; }
           .stats-grid { grid-template-columns: repeat(2, 1fr); }
           .stat-box:nth-child(2) { border-right: none; }
-          .stat-box:nth-child(3), .stat-box:nth-child(4) { border-top: 1px solid var(--border); }
+          .stat-box:nth-child(3),
+          .stat-box:nth-child(4) { border-top: 1px solid var(--border); }
           .dual-grid, .features-bento, .test-grid { grid-template-columns: 1fr; }
-          .footer-top { grid-template-columns: 1fr 1fr; gap: 40px; }
-          .section, .stats-section { padding: 80px 24px; }
-          .hero-inner { padding: 60px 24px; }
-          .cta-section { margin: 0 16px 80px; padding: 60px 32px; }
-          .footer { padding: 60px 24px 40px; }
-          .nav-inner { padding: 16px 24px; }
+          .footer-top { grid-template-columns: 1fr 1fr; gap: 36px; }
+          .section, .stats-section { padding: 72px 24px; }
+          .hero-inner { padding: 56px 24px; }
+          .cta-section { margin: 0 16px 72px; padding: 56px 28px; }
+          .footer { padding: 56px 24px 36px; }
+          .nav-inner { padding: 14px 24px; }
         }
         @media (max-width: 600px) {
           .stats-grid { grid-template-columns: 1fr 1fr; }
           .footer-top { grid-template-columns: 1fr; }
           .hero-btns { flex-direction: column; }
           .btn-primary, .btn-secondary { justify-content: center; }
+          .hero-h1 { letter-spacing: -1.5px; }
         }
       `}</style>
 
-      {/* NAVBAR */}
+      {/* ── NAVBAR ────────────────────────────────── */}
       <header className="nav">
         <div className="nav-inner">
           <Link href="/" className="nav-logo">Zel<span>teb</span></Link>
@@ -277,14 +565,13 @@ export default function Home() {
         </div>
       </header>
 
-      {/* HERO */}
+      {/* ── HERO ──────────────────────────────────── */}
       <section className="hero" ref={heroRef}>
         <div className="hero-grid" />
         <div
           className="hero-glow"
           style={{
-            background: `radial-gradient(ellipse 60% 50% at ${mousePos.x}% ${mousePos.y}%, rgba(212,255,30,0.07) 0%, transparent 70%)`,
-            transition: "background 0.3s ease",
+            background: `radial-gradient(ellipse 55% 45% at ${mousePos.x}% ${mousePos.y}%, rgba(0,0,0,0.03) 0%, transparent 70%)`,
           }}
         />
         <div className="hero-inner">
@@ -316,7 +603,7 @@ export default function Home() {
                 className="btn-primary"
               >
                 {loading === "brand" ? <div className="spinner" /> : <GoogleIcon />}
-                <span>{loading === "brand" ? "Signing in..." : "I'm a Brand"}</span>
+                <span>{loading === "brand" ? "Signing in…" : "I'm a Brand"}</span>
                 {loading !== "brand" && <span>→</span>}
               </button>
               <button
@@ -324,20 +611,20 @@ export default function Home() {
                 disabled={loading !== null}
                 className="btn-secondary"
               >
-                {loading === "influencer" ? <div className="spinner spinner-light" /> : <GoogleIcon light />}
-                <span>{loading === "influencer" ? "Signing in..." : "I'm a Creator"}</span>
-                {loading !== "influencer" && <span style={{ color: "rgba(255,255,255,0.5)" }}>→</span>}
+                {loading === "influencer" ? <div className="spinner spinner-dark" /> : <GoogleIcon dark />}
+                <span>{loading === "influencer" ? "Signing in…" : "I'm a Creator"}</span>
+                {loading !== "influencer" && <span style={{ color: "var(--gray-400)" }}>→</span>}
               </button>
             </div>
           )}
           <div className="hero-cards anim-5">
             {[
-              { initials: "RK", name: "Rohit K.", stat: "2.1M followers", color: "linear-gradient(135deg,#f093fb,#f5576c)" },
-              { initials: "PV", name: "Priya V.", stat: "₹4.2L earned", color: "linear-gradient(135deg,#4facfe,#00f2fe)" },
-              { initials: "AM", name: "Arjun M.", stat: "Brand: NikeIN", color: "linear-gradient(135deg,#43e97b,#38f9d7)" },
+              { initials: "RK", name: "Rohit K.", stat: "2.1M followers", bg: "#1a1a18" },
+              { initials: "PV", name: "Priya V.", stat: "₹4.2L earned",   bg: "#4a4a47" },
+              { initials: "AM", name: "Arjun M.", stat: "Brand: NikeIN",  bg: "#737370" },
             ].map((c) => (
               <div className="hero-card" key={c.name}>
-                <div className="hero-card-avatar" style={{ background: c.color }}>{c.initials}</div>
+                <div className="hero-card-avatar" style={{ background: c.bg }}>{c.initials}</div>
                 <div>
                   <div className="hero-card-text">{c.name}</div>
                   <div className="hero-card-sub">{c.stat}</div>
@@ -348,12 +635,12 @@ export default function Home() {
         </div>
       </section>
 
-      {/* TICKER */}
+      {/* ── TICKER ────────────────────────────────── */}
       <div className="ticker-wrap">
         <div className="ticker-inner">
           {[...Array(2)].map((_, i) => (
             <div key={i} style={{ display: "flex" }}>
-              {["Instagram", "YouTube", "X (Twitter)", "LinkedIn", "Reddit", "Medium", "Paid Campaigns", "Verified Creators", "Brand Deals", "Real Analytics", "INR Payouts", "Instant Matching"].map((item) => (
+              {["Instagram","YouTube","X (Twitter)","LinkedIn","Reddit","Medium","Paid Campaigns","Verified Creators","Brand Deals","Real Analytics","INR Payouts","Instant Matching"].map((item) => (
                 <div className="ticker-item" key={item}>
                   <div className="ticker-dot" />
                   {item}
@@ -364,14 +651,14 @@ export default function Home() {
         </div>
       </div>
 
-      {/* STATS */}
+      {/* ── STATS ─────────────────────────────────── */}
       <div className="stats-section">
         <div className="stats-grid">
           {[
             { num: "12K", suffix: "+", label: "Verified influencers" },
             { num: "850", suffix: "+", label: "Brands onboarded" },
             { num: "₹2Cr", suffix: "+", label: "Creator earnings paid out" },
-            { num: "98", suffix: "%", label: "Campaign satisfaction" },
+            { num: "98",  suffix: "%", label: "Campaign satisfaction" },
           ].map((s) => (
             <div className="stat-box" key={s.label}>
               <div className="stat-num">{s.num}<span className="accent">{s.suffix}</span></div>
@@ -383,22 +670,23 @@ export default function Home() {
 
       <hr className="divider" />
 
-      {/* HOW IT WORKS — DUAL PATH */}
+      {/* ── HOW IT WORKS ──────────────────────────── */}
       <section className="section">
         <p className="section-label">How it works</p>
         <h2 className="section-h2">Two sides. <em>One platform.</em></h2>
         <p className="section-sub">Whether you're a brand looking to grow or a creator ready to monetize — Zelteb has a clear path for you.</p>
+
         <div className="dual-grid">
-          {/* Brand */}
-          <div className="path-card">
+          {/* Brand card */}
+          <div className="path-card brand-path">
             <div className="path-pill brand">For Brands</div>
             <h3 className="path-h3">Find influencers who actually move the needle.</h3>
             <p className="path-desc">Stop guessing. Browse verified creators by niche, platform, and audience quality. Launch paid campaigns that get results — not just impressions.</p>
             <div className="path-steps">
               {[
-                { n: "01", t: "Post a campaign brief", d: "Define your goals, budget, target audience, and preferred platforms." },
-                { n: "02", t: "Browse matched creators", d: "Get instant matches from our verified influencer pool. Filter by metrics." },
-                { n: "03", t: "Collaborate & track", d: "Manage content approvals, track live performance, and pay securely." },
+                { n: "01", t: "Post a campaign brief",    d: "Define your goals, budget, target audience, and preferred platforms." },
+                { n: "02", t: "Browse matched creators",  d: "Get instant matches from our verified influencer pool. Filter by metrics." },
+                { n: "03", t: "Collaborate & track",      d: "Manage content approvals, track live performance, and pay securely." },
               ].map((s) => (
                 <div className="path-step" key={s.n}>
                   <div className="step-num">{s.n}</div>
@@ -406,22 +694,27 @@ export default function Home() {
                 </div>
               ))}
             </div>
-            <button onClick={() => signUpWith("brand")} disabled={loading !== null} className="btn-primary" style={{ width: "100%", justifyContent: "center" }}>
+            <button
+              onClick={() => signUpWith("brand")}
+              disabled={loading !== null}
+              className="btn-primary"
+              style={{ width: "100%", justifyContent: "center" }}
+            >
               {loading === "brand" ? <div className="spinner" /> : null}
-              {loading === "brand" ? "Signing in..." : "Start hiring creators →"}
+              {loading === "brand" ? "Signing in…" : "Start hiring creators →"}
             </button>
           </div>
 
-          {/* Creator */}
-          <div className="path-card">
+          {/* Creator card */}
+          <div className="path-card creator-path">
             <div className="path-pill creator">For Creators</div>
             <h3 className="path-h3">Turn your audience into a real income stream.</h3>
             <p className="path-desc">No cold emails. No chasing brands. Zelteb brings paid opportunities to you based on your niche, platforms, and engagement — automatically.</p>
             <div className="path-steps">
               {[
-                { n: "01", t: "Verify your socials", d: "Connect your Instagram, YouTube, X, and other platforms in one click." },
+                { n: "01", t: "Verify your socials",      d: "Connect your Instagram, YouTube, X, and other platforms in one click." },
                 { n: "02", t: "Get matched to campaigns", d: "Brands find you based on your niche and audience. No bidding wars." },
-                { n: "03", t: "Create content & get paid", d: "Submit your content, get approved, and receive INR payouts directly." },
+                { n: "03", t: "Create content & get paid",d: "Submit your content, get approved, and receive INR payouts directly." },
               ].map((s) => (
                 <div className="path-step" key={s.n}>
                   <div className="step-num">{s.n}</div>
@@ -429,9 +722,14 @@ export default function Home() {
                 </div>
               ))}
             </div>
-            <button onClick={() => signUpWith("influencer")} disabled={loading !== null} className="btn-secondary" style={{ width: "100%", justifyContent: "center" }}>
-              {loading === "influencer" ? <div className="spinner spinner-light" /> : null}
-              {loading === "influencer" ? "Signing in..." : "Join as a creator →"}
+            <button
+              onClick={() => signUpWith("influencer")}
+              disabled={loading !== null}
+              className="btn-secondary"
+              style={{ width: "100%", justifyContent: "center" }}
+            >
+              {loading === "influencer" ? <div className="spinner spinner-dark" /> : null}
+              {loading === "influencer" ? "Signing in…" : "Join as a creator →"}
             </button>
           </div>
         </div>
@@ -439,19 +737,19 @@ export default function Home() {
 
       <hr className="divider" />
 
-      {/* FEATURES */}
+      {/* ── FEATURES ──────────────────────────────── */}
       <section className="section">
         <p className="section-label">Platform features</p>
         <h2 className="section-h2">Built for real <em>results.</em></h2>
         <p className="section-sub">Every tool you need to run successful influencer campaigns — from discovery to payment.</p>
         <div className="features-bento">
           {[
-            { icon: "🔍", title: "Smart creator discovery", desc: "Filter by platform, niche, follower count, engagement rate, and audience demographics to find the perfect fit." },
-            { icon: "✅", title: "Verified social profiles", desc: "Every creator goes through social verification. Know exactly who you're working with before you commit." },
-            { icon: "📊", title: "Live campaign analytics", desc: "Track reach, engagement, clicks, and conversions in real time. No more waiting for screenshots." },
-            { icon: "💸", title: "Secure INR payments", desc: "Escrow-based payments. Brands pay into escrow, creators get paid upon content approval. Zero disputes." },
-            { icon: "🤝", title: "Managed collaborations", desc: "Built-in messaging, content submission, revision requests, and approval workflows — all in one place." },
-            { icon: "🌐", title: "Multi-platform support", desc: "Instagram, YouTube, X, LinkedIn, Reddit, Medium — manage all your channels from a single dashboard." },
+            { icon: "🔍", title: "Smart creator discovery",   desc: "Filter by platform, niche, follower count, engagement rate, and audience demographics to find the perfect fit." },
+            { icon: "✅", title: "Verified social profiles",  desc: "Every creator goes through social verification. Know exactly who you're working with before you commit." },
+            { icon: "📊", title: "Live campaign analytics",   desc: "Track reach, engagement, clicks, and conversions in real time. No more waiting for screenshots." },
+            { icon: "💸", title: "Secure INR payments",       desc: "Escrow-based payments. Brands pay into escrow, creators get paid upon content approval. Zero disputes." },
+            { icon: "🤝", title: "Managed collaborations",    desc: "Built-in messaging, content submission, revision requests, and approval workflows — all in one place." },
+            { icon: "🌐", title: "Multi-platform support",    desc: "Instagram, YouTube, X, LinkedIn, Reddit, Medium — manage all your channels from a single dashboard." },
           ].map((f) => (
             <div className="feat-card" key={f.title}>
               <div className="feat-icon">{f.icon}</div>
@@ -464,7 +762,7 @@ export default function Home() {
 
       <hr className="divider" />
 
-      {/* TESTIMONIALS */}
+      {/* ── TESTIMONIALS ──────────────────────────── */}
       <section className="section">
         <p className="section-label">What people say</p>
         <h2 className="section-h2">Trusted by brands & <em>creators.</em></h2>
@@ -472,24 +770,21 @@ export default function Home() {
           {[
             {
               quote: "Zelteb cut our influencer search time from weeks to hours. The verification system means we never deal with fake engagement anymore.",
-              name: "Sneha R.", role: "Marketing Head, FreshCart India", initials: "SR",
-              color: "linear-gradient(135deg,#f093fb,#f5576c)"
+              name: "Sneha R.", role: "Marketing Head, FreshCart India", initials: "SR", bg: "#1a1a18",
             },
             {
               quote: "I used to spend months cold-pitching brands. Now campaigns come to me and I've tripled my monthly income from collaborations.",
-              name: "Karan M.", role: "Lifestyle Creator, 890K on Instagram", initials: "KM",
-              color: "linear-gradient(135deg,#4facfe,#00f2fe)"
+              name: "Karan M.", role: "Lifestyle Creator, 890K on Instagram", initials: "KM", bg: "#4a4a47",
             },
             {
               quote: "The analytics dashboard alone is worth it. We can see exactly what's working mid-campaign and adjust — not after it's over.",
-              name: "Divya S.", role: "Growth Lead, Nua Brand", initials: "DS",
-              color: "linear-gradient(135deg,#43e97b,#38f9d7)"
+              name: "Divya S.", role: "Growth Lead, Nua Brand", initials: "DS", bg: "#737370",
             },
           ].map((t) => (
             <div className="test-card" key={t.name}>
               <div className="stars">
-                {[1,2,3,4,5].map(s => (
-                  <svg key={s} width="14" height="14" viewBox="0 0 24 24" fill="var(--lime)">
+                {[1,2,3,4,5].map((s) => (
+                  <svg key={s} width="13" height="13" viewBox="0 0 24 24" fill="var(--black)">
                     <polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/>
                   </svg>
                 ))}
@@ -497,7 +792,7 @@ export default function Home() {
               <div className="test-quote">"</div>
               <p className="test-text">{t.quote}</p>
               <div className="test-author">
-                <div className="test-avatar" style={{ background: t.color }}>{t.initials}</div>
+                <div className="test-avatar" style={{ background: t.bg }}>{t.initials}</div>
                 <div>
                   <div className="test-name">{t.name}</div>
                   <div className="test-role">{t.role}</div>
@@ -508,29 +803,32 @@ export default function Home() {
         </div>
       </section>
 
-      {/* FINAL CTA */}
+      {/* ── FINAL CTA ─────────────────────────────── */}
       <div className="cta-section">
         <h2 className="cta-h2">Your next brand deal<br />is one click away.</h2>
         <p className="cta-sub">Join 12,000+ creators and 850+ brands already growing on Zelteb.</p>
         {user ? (
           <div className="cta-btns">
-            <Link href={userRole === "brand" ? "/brand/dashboard" : "/dashboard"} style={{ padding: "16px 36px", background: "var(--ink)", color: "white", borderRadius: "14px", fontSize: "15px", fontWeight: 700, textDecoration: "none" }}>
+            <Link
+              href={userRole === "brand" ? "/brand/dashboard" : "/dashboard"}
+              style={{ padding: "15px 32px", background: "white", color: "var(--black)", borderRadius: "12px", fontSize: "14px", fontWeight: 700, textDecoration: "none" }}
+            >
               Go to dashboard →
             </Link>
           </div>
         ) : (
           <div className="cta-btns">
             <button onClick={() => signUpWith("brand")} disabled={loading !== null} className="btn-cta-brand">
-              {loading === "brand" ? "Signing in..." : "Hire creators →"}
+              {loading === "brand" ? "Signing in…" : "Hire creators →"}
             </button>
             <button onClick={() => signUpWith("influencer")} disabled={loading !== null} className="btn-cta-creator">
-              {loading === "influencer" ? "Signing in..." : "Become a creator →"}
+              {loading === "influencer" ? "Signing in…" : "Become a creator →"}
             </button>
           </div>
         )}
       </div>
 
-      {/* FOOTER */}
+      {/* ── FOOTER ────────────────────────────────── */}
       <footer className="footer">
         <div className="footer-inner">
           <div className="footer-top">
@@ -576,19 +874,30 @@ export default function Home() {
       </footer>
 
       {/* JSON-LD */}
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify({ "@context": "https://schema.org", "@type": "WebSite", name: "Zelteb", url: "https://zelteb.com", description: "Zelteb is India's influencer marketing marketplace — connecting brands with verified creators for paid content campaigns.", potentialAction: { "@type": "SearchAction", target: "https://zelteb.com/discover?q={search_term_string}", "query-input": "required name=search_term_string" } }) }} />
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify({ "@context": "https://schema.org", "@type": "Organization", name: "Zelteb", url: "https://zelteb.com", description: "Influencer marketing marketplace for Indian brands and creators. Find verified influencers, run paid campaigns, track real results.", contactPoint: { "@type": "ContactPoint", email: "helpzelteb@gmail.com", contactType: "customer support" } }) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify({
+        "@context": "https://schema.org", "@type": "WebSite",
+        name: "Zelteb", url: "https://zelteb.com",
+        description: "Zelteb is India's influencer marketing marketplace — connecting brands with verified creators for paid content campaigns.",
+        potentialAction: { "@type": "SearchAction", target: "https://zelteb.com/discover?q={search_term_string}", "query-input": "required name=search_term_string" }
+      })}} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify({
+        "@context": "https://schema.org", "@type": "Organization",
+        name: "Zelteb", url: "https://zelteb.com",
+        description: "Influencer marketing marketplace for Indian brands and creators.",
+        contactPoint: { "@type": "ContactPoint", email: "helpzelteb@gmail.com", contactType: "customer support" }
+      })}} />
     </div>
   );
 }
 
-function GoogleIcon({ light }: { light?: boolean }) {
+function GoogleIcon({ dark, light }: { dark?: boolean; light?: boolean }) {
+  const opacity = dark ? 0.6 : light ? 0.5 : 1;
   return (
-    <svg width="16" height="16" viewBox="0 0 24 24" style={{ flexShrink: 0 }}>
-      <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill={light ? "rgba(255,255,255,0.7)" : "#4285F4"}/>
-      <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill={light ? "rgba(255,255,255,0.7)" : "#34A853"}/>
-      <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill={light ? "rgba(255,255,255,0.7)" : "#FBBC05"}/>
-      <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill={light ? "rgba(255,255,255,0.7)" : "#EA4335"}/>
+    <svg width="15" height="15" viewBox="0 0 24 24" style={{ flexShrink: 0, opacity }}>
+      <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill={dark ? "#333" : "#4285F4"}/>
+      <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill={dark ? "#333" : "#34A853"}/>
+      <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill={dark ? "#333" : "#FBBC05"}/>
+      <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill={dark ? "#333" : "#EA4335"}/>
     </svg>
   );
 }
