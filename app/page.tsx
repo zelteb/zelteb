@@ -8,16 +8,9 @@ export default function Home() {
   const [user, setUser] = useState<any>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const [userRole, setUserRole] = useState<"brand" | "influencer" | null>(null);
-  const [loading, setLoading] = useState<"brand" | "influencer" | "login" | null>(null);
-  const [hasSignedUpBefore, setHasSignedUpBefore] = useState(false);
+  const [loading, setLoading] = useState<"brand" | "influencer" | null>(null);
 
   useEffect(() => {
-    // Check if user has signed up before (stored in localStorage)
-    const previousRole = localStorage.getItem("zelteb_signup_role");
-    if (previousRole === "brand" || previousRole === "influencer") {
-      setHasSignedUpBefore(true);
-    }
-
     supabase.auth.getUser().then(async ({ data }) => {
       setUser(data.user);
       if (data.user) {
@@ -26,11 +19,7 @@ export default function Home() {
           .select("id")
           .eq("user_id", data.user.id)
           .single();
-        const role: "brand" | "influencer" = brand ? "brand" : "influencer";
-        setUserRole(role);
-        // Persist role so Login button shows on future visits
-        localStorage.setItem("zelteb_signup_role", role);
-        setHasSignedUpBefore(true);
+        setUserRole(brand ? "brand" : "influencer");
       }
     });
 
@@ -39,7 +28,6 @@ export default function Home() {
         setUser(session?.user ?? null);
         if (!session?.user) {
           setUserRole(null);
-          // Keep hasSignedUpBefore true — they've signed up before, just logged out
         }
       }
     );
@@ -49,19 +37,7 @@ export default function Home() {
 
   const signUpWith = async (role: "brand" | "influencer") => {
     setLoading(role);
-    localStorage.setItem("zelteb_signup_role", role);
     const callbackUrl = `${window.location.origin}/auth/callback?role=${role}`;
-    await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: { redirectTo: callbackUrl },
-    });
-    setLoading(null);
-  };
-
-  // Login: no role param — /auth/callback will detect role from DB and redirect
-  const handleLogin = async () => {
-    setLoading("login");
-    const callbackUrl = `${window.location.origin}/auth/callback`;
     await supabase.auth.signInWithOAuth({
       provider: "google",
       options: { redirectTo: callbackUrl },
@@ -122,28 +98,11 @@ export default function Home() {
           </nav>
 
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-            {user ? (
-              // Logged in → show Dashboard
-              <Link
-                href={userRole === "brand" ? "/brand/dashboard" : "/dashboard"}
-                className="px-6 py-2.5 rounded-full bg-black text-white text-sm font-bold hover:bg-gray-800 transition-all"
-              >
+            {user && (
+              <Link href={userRole === "brand" ? "/brand/dashboard" : "/dashboard"} className="px-6 py-2.5 rounded-full bg-black text-white text-sm font-bold hover:bg-gray-800 transition-all">
                 Dashboard
               </Link>
-            ) : hasSignedUpBefore ? (
-              // Has signed up before but logged out → show Login
-              <button
-                onClick={handleLogin}
-                disabled={loading === "login"}
-                className="signup-btn px-6 py-2.5 rounded-full bg-black text-white text-sm font-bold hover:bg-gray-800 transition-all"
-                style={{ borderRadius: 9999 }}
-              >
-                {loading === "login" ? (
-                  <div className="spinner spinner-white" style={{ width: 14, height: 14, borderWidth: 2 }} />
-                ) : null}
-                <span>{loading === "login" ? "Signing in..." : "Login"}</span>
-              </button>
-            ) : null /* Brand new visitor → no button */}
+            )}
           </div>
         </div>
       </header>
