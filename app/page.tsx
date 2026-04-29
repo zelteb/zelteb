@@ -792,7 +792,7 @@ export default function Home() {
                 <Link href="/about" className="footer-link">About us</Link>
                 <Link href="/help" className="footer-link">Contact</Link>
                 <Link href="/faq" className="footer-link">FAQ</Link>
-                <Link href="/zelteb-employees" className="footer-link">Careers</Link>
+                <Link href="/zelteb-employees" className="footer-link">Zelteb Employes</Link>
               </div>
             </div>
             <div>
