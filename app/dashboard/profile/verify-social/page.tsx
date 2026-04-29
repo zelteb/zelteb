@@ -15,7 +15,6 @@ import {
   Copy,
   Check,
   Link2Off,
-  Sparkles,
 } from "lucide-react";
 
 // ─── Platform config ──────────────────────────────────────────────────────────
@@ -85,26 +84,37 @@ const PLATFORMS = [
       </svg>
     ),
   },
+  {
+    value: "medium",
+    label: "Medium",
+    color: "text-gray-900",
+    bg: "bg-gray-50",
+    border: "border-gray-200",
+    ring: "ring-gray-400",
+    icon: (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M13.54 12a6.8 6.8 0 01-6.77 6.82A6.8 6.8 0 010 12a6.8 6.8 0 016.77-6.82A6.8 6.8 0 0113.54 12zM20.96 12c0 3.54-1.51 6.42-3.38 6.42-1.87 0-3.39-2.88-3.39-6.42s1.52-6.42 3.39-6.42 3.38 2.88 3.38 6.42M24 12c0 3.17-.53 5.75-1.19 5.75-.66 0-1.19-2.58-1.19-5.75s.53-5.75 1.19-5.75C23.47 6.25 24 8.83 24 12z" />
+      </svg>
+    ),
+  },
 ] as const;
 
 type PlatformValue = (typeof PLATFORMS)[number]["value"];
 
 // ─── Resolve a guaranteed full social URL ─────────────────────────────────────
-// Guards against old DB rows where profile_url was stored as just a handle/slug
 const PLATFORM_BASE: Record<string, string> = {
   instagram: "https://www.instagram.com/",
   youtube: "https://www.youtube.com/@",
   x: "https://x.com/",
   linkedin: "https://www.linkedin.com/in/",
   reddit: "https://www.reddit.com/user/",
+  medium: "https://medium.com/@",
 };
 
 function resolveSocialUrl(platform: string, profileUrl: string, handle: string): string {
-  // Already a full URL — use as-is
   if (profileUrl.startsWith("http://") || profileUrl.startsWith("https://")) {
     return profileUrl;
   }
-  // Partial/bad data — reconstruct from platform base + handle
   const base = PLATFORM_BASE[platform];
   if (base) return `${base}${handle}`;
   return profileUrl;
@@ -138,6 +148,18 @@ function StatusBadge({ status }: { status: ExistingRequest["status"] }) {
       <Clock size={10} strokeWidth={2.5} /> Pending
     </span>
   );
+}
+
+// ─── Fetch helper — centralised so any caller gets fresh data ─────────────────
+async function fetchRequests(userId: string): Promise<ExistingRequest[]> {
+  const { data, error } = await supabase
+    .from("verification_requests")
+    .select("id, platform, handle, profile_url, status, created_at")
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false });
+
+  if (error) throw error;
+  return data ?? [];
 }
 
 // ─── Main page ────────────────────────────────────────────────────────────────
@@ -180,13 +202,13 @@ export default function VerifySocialPage() {
 
       if (profile?.username) setUsername(profile.username);
 
-      const { data } = await supabase
-        .from("verification_requests")
-        .select("id, platform, handle, profile_url, status, created_at")
-        .eq("user_id", auth.user.id)
-        .order("created_at", { ascending: false });
+      try {
+        const requests = await fetchRequests(auth.user.id);
+        setExistingRequests(requests);
+      } catch {
+        // non-fatal
+      }
 
-      if (data) setExistingRequests(data);
       setLoading(false);
     };
     load();
@@ -201,7 +223,9 @@ export default function VerifySocialPage() {
     setTimeout(() => setCopiedLink(false), 2500);
   };
 
+  // ── Delink ──────────────────────────────────────────────────────────────────
   const handleDelink = async (reqId: string) => {
+    if (!user) return;
     setDelinkingId(reqId);
     try {
       const { error: delError } = await supabase
@@ -211,14 +235,20 @@ export default function VerifySocialPage() {
         .eq("user_id", user.id);
 
       if (delError) throw delError;
-      setExistingRequests((prev) => prev.filter((r) => r.id !== reqId));
+
+      // Re-fetch from DB instead of optimistic splice so a refresh shows the
+      // same state — this is the fix for the "still connected after refresh" bug.
+      const fresh = await fetchRequests(user.id);
+      setExistingRequests(fresh);
     } catch (err: any) {
       alert("Failed to delink: " + err.message);
+    } finally {
+      setDelinkingId(null);
+      setConfirmDelinkId(null);
     }
-    setDelinkingId(null);
-    setConfirmDelinkId(null);
   };
 
+  // ── Submit ──────────────────────────────────────────────────────────────────
   const handleSubmit = async () => {
     setError("");
 
@@ -245,7 +275,6 @@ export default function VerifySocialPage() {
       return;
     }
 
-    // Derive handle from URL for storage (best-effort)
     const urlParts = profileUrl.trim().replace(/\/$/, "").split("/");
     const derivedHandle = urlParts[urlParts.length - 1].replace(/^@/, "") || profileUrl.trim();
 
@@ -263,13 +292,8 @@ export default function VerifySocialPage() {
 
       if (insertError) throw insertError;
 
-      const { data } = await supabase
-        .from("verification_requests")
-        .select("id, platform, handle, profile_url, status, created_at")
-        .eq("user_id", user.id)
-        .order("created_at", { ascending: false });
-
-      if (data) setExistingRequests(data);
+      const fresh = await fetchRequests(user.id);
+      setExistingRequests(fresh);
 
       setSelectedPlatform(null);
       setProfileUrl("");
@@ -576,7 +600,7 @@ export default function VerifySocialPage() {
                 </div>
               </div>
 
-              {/* Profile URL input — only shown after platform selected */}
+              {/* Profile URL input */}
               {selectedPlatform && selectedMeta && (
                 <div className="border-t border-gray-100 pt-5 space-y-1.5">
                   <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-3">
@@ -636,19 +660,6 @@ export default function VerifySocialPage() {
                   )}
                 </button>
                 <p className="text-xs text-gray-400">Reviewed in 1–2 days</p>
-              </div>
-            </div>
-
-            {/* ── Info box ── */}
-            <div className="flex gap-3 bg-orange-50 border border-orange-100 rounded-2xl px-5 py-4">
-              <Sparkles size={15} className="text-orange-400 mt-0.5 shrink-0" />
-              <div>
-                <p className="text-sm font-semibold text-orange-700 mb-0.5">Manual review process</p>
-                <p className="text-xs text-orange-600 leading-relaxed">
-                  Each request is reviewed by our team to confirm the account belongs to you
-                  and meets our guidelines. Once approved, a verified badge appears on your
-                  profile.
-                </p>
               </div>
             </div>
 
