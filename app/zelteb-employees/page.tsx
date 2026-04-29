@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
-import { useRouter } from "next/navigation";
 import Image from "next/image";
 import {
   Loader2,
@@ -26,9 +25,9 @@ const LOCKOUT_DURATION_MS = 24 * 60 * 60 * 1000; // 24 hours
 const STORAGE_KEY = "zelteb_employee_gate";
 
 interface GateState {
-  attempts: number;       // attempts used today
-  lockedUntil: number;    // epoch ms, 0 = not locked
-  dayStart: number;       // epoch ms of the day these attempts belong to
+  attempts: number;
+  lockedUntil: number;
+  dayStart: number;
 }
 
 function getTodayStart(): number {
@@ -42,9 +41,7 @@ function loadGateState(): GateState {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) throw new Error("empty");
     const parsed: GateState = JSON.parse(raw);
-    // If stored day is different from today, reset attempts (but keep lockout)
     if (parsed.dayStart !== getTodayStart()) {
-      // New day — fresh attempts, but lockout might still be active
       return {
         attempts: 0,
         lockedUntil: parsed.lockedUntil,
@@ -80,13 +77,11 @@ function PasscodeGate({ onSuccess }: { onSuccess: () => void }) {
   const [gateState, setGateState] = useState<GateState>(() => loadGateState());
   const [now, setNow] = useState(Date.now());
 
-  // Tick timer every second for countdown
   useEffect(() => {
     const interval = setInterval(() => {
       const currentNow = Date.now();
       setNow(currentNow);
 
-      // Auto-unlock when lockout expires
       setGateState((prev) => {
         if (prev.lockedUntil > 0 && currentNow >= prev.lockedUntil) {
           const updated: GateState = {
@@ -115,7 +110,6 @@ function PasscodeGate({ onSuccess }: { onSuccess: () => void }) {
       return;
     }
 
-    // Wrong password
     const newAttempts = gateState.attempts + 1;
     const willLock = newAttempts >= MAX_ATTEMPTS;
 
@@ -178,7 +172,6 @@ function PasscodeGate({ onSuccess }: { onSuccess: () => void }) {
         </h1>
 
         {isLocked ? (
-          /* ── Locked state ── */
           <div className="text-center">
             <p className="text-sm text-gray-400 mb-4">
               Too many failed attempts. Try again in:
@@ -194,13 +187,11 @@ function PasscodeGate({ onSuccess }: { onSuccess: () => void }) {
             </p>
           </div>
         ) : (
-          /* ── Normal state ── */
           <>
             <p className="text-sm text-gray-400 text-center mb-6">
               Enter your access code to continue
             </p>
 
-            {/* Attempts left indicator */}
             {gateState.attempts > 0 && (
               <div className="flex justify-center gap-1.5 mb-4">
                 {Array.from({ length: MAX_ATTEMPTS }).map((_, i) => (
@@ -217,7 +208,6 @@ function PasscodeGate({ onSuccess }: { onSuccess: () => void }) {
               </div>
             )}
 
-            {/* Input */}
             <div className="relative mb-3">
               <input
                 type={showCode ? "text" : "password"}
@@ -242,14 +232,12 @@ function PasscodeGate({ onSuccess }: { onSuccess: () => void }) {
               </button>
             </div>
 
-            {/* Error */}
             {error && (
               <p className="text-xs text-red-500 text-center mb-3 font-medium">
                 {error}
               </p>
             )}
 
-            {/* Button */}
             <button
               onClick={handleSubmit}
               disabled={isLocked}
@@ -530,7 +518,6 @@ function RequestRow({
 
 // ─── Main page ────────────────────────────────────────────────────────────────
 export default function ZeltebEmployeesPage() {
-  const router = useRouter();
   const [unlocked, setUnlocked] = useState(false);
   const [requests, setRequests] = useState<VerificationRequest[]>([]);
   const [loading, setLoading] = useState(false);
@@ -545,8 +532,6 @@ export default function ZeltebEmployeesPage() {
 
     const load = async () => {
       setLoading(true);
-      const { data: auth } = await supabase.auth.getUser();
-      if (!auth.user) { router.push("/"); return; }
 
       const { data: verifications, error: verErr } = await supabase
         .from("verification_requests")
@@ -603,7 +588,7 @@ export default function ZeltebEmployeesPage() {
     };
 
     load();
-  }, [unlocked, router]);
+  }, [unlocked]);
 
   const handleAccept = async (id: string) => {
     setUpdating(id);
@@ -688,7 +673,7 @@ export default function ZeltebEmployeesPage() {
             <strong>Error loading data:</strong> {fetchError}
             <br />
             <span className="text-xs text-red-400">
-              Make sure RLS policies allow admins to read all verification_requests.
+              Make sure RLS policies allow reading all verification_requests.
             </span>
           </div>
         )}
