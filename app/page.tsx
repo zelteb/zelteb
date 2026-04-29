@@ -60,54 +60,34 @@ export default function Home() {
   };
 
   return (
-    <div className="root" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+    <div className="root">
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,700;0,9..40,900;1,9..40,300;1,9..40,400&family=Fraunces:ital,opsz,wght@0,9..144,100;0,9..144,400;0,9..144,700;1,9..144,100;1,9..144,400;1,9..144,700&display=swap');
-
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
         :root {
+          --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+
           --black:   #0a0a0a;
           --white:   #ffffff;
-          --off-white: #f8f6ff;
-          --gray-50: #fafafa;
-          --gray-100: #f0eeff;
-          --gray-200: #e0dbff;
-          --gray-300: #c5beff;
-          --gray-400: #9f96f8;
-          --gray-500: #7b72e9;
-          --gray-600: #5a52c7;
-          --gray-700: #3d37a0;
-          --gray-800: #261f7a;
-          --gray-900: #140f52;
-
-          /* Vivid palette */
           --violet:    #7c3aed;
           --violet-bg: #ede9fe;
           --violet-mid:#8b5cf6;
           --violet-light: #ddd6fe;
-
           --rose:      #e11d48;
           --rose-bg:   #ffe4e6;
           --rose-mid:  #f43f5e;
-
           --cyan:      #0891b2;
           --cyan-bg:   #cffafe;
           --cyan-mid:  #06b6d4;
-
           --emerald:   #059669;
           --emerald-bg:#d1fae5;
           --emerald-mid:#10b981;
-
           --amber:     #d97706;
           --amber-bg:  #fef3c7;
           --amber-mid: #f59e0b;
-          --amber-light:#fde68a;
-
           --orange:    #ea580c;
           --orange-bg: #ffedd5;
           --orange-mid:#f97316;
-
           --blue:      #1d4ed8;
           --blue-bg:   #dbeafe;
           --blue-mid:  #3b82f6;
@@ -115,14 +95,9 @@ export default function Home() {
           --border: rgba(124,58,237,0.12);
           --border-dark: rgba(124,58,237,0.22);
           --muted:  #6b7280;
-          --surface: #ffffff;
-          --surface2: #f8f6ff;
-          --ink: #0a0a0a;
         }
 
-        .root { background: var(--white); min-height: 100vh; color: var(--black); overflow-x: hidden; }
-
-        .brand-serif { font-family: 'Fraunces', serif; }
+        .root { background: var(--white); min-height: 100vh; color: var(--black); overflow-x: hidden; font-family: var(--font); }
 
         @keyframes fadeUp {
           from { opacity: 0; transform: translateY(24px); }
@@ -133,9 +108,7 @@ export default function Home() {
           to   { transform: translateX(-50%); }
         }
         @keyframes spin { to { transform: rotate(360deg); } }
-        @keyframes blink {
-          0%,100% { opacity:1; } 50% { opacity:0.3; }
-        }
+        @keyframes blink { 0%,100% { opacity:1; } 50% { opacity:0.3; } }
         @keyframes float {
           0%,100% { transform: translateY(0px); }
           50% { transform: translateY(-6px); }
@@ -147,7 +120,7 @@ export default function Home() {
         .anim-4 { animation: fadeUp 0.65s cubic-bezier(0.16,1,0.3,1) 0.46s both; }
         .anim-5 { animation: fadeUp 0.65s cubic-bezier(0.16,1,0.3,1) 0.58s both; }
 
-        /* ── NAV ─────────────────────────────────── */
+        /* NAV */
         .nav {
           position: sticky; top: 0; z-index: 100;
           background: rgba(255,255,255,0.94);
@@ -160,8 +133,7 @@ export default function Home() {
           display: flex; align-items: center; justify-content: space-between;
         }
         .nav-logo {
-          font-family: 'Fraunces', serif;
-          font-size: 26px; font-weight: 900;
+          font-size: 22px; font-weight: 800;
           color: #000000; text-decoration: none; letter-spacing: -0.5px;
         }
         .nav-links { display: flex; gap: 28px; align-items: center; }
@@ -174,12 +146,12 @@ export default function Home() {
           padding: 9px 20px;
           background: var(--violet); color: var(--white);
           border-radius: 100px; font-size: 13px; font-weight: 700;
-          text-decoration: none; transition: all 0.15s; letter-spacing: 0.01em;
+          text-decoration: none; transition: all 0.15s;
           box-shadow: 0 2px 12px rgba(124,58,237,0.3);
         }
-        .nav-cta:hover { background: var(--gray-700); box-shadow: 0 4px 18px rgba(124,58,237,0.4); }
+        .nav-cta:hover { background: #6d28d9; box-shadow: 0 4px 18px rgba(124,58,237,0.4); }
 
-        /* ── HERO ─────────────────────────────────── */
+        /* HERO */
         .hero {
           position: relative; min-height: 90vh;
           display: flex; align-items: center; overflow: hidden;
@@ -228,20 +200,18 @@ export default function Home() {
           animation: blink 2s ease-in-out infinite;
         }
         .hero-h1 {
-          font-family: 'Fraunces', serif;
-          font-size: clamp(56px, 8vw, 108px);
-          font-weight: 700; line-height: 0.9;
-          letter-spacing: -3px; margin-bottom: 32px; color: var(--black);
+          font-size: clamp(48px, 7vw, 88px);
+          font-weight: 800; line-height: 1.0;
+          letter-spacing: -2.5px; margin-bottom: 32px; color: var(--black);
         }
-        .hero-h1 .italic { font-style: italic; }
         .hero-h1 .grad {
           background: linear-gradient(135deg, var(--violet) 0%, var(--rose-mid) 50%, var(--orange-mid) 100%);
           -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-          background-clip: text;
+          background-clip: text; font-style: italic;
         }
         .hero-sub {
-          font-size: clamp(16px, 1.8vw, 18px); color: var(--muted);
-          max-width: 500px; line-height: 1.65; margin-bottom: 48px; font-weight: 400;
+          font-size: clamp(15px, 1.8vw, 17px); color: var(--muted);
+          max-width: 500px; line-height: 1.7; margin-bottom: 48px; font-weight: 400;
         }
         .hero-btns { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 72px; }
 
@@ -252,7 +222,7 @@ export default function Home() {
           color: var(--white);
           border-radius: 12px; font-size: 14px; font-weight: 700;
           border: none; cursor: pointer; transition: all 0.2s;
-          font-family: inherit; text-decoration: none;
+          font-family: var(--font); text-decoration: none;
           box-shadow: 0 4px 20px rgba(124,58,237,0.35);
         }
         .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 28px rgba(124,58,237,0.45); }
@@ -264,12 +234,11 @@ export default function Home() {
           background: var(--white); color: var(--black);
           border-radius: 12px; font-size: 14px; font-weight: 600;
           border: 1.5px solid var(--border-dark); cursor: pointer;
-          transition: all 0.18s; font-family: inherit; text-decoration: none;
+          transition: all 0.18s; font-family: var(--font); text-decoration: none;
         }
         .btn-secondary:hover { background: var(--violet-bg); border-color: var(--violet-mid); color: var(--violet); transform: translateY(-1px); }
         .btn-secondary:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
 
-        /* floating profile cards */
         .hero-cards { display: flex; gap: 12px; flex-wrap: wrap; }
         .hero-card {
           padding: 14px 18px;
@@ -290,7 +259,7 @@ export default function Home() {
         .hero-card-text { font-size: 13px; font-weight: 700; color: var(--black); }
         .hero-card-sub { font-size: 11px; color: var(--muted); margin-top: 2px; }
 
-        /* ── TICKER ───────────────────────────────── */
+        /* TICKER */
         .ticker-wrap {
           overflow: hidden;
           border-top: 1px solid rgba(124,58,237,0.15);
@@ -298,27 +267,20 @@ export default function Home() {
           padding: 13px 0;
           background: linear-gradient(90deg, var(--violet-bg) 0%, #e0f2fe 50%, var(--emerald-bg) 100%);
         }
-        .ticker-inner {
-          display: flex; width: max-content;
-          animation: ticker 28s linear infinite;
-        }
+        .ticker-inner { display: flex; width: max-content; animation: ticker 28s linear infinite; }
         .ticker-item {
           white-space: nowrap; padding: 0 32px;
           font-size: 12px; font-weight: 700;
-          letter-spacing: 0.09em;
-          text-transform: uppercase;
+          letter-spacing: 0.09em; text-transform: uppercase;
           display: flex; align-items: center; gap: 14px;
         }
-        .ticker-dot {
-          width: 5px; height: 5px;
-          border-radius: 50%; flex-shrink: 0;
-        }
+        .ticker-dot { width: 5px; height: 5px; border-radius: 50%; flex-shrink: 0; }
 
-        /* ── STATS ────────────────────────────────── */
+        /* STATS */
         .stats-section { padding: 96px 40px; max-width: 1200px; margin: 0 auto; }
         .stats-grid {
           display: grid; grid-template-columns: repeat(4, 1fr);
-          gap: 0; border: 1px solid var(--border-dark); border-radius: 24px;
+          border: 1px solid var(--border-dark); border-radius: 24px;
           overflow: hidden; background: var(--white);
         }
         .stat-box {
@@ -334,9 +296,8 @@ export default function Home() {
         .stat-box:nth-child(4)::before { background: linear-gradient(90deg, var(--orange), var(--orange-mid)); }
         .stat-box:last-child { border-right: none; }
         .stat-num {
-          font-family: 'Fraunces', serif;
-          font-size: clamp(38px, 4.5vw, 60px);
-          font-weight: 700; line-height: 1; letter-spacing: -2px; color: var(--black);
+          font-size: clamp(36px, 4vw, 56px);
+          font-weight: 800; line-height: 1; letter-spacing: -2px; color: var(--black);
         }
         .stat-num .s1 { color: var(--violet); }
         .stat-num .s2 { color: var(--cyan); }
@@ -344,7 +305,7 @@ export default function Home() {
         .stat-num .s4 { color: var(--orange); }
         .stat-label { font-size: 13px; color: var(--muted); margin-top: 9px; font-weight: 500; }
 
-        /* ── SECTIONS ─────────────────────────────── */
+        /* SECTIONS */
         .section { padding: 112px 40px; max-width: 1200px; margin: 0 auto; }
         .section-label {
           display: inline-flex; align-items: center; gap: 7px;
@@ -355,10 +316,9 @@ export default function Home() {
           border: 1px solid rgba(124,58,237,0.2);
         }
         .section-h2 {
-          font-family: 'Fraunces', serif;
-          font-size: clamp(34px, 5vw, 58px);
-          font-weight: 700; line-height: 1.05;
-          letter-spacing: -2px; margin-bottom: 14px; color: var(--black);
+          font-size: clamp(30px, 4.5vw, 52px);
+          font-weight: 800; line-height: 1.1;
+          letter-spacing: -1.5px; margin-bottom: 14px; color: var(--black);
         }
         .section-h2 em {
           font-style: italic;
@@ -371,9 +331,8 @@ export default function Home() {
           max-width: 460px; line-height: 1.65; margin-bottom: 64px; font-weight: 400;
         }
 
-        /* ── DUAL PATH ────────────────────────────── */
+        /* DUAL PATH */
         .dual-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-
         .path-card {
           border: 1px solid var(--border-dark);
           border-radius: 28px; padding: 48px 44px;
@@ -381,7 +340,6 @@ export default function Home() {
           transition: box-shadow 0.25s, transform 0.25s;
         }
         .path-card:hover { box-shadow: 0 8px 40px rgba(124,58,237,0.12); transform: translateY(-2px); }
-
         .path-card.brand-path {
           background: linear-gradient(145deg, #fdf4ff 0%, #f5f3ff 100%);
           border-top: 3px solid var(--violet-mid);
@@ -390,8 +348,6 @@ export default function Home() {
           background: linear-gradient(145deg, #fffbeb 0%, #fff7ed 100%);
           border-top: 3px solid var(--orange-mid);
         }
-
-        /* Decorative circle in card corner */
         .path-card::after {
           content: ''; position: absolute;
           bottom: -60px; right: -60px;
@@ -406,288 +362,135 @@ export default function Home() {
           font-size: 11px; font-weight: 700; letter-spacing: 0.09em;
           text-transform: uppercase; margin-bottom: 28px;
         }
-        .path-pill.brand {
-          background: var(--violet-bg); color: var(--violet);
-          border: 1px solid rgba(124,58,237,0.25);
-        }
-        .path-pill.creator {
-          background: var(--orange-bg); color: var(--orange);
-          border: 1px solid rgba(249,115,22,0.25);
-        }
+        .path-pill.brand { background: var(--violet-bg); color: var(--violet); border: 1px solid rgba(124,58,237,0.25); }
+        .path-pill.creator { background: var(--orange-bg); color: var(--orange); border: 1px solid rgba(249,115,22,0.25); }
 
-        .path-h3 {
-          font-family: 'Fraunces', serif;
-          font-size: 30px; font-weight: 700; letter-spacing: -0.8px;
-          margin-bottom: 14px; line-height: 1.1; color: var(--black);
-        }
-        .path-desc {
-          font-size: 14px; color: var(--muted);
-          line-height: 1.65; margin-bottom: 36px;
-        }
+        .path-h3 { font-size: 26px; font-weight: 800; letter-spacing: -0.5px; margin-bottom: 14px; line-height: 1.2; color: var(--black); }
+        .path-desc { font-size: 14px; color: var(--muted); line-height: 1.65; margin-bottom: 36px; }
         .path-steps { display: flex; flex-direction: column; gap: 14px; margin-bottom: 40px; }
         .path-step { display: flex; align-items: flex-start; gap: 12px; }
         .step-num {
-          width: 26px; height: 26px;
-          border-radius: 8px;
+          width: 26px; height: 26px; border-radius: 8px;
           display: flex; align-items: center; justify-content: center;
-          font-size: 10px; font-weight: 700;
-          flex-shrink: 0; margin-top: 1px;
+          font-size: 10px; font-weight: 700; flex-shrink: 0; margin-top: 1px;
         }
-        .brand-path .step-num {
-          background: var(--violet-bg); color: var(--violet);
-          border: 1px solid rgba(124,58,237,0.2);
-        }
-        .creator-path .step-num {
-          background: var(--orange-bg); color: var(--orange);
-          border: 1px solid rgba(249,115,22,0.2);
-        }
+        .brand-path .step-num { background: var(--violet-bg); color: var(--violet); border: 1px solid rgba(124,58,237,0.2); }
+        .creator-path .step-num { background: var(--orange-bg); color: var(--orange); border: 1px solid rgba(249,115,22,0.2); }
         .step-text { font-size: 14px; color: #4b5563; line-height: 1.55; }
         .step-text strong { color: var(--black); font-weight: 600; }
 
-        /* Brand & Creator primary buttons */
         .btn-brand {
-          display: inline-flex; align-items: center; gap: 9px;
-          padding: 14px 28px;
+          display: inline-flex; align-items: center; gap: 9px; padding: 14px 28px;
           background: linear-gradient(135deg, var(--violet) 0%, #a855f7 100%);
-          color: var(--white);
-          border-radius: 12px; font-size: 14px; font-weight: 700;
-          border: none; cursor: pointer; transition: all 0.2s;
-          font-family: inherit; text-decoration: none;
-          box-shadow: 0 3px 16px rgba(124,58,237,0.3);
-          width: 100%; justify-content: center;
+          color: var(--white); border-radius: 12px; font-size: 14px; font-weight: 700;
+          border: none; cursor: pointer; transition: all 0.2s; font-family: var(--font);
+          box-shadow: 0 3px 16px rgba(124,58,237,0.3); width: 100%; justify-content: center;
         }
         .btn-brand:hover { transform: translateY(-2px); box-shadow: 0 6px 24px rgba(124,58,237,0.4); }
         .btn-brand:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
 
         .btn-creator {
-          display: inline-flex; align-items: center; gap: 9px;
-          padding: 14px 28px;
+          display: inline-flex; align-items: center; gap: 9px; padding: 14px 28px;
           background: linear-gradient(135deg, var(--orange) 0%, var(--amber) 100%);
-          color: var(--white);
-          border-radius: 12px; font-size: 14px; font-weight: 700;
-          border: none; cursor: pointer; transition: all 0.2s;
-          font-family: inherit; text-decoration: none;
-          box-shadow: 0 3px 16px rgba(234,88,12,0.3);
-          width: 100%; justify-content: center;
+          color: var(--white); border-radius: 12px; font-size: 14px; font-weight: 700;
+          border: none; cursor: pointer; transition: all 0.2s; font-family: var(--font);
+          box-shadow: 0 3px 16px rgba(234,88,12,0.3); width: 100%; justify-content: center;
         }
         .btn-creator:hover { transform: translateY(-2px); box-shadow: 0 6px 24px rgba(234,88,12,0.4); }
         .btn-creator:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
 
-        /* ── FEATURES ─────────────────────────────── */
+        /* FEATURES */
         .features-bento { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
         .feat-card {
-          padding: 32px 28px;
-          background: var(--white);
-          border: 1px solid var(--border);
-          border-radius: 20px; transition: all 0.22s;
+          padding: 32px 28px; background: var(--white);
+          border: 1px solid var(--border); border-radius: 20px; transition: all 0.22s;
           position: relative; overflow: hidden;
         }
-        .feat-card:hover {
-          border-color: var(--border-dark);
-          box-shadow: 0 6px 24px rgba(124,58,237,0.1);
-          transform: translateY(-3px);
-        }
+        .feat-card:hover { border-color: var(--border-dark); box-shadow: 0 6px 24px rgba(124,58,237,0.1); transform: translateY(-3px); }
         .feat-card:nth-child(1) { background: linear-gradient(145deg, #fdf4ff, #ffffff); }
         .feat-card:nth-child(2) { background: linear-gradient(145deg, #ecfdf5, #ffffff); }
         .feat-card:nth-child(3) { background: linear-gradient(145deg, #eff6ff, #ffffff); }
         .feat-card:nth-child(4) { background: linear-gradient(145deg, #fff7ed, #ffffff); }
         .feat-card:nth-child(5) { background: linear-gradient(145deg, #fdf2f8, #ffffff); }
         .feat-card:nth-child(6) { background: linear-gradient(145deg, #ecfeff, #ffffff); }
-
-        .feat-icon {
-          width: 44px; height: 44px;
-          border-radius: 12px; display: flex; align-items: center;
-          justify-content: center; margin-bottom: 18px; font-size: 20px;
-        }
+        .feat-icon { width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; margin-bottom: 18px; font-size: 20px; }
         .feat-card:nth-child(1) .feat-icon { background: var(--violet-bg); }
         .feat-card:nth-child(2) .feat-icon { background: var(--emerald-bg); }
         .feat-card:nth-child(3) .feat-icon { background: var(--blue-bg); }
         .feat-card:nth-child(4) .feat-icon { background: var(--amber-bg); }
         .feat-card:nth-child(5) .feat-icon { background: var(--rose-bg); }
         .feat-card:nth-child(6) .feat-icon { background: var(--cyan-bg); }
-
         .feat-title { font-size: 15px; font-weight: 700; margin-bottom: 9px; color: var(--black); }
         .feat-desc { font-size: 13px; color: var(--muted); line-height: 1.6; }
 
-        /* ── TESTIMONIALS ─────────────────────────── */
+        /* TESTIMONIALS */
         .test-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
         .test-card {
-          padding: 32px;
-          background: var(--white);
-          border: 1px solid var(--border);
-          border-radius: 24px; position: relative;
-          transition: all 0.22s;
+          padding: 32px; background: var(--white);
+          border: 1px solid var(--border); border-radius: 24px;
+          position: relative; transition: all 0.22s;
         }
         .test-card:hover { box-shadow: 0 6px 28px rgba(124,58,237,0.1); transform: translateY(-2px); }
         .test-card:nth-child(1) { border-top: 3px solid var(--violet-mid); }
         .test-card:nth-child(2) { border-top: 3px solid var(--cyan-mid); }
         .test-card:nth-child(3) { border-top: 3px solid var(--emerald-mid); }
-
-        .test-quote {
-          font-family: 'Fraunces', serif;
-          font-size: 52px; line-height: 1; margin-bottom: 14px;
-        }
+        .test-quote { font-size: 52px; font-weight: 800; line-height: 1; margin-bottom: 14px; }
         .test-card:nth-child(1) .test-quote { color: var(--violet-light); }
         .test-card:nth-child(2) .test-quote { color: var(--cyan-bg); }
         .test-card:nth-child(3) .test-quote { color: var(--emerald-bg); }
-
-        .test-text {
-          font-size: 14px; color: #4b5563;
-          line-height: 1.65; margin-bottom: 24px; font-weight: 400;
-        }
+        .test-text { font-size: 14px; color: #4b5563; line-height: 1.65; margin-bottom: 24px; }
         .test-author { display: flex; align-items: center; gap: 11px; }
-        .test-avatar {
-          width: 40px; height: 40px; border-radius: 50%;
-          display: flex; align-items: center; justify-content: center;
-          font-weight: 700; font-size: 13px; flex-shrink: 0; color: var(--white);
-        }
+        .test-avatar { width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 13px; flex-shrink: 0; color: var(--white); }
         .test-name { font-size: 13px; font-weight: 700; color: var(--black); }
         .test-role { font-size: 12px; color: var(--muted); margin-top: 2px; }
         .stars { display: flex; gap: 3px; margin-bottom: 16px; }
 
-        /* ── CTA BLOCK ────────────────────────────── */
+        /* CTA */
         .cta-section {
-          margin: 0 40px 112px;
-          border-radius: 32px;
+          margin: 0 40px 112px; border-radius: 32px;
           background: linear-gradient(135deg, #4c1d95 0%, #7c3aed 35%, #be185d 70%, #ea580c 100%);
-          color: var(--white);
-          padding: 96px 80px; text-align: center;
+          color: var(--white); padding: 96px 80px; text-align: center;
           position: relative; overflow: hidden;
         }
-        .cta-section::before {
-          content: ''; position: absolute;
-          top: -100px; left: -100px;
-          width: 400px; height: 400px;
-          border-radius: 50%; background: rgba(255,255,255,0.05);
-          pointer-events: none;
-        }
-        .cta-section::after {
-          content: ''; position: absolute;
-          bottom: -80px; right: -80px;
-          width: 300px; height: 300px;
-          border-radius: 50%; background: rgba(255,255,255,0.04);
-          pointer-events: none;
-        }
-        .cta-section-circle {
-          position: absolute; top: 50%; right: 12%;
-          width: 180px; height: 180px; border-radius: 50%;
-          background: rgba(255,255,255,0.04); transform: translateY(-50%);
-          pointer-events: none;
-        }
-        .cta-h2 {
-          font-family: 'Fraunces', serif;
-          font-size: clamp(38px, 6vw, 68px); font-weight: 700;
-          letter-spacing: -2.5px; line-height: 0.95;
-          margin-bottom: 20px; position: relative; z-index: 1; color: var(--white);
-        }
-        .cta-sub {
-          font-size: 17px; margin-bottom: 48px;
-          color: rgba(255,255,255,0.65); font-weight: 400;
-          position: relative; z-index: 1;
-        }
-        .cta-btns {
-          display: flex; gap: 14px;
-          justify-content: center; flex-wrap: wrap;
-          position: relative; z-index: 1;
-        }
-        .btn-cta-brand {
-          padding: 16px 34px;
-          background: var(--white); color: var(--violet);
-          border-radius: 14px; font-size: 14px; font-weight: 800;
-          border: none; cursor: pointer; transition: all 0.18s; font-family: inherit;
-          box-shadow: 0 4px 16px rgba(0,0,0,0.2);
-        }
-        .btn-cta-brand:hover { background: var(--violet-bg); transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,0.25); }
-        .btn-cta-creator {
-          padding: 16px 34px;
-          background: transparent; color: var(--white);
-          border-radius: 14px; font-size: 14px; font-weight: 800;
-          border: 2px solid rgba(255,255,255,0.4);
-          cursor: pointer; transition: all 0.18s; font-family: inherit;
-        }
-        .btn-cta-creator:hover {
-          background: rgba(255,255,255,0.12); transform: translateY(-2px);
-          border-color: rgba(255,255,255,0.6);
-        }
+        .cta-section::before { content: ''; position: absolute; top: -100px; left: -100px; width: 400px; height: 400px; border-radius: 50%; background: rgba(255,255,255,0.05); pointer-events: none; }
+        .cta-section::after { content: ''; position: absolute; bottom: -80px; right: -80px; width: 300px; height: 300px; border-radius: 50%; background: rgba(255,255,255,0.04); pointer-events: none; }
+        .cta-section-circle { position: absolute; top: 50%; right: 12%; width: 180px; height: 180px; border-radius: 50%; background: rgba(255,255,255,0.04); transform: translateY(-50%); pointer-events: none; }
+        .cta-h2 { font-size: clamp(34px, 5.5vw, 60px); font-weight: 800; letter-spacing: -2px; line-height: 1.05; margin-bottom: 20px; position: relative; z-index: 1; color: var(--white); }
+        .cta-sub { font-size: 17px; margin-bottom: 48px; color: rgba(255,255,255,0.65); font-weight: 400; position: relative; z-index: 1; }
+        .cta-btns { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; position: relative; z-index: 1; }
+        .btn-cta-brand { padding: 16px 34px; background: var(--white); color: var(--violet); border-radius: 14px; font-size: 14px; font-weight: 800; border: none; cursor: pointer; transition: all 0.18s; font-family: var(--font); box-shadow: 0 4px 16px rgba(0,0,0,0.2); }
+        .btn-cta-brand:hover { background: var(--violet-bg); transform: translateY(-2px); }
+        .btn-cta-creator { padding: 16px 34px; background: transparent; color: var(--white); border-radius: 14px; font-size: 14px; font-weight: 800; border: 2px solid rgba(255,255,255,0.4); cursor: pointer; transition: all 0.18s; font-family: var(--font); }
+        .btn-cta-creator:hover { background: rgba(255,255,255,0.12); transform: translateY(-2px); border-color: rgba(255,255,255,0.6); }
 
-        /* ── FOOTER ───────────────────────────────── */
-        .footer {
-          background: #0f0a1e;
-          border-top: 1px solid rgba(124,58,237,0.2);
-          padding: 72px 40px 40px;
-        }
+        /* FOOTER */
+        .footer { background: #0f0a1e; border-top: 1px solid rgba(124,58,237,0.2); padding: 72px 40px 40px; }
         .footer-inner { max-width: 1200px; margin: 0 auto; }
-        .footer-top {
-          display: grid; grid-template-columns: 1.4fr 1fr 1fr 1fr;
-          gap: 56px; margin-bottom: 56px;
-        }
-        .footer-brand {
-          font-family: 'Fraunces', serif;
-          font-size: 28px; font-weight: 900; margin-bottom: 12px; color: #ffffff;
-        }
-        .footer-tagline {
-          font-size: 13px; color: rgba(255,255,255,0.4);
-          line-height: 1.6; max-width: 230px; margin-bottom: 24px;
-        }
-        .footer-email-row {
-          display: flex;
-          background: rgba(255,255,255,0.06);
-          border: 1px solid rgba(124,58,237,0.3);
-          border-radius: 10px; overflow: hidden;
-        }
-        .footer-email-input {
-          flex: 1; background: transparent; border: none;
-          padding: 11px 14px; color: #ffffff; font-size: 13px;
-          outline: none; font-family: inherit;
-        }
+        .footer-top { display: grid; grid-template-columns: 1.4fr 1fr 1fr 1fr; gap: 56px; margin-bottom: 56px; }
+        .footer-brand { font-size: 24px; font-weight: 900; margin-bottom: 12px; color: #ffffff; letter-spacing: -0.5px; }
+        .footer-tagline { font-size: 13px; color: rgba(255,255,255,0.4); line-height: 1.6; max-width: 230px; margin-bottom: 24px; }
+        .footer-email-row { display: flex; background: rgba(255,255,255,0.06); border: 1px solid rgba(124,58,237,0.3); border-radius: 10px; overflow: hidden; }
+        .footer-email-input { flex: 1; background: transparent; border: none; padding: 11px 14px; color: #ffffff; font-size: 13px; outline: none; font-family: var(--font); }
         .footer-email-input::placeholder { color: rgba(255,255,255,0.3); }
-        .footer-email-btn {
-          padding: 11px 16px;
-          background: linear-gradient(135deg, var(--violet), var(--rose-mid));
-          border: none; cursor: pointer; color: var(--white);
-          font-size: 15px; font-weight: 700; transition: opacity 0.15s;
-        }
+        .footer-email-btn { padding: 11px 16px; background: linear-gradient(135deg, var(--violet), var(--rose-mid)); border: none; cursor: pointer; color: var(--white); font-size: 15px; font-weight: 700; transition: opacity 0.15s; }
         .footer-email-btn:hover { opacity: 0.85; }
-        .footer-col-title {
-          font-size: 11px; font-weight: 700;
-          text-transform: uppercase; letter-spacing: 0.1em;
-          color: rgba(255,255,255,0.3); margin-bottom: 18px;
-        }
+        .footer-col-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: rgba(255,255,255,0.3); margin-bottom: 18px; }
         .footer-links { display: flex; flex-direction: column; gap: 11px; }
-        .footer-link {
-          font-size: 13px; color: rgba(255,255,255,0.5);
-          text-decoration: none; transition: color 0.15s;
-        }
+        .footer-link { font-size: 13px; color: rgba(255,255,255,0.5); text-decoration: none; transition: color 0.15s; }
         .footer-link:hover { color: var(--violet-mid); }
-        .footer-bottom {
-          display: flex; align-items: center; justify-content: space-between;
-          padding-top: 28px; border-top: 1px solid rgba(255,255,255,0.07);
-        }
+        .footer-bottom { display: flex; align-items: center; justify-content: space-between; padding-top: 28px; border-top: 1px solid rgba(255,255,255,0.07); }
         .footer-copy { font-size: 12px; color: rgba(255,255,255,0.25); }
         .footer-heart { color: var(--rose-mid); }
 
-        /* divider */
         .divider { border: none; border-top: 1px solid rgba(124,58,237,0.1); margin: 0; }
+        .spinner { width: 15px; height: 15px; border: 2px solid rgba(255,255,255,0.3); border-top-color: white; border-radius: 50%; animation: spin 0.7s linear infinite; flex-shrink: 0; }
+        .spinner-dark { border-color: rgba(0,0,0,0.15); border-top-color: var(--violet); }
 
-        /* spinner */
-        .spinner {
-          width: 15px; height: 15px;
-          border: 2px solid rgba(255,255,255,0.3);
-          border-top-color: white; border-radius: 50%;
-          animation: spin 0.7s linear infinite; flex-shrink: 0;
-        }
-        .spinner-dark {
-          border-color: rgba(0,0,0,0.15);
-          border-top-color: var(--violet);
-        }
-
-        /* ── RESPONSIVE ───────────────────────────── */
         @media (max-width: 900px) {
           .nav-links { display: none; }
           .stats-grid { grid-template-columns: repeat(2, 1fr); }
           .stat-box:nth-child(2) { border-right: none; }
-          .stat-box:nth-child(3),
-          .stat-box:nth-child(4) { border-top: 1px solid var(--border); }
+          .stat-box:nth-child(3), .stat-box:nth-child(4) { border-top: 1px solid var(--border); }
           .dual-grid, .features-bento, .test-grid { grid-template-columns: 1fr; }
           .footer-top { grid-template-columns: 1fr 1fr; gap: 36px; }
           .section, .stats-section { padding: 72px 24px; }
@@ -701,11 +504,11 @@ export default function Home() {
           .footer-top { grid-template-columns: 1fr; }
           .hero-btns { flex-direction: column; }
           .btn-primary, .btn-secondary { justify-content: center; }
-          .hero-h1 { letter-spacing: -1.5px; }
+          .hero-h1 { letter-spacing: -1px; }
         }
       `}</style>
 
-      {/* ── NAVBAR ────────────────────────────────── */}
+      {/* NAVBAR */}
       <header className="nav">
         <div className="nav-inner">
           <Link href="/" className="nav-logo">Zelteb</Link>
@@ -716,9 +519,7 @@ export default function Home() {
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
             {user ? (
-              <Link href={userRole === "brand" ? "/brand/dashboard" : "/dashboard"} className="nav-cta">
-                Dashboard →
-              </Link>
+              <Link href={userRole === "brand" ? "/brand/dashboard" : "/dashboard"} className="nav-cta">Dashboard →</Link>
             ) : (
               <Link href="#get-started" className="nav-cta">Get started</Link>
             )}
@@ -726,7 +527,7 @@ export default function Home() {
         </div>
       </header>
 
-      {/* ── HERO ──────────────────────────────────── */}
+      {/* HERO */}
       <section className="hero" ref={heroRef}>
         <div className="hero-grid" />
         <div className="hero-blob1" />
@@ -741,7 +542,7 @@ export default function Home() {
           </div>
           <h1 className="hero-h1 anim-2">
             Where brands<br />
-            meet <span className="italic grad">creators</span><br />
+            meet <span className="grad">creators</span><br />
             that convert.
           </h1>
           <p className="hero-sub anim-3">
@@ -749,26 +550,16 @@ export default function Home() {
           </p>
           {user ? (
             <div className="hero-btns anim-4">
-              <Link href={userRole === "brand" ? "/brand/dashboard" : "/dashboard"} className="btn-primary">
-                Go to dashboard →
-              </Link>
+              <Link href={userRole === "brand" ? "/brand/dashboard" : "/dashboard"} className="btn-primary">Go to dashboard →</Link>
             </div>
           ) : (
             <div className="hero-btns anim-4" id="get-started">
-              <button
-                onClick={() => signUpWith("brand")}
-                disabled={loading !== null}
-                className="btn-primary"
-              >
+              <button onClick={() => signUpWith("brand")} disabled={loading !== null} className="btn-primary">
                 {loading === "brand" ? <div className="spinner" /> : <GoogleIcon />}
                 <span>{loading === "brand" ? "Signing in…" : "I'm a Brand"}</span>
                 {loading !== "brand" && <span>→</span>}
               </button>
-              <button
-                onClick={() => signUpWith("influencer")}
-                disabled={loading !== null}
-                className="btn-secondary"
-              >
+              <button onClick={() => signUpWith("influencer")} disabled={loading !== null} className="btn-secondary">
                 {loading === "influencer" ? <div className="spinner spinner-dark" /> : <GoogleIcon dark />}
                 <span>{loading === "influencer" ? "Signing in…" : "I'm a Creator"}</span>
                 {loading !== "influencer" && <span style={{ color: "var(--violet-mid)" }}>→</span>}
@@ -793,24 +584,24 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ── TICKER ────────────────────────────────── */}
+      {/* TICKER */}
       <div className="ticker-wrap">
         <div className="ticker-inner">
           {[...Array(2)].map((_, i) => (
             <div key={i} style={{ display: "flex" }}>
               {[
-                { label: "Instagram",        color: "#7c3aed", dot: "#a855f7" },
-                { label: "YouTube",          color: "#be185d", dot: "#f43f5e" },
-                { label: "X (Twitter)",      color: "#0891b2", dot: "#06b6d4" },
-                { label: "LinkedIn",         color: "#1d4ed8", dot: "#3b82f6" },
-                { label: "Reddit",           color: "#ea580c", dot: "#f97316" },
-                { label: "Medium",           color: "#059669", dot: "#10b981" },
-                { label: "Paid Campaigns",   color: "#7c3aed", dot: "#8b5cf6" },
-                { label: "Verified Creators",color: "#be185d", dot: "#f43f5e" },
-                { label: "Brand Deals",      color: "#0891b2", dot: "#06b6d4" },
-                { label: "Real Analytics",   color: "#d97706", dot: "#f59e0b" },
-                { label: "INR Payouts",      color: "#059669", dot: "#10b981" },
-                { label: "Instant Matching", color: "#ea580c", dot: "#f97316" },
+                { label: "Instagram",         color: "#7c3aed", dot: "#a855f7" },
+                { label: "YouTube",           color: "#be185d", dot: "#f43f5e" },
+                { label: "X (Twitter)",       color: "#0891b2", dot: "#06b6d4" },
+                { label: "LinkedIn",          color: "#1d4ed8", dot: "#3b82f6" },
+                { label: "Reddit",            color: "#ea580c", dot: "#f97316" },
+                { label: "Medium",            color: "#059669", dot: "#10b981" },
+                { label: "Paid Campaigns",    color: "#7c3aed", dot: "#8b5cf6" },
+                { label: "Verified Creators", color: "#be185d", dot: "#f43f5e" },
+                { label: "Brand Deals",       color: "#0891b2", dot: "#06b6d4" },
+                { label: "Real Analytics",    color: "#d97706", dot: "#f59e0b" },
+                { label: "INR Payouts",       color: "#059669", dot: "#10b981" },
+                { label: "Instant Matching",  color: "#ea580c", dot: "#f97316" },
               ].map((item) => (
                 <div className="ticker-item" key={item.label} style={{ color: item.color }}>
                   <div className="ticker-dot" style={{ background: item.dot }} />
@@ -822,12 +613,12 @@ export default function Home() {
         </div>
       </div>
 
-      {/* ── STATS ─────────────────────────────────── */}
+      {/* STATS */}
       <div className="stats-section">
         <div className="stats-grid">
           {[
             { num: "12K", suffix: "+", label: "Verified influencers", cls: "s1" },
-            { num: "850", suffix: "+", label: "Brands onboarded", cls: "s2" },
+            { num: "850", suffix: "+", label: "Brands onboarded",      cls: "s2" },
             { num: "₹2Cr", suffix: "+", label: "Creator earnings paid out", cls: "s3" },
             { num: "98",  suffix: "%", label: "Campaign satisfaction", cls: "s4" },
           ].map((s) => (
@@ -841,23 +632,21 @@ export default function Home() {
 
       <hr className="divider" />
 
-      {/* ── HOW IT WORKS ──────────────────────────── */}
+      {/* HOW IT WORKS */}
       <section className="section">
         <p className="section-label">✦ How it works</p>
         <h2 className="section-h2">Two sides. <em>One platform.</em></h2>
         <p className="section-sub">Whether you're a brand looking to grow or a creator ready to monetize — Zelteb has a clear path for you.</p>
-
         <div className="dual-grid">
-          {/* Brand card */}
           <div className="path-card brand-path">
             <div className="path-pill brand">For Brands</div>
             <h3 className="path-h3">Find influencers who actually move the needle.</h3>
             <p className="path-desc">Stop guessing. Browse verified creators by niche, platform, and audience quality. Launch paid campaigns that get results — not just impressions.</p>
             <div className="path-steps">
               {[
-                { n: "01", t: "Post a campaign brief",    d: "Define your goals, budget, target audience, and preferred platforms." },
-                { n: "02", t: "Browse matched creators",  d: "Get instant matches from our verified influencer pool. Filter by metrics." },
-                { n: "03", t: "Collaborate & track",      d: "Manage content approvals, track live performance, and pay securely." },
+                { n: "01", t: "Post a campaign brief",   d: "Define your goals, budget, target audience, and preferred platforms." },
+                { n: "02", t: "Browse matched creators", d: "Get instant matches from our verified influencer pool. Filter by metrics." },
+                { n: "03", t: "Collaborate & track",     d: "Manage content approvals, track live performance, and pay securely." },
               ].map((s) => (
                 <div className="path-step" key={s.n}>
                   <div className="step-num">{s.n}</div>
@@ -865,26 +654,20 @@ export default function Home() {
                 </div>
               ))}
             </div>
-            <button
-              onClick={() => signUpWith("brand")}
-              disabled={loading !== null}
-              className="btn-brand"
-            >
+            <button onClick={() => signUpWith("brand")} disabled={loading !== null} className="btn-brand">
               {loading === "brand" ? <div className="spinner" /> : null}
               {loading === "brand" ? "Signing in…" : "Start hiring creators →"}
             </button>
           </div>
-
-          {/* Creator card */}
           <div className="path-card creator-path">
             <div className="path-pill creator">For Creators</div>
             <h3 className="path-h3">Turn your audience into a real income stream.</h3>
             <p className="path-desc">No cold emails. No chasing brands. Zelteb brings paid opportunities to you based on your niche, platforms, and engagement — automatically.</p>
             <div className="path-steps">
               {[
-                { n: "01", t: "Verify your socials",      d: "Connect your Instagram, YouTube, X, and other platforms in one click." },
-                { n: "02", t: "Get matched to campaigns", d: "Brands find you based on your niche and audience. No bidding wars." },
-                { n: "03", t: "Create content & get paid",d: "Submit your content, get approved, and receive INR payouts directly." },
+                { n: "01", t: "Verify your socials",       d: "Connect your Instagram, YouTube, X, and other platforms in one click." },
+                { n: "02", t: "Get matched to campaigns",  d: "Brands find you based on your niche and audience. No bidding wars." },
+                { n: "03", t: "Create content & get paid", d: "Submit your content, get approved, and receive INR payouts directly." },
               ].map((s) => (
                 <div className="path-step" key={s.n}>
                   <div className="step-num">{s.n}</div>
@@ -892,11 +675,7 @@ export default function Home() {
                 </div>
               ))}
             </div>
-            <button
-              onClick={() => signUpWith("influencer")}
-              disabled={loading !== null}
-              className="btn-creator"
-            >
+            <button onClick={() => signUpWith("influencer")} disabled={loading !== null} className="btn-creator">
               {loading === "influencer" ? <div className="spinner" /> : null}
               {loading === "influencer" ? "Signing in…" : "Join as a creator →"}
             </button>
@@ -906,19 +685,19 @@ export default function Home() {
 
       <hr className="divider" />
 
-      {/* ── FEATURES ──────────────────────────────── */}
+      {/* FEATURES */}
       <section className="section">
         <p className="section-label">✦ Platform features</p>
         <h2 className="section-h2">Built for real <em>results.</em></h2>
         <p className="section-sub">Every tool you need to run successful influencer campaigns — from discovery to payment.</p>
         <div className="features-bento">
           {[
-            { icon: "🔍", title: "Smart creator discovery",   desc: "Filter by platform, niche, follower count, engagement rate, and audience demographics to find the perfect fit." },
-            { icon: "✅", title: "Verified social profiles",  desc: "Every creator goes through social verification. Know exactly who you're working with before you commit." },
-            { icon: "📊", title: "Live campaign analytics",   desc: "Track reach, engagement, clicks, and conversions in real time. No more waiting for screenshots." },
-            { icon: "💸", title: "Secure INR payments",       desc: "Escrow-based payments. Brands pay into escrow, creators get paid upon content approval. Zero disputes." },
-            { icon: "🤝", title: "Managed collaborations",    desc: "Built-in messaging, content submission, revision requests, and approval workflows — all in one place." },
-            { icon: "🌐", title: "Multi-platform support",    desc: "Instagram, YouTube, X, LinkedIn, Reddit, Medium — manage all your channels from a single dashboard." },
+            { icon: "🔍", title: "Smart creator discovery",  desc: "Filter by platform, niche, follower count, engagement rate, and audience demographics to find the perfect fit." },
+            { icon: "✅", title: "Verified social profiles", desc: "Every creator goes through social verification. Know exactly who you're working with before you commit." },
+            { icon: "📊", title: "Live campaign analytics",  desc: "Track reach, engagement, clicks, and conversions in real time. No more waiting for screenshots." },
+            { icon: "💸", title: "Secure INR payments",      desc: "Escrow-based payments. Brands pay into escrow, creators get paid upon content approval. Zero disputes." },
+            { icon: "🤝", title: "Managed collaborations",   desc: "Built-in messaging, content submission, revision requests, and approval workflows — all in one place." },
+            { icon: "🌐", title: "Multi-platform support",   desc: "Instagram, YouTube, X, LinkedIn, Reddit, Medium — manage all your channels from a single dashboard." },
           ].map((f) => (
             <div className="feat-card" key={f.title}>
               <div className="feat-icon">{f.icon}</div>
@@ -931,27 +710,15 @@ export default function Home() {
 
       <hr className="divider" />
 
-      {/* ── TESTIMONIALS ──────────────────────────── */}
+      {/* TESTIMONIALS */}
       <section className="section">
         <p className="section-label">✦ What people say</p>
         <h2 className="section-h2">Trusted by brands & <em>creators.</em></h2>
         <div className="test-grid">
           {[
-            {
-              quote: "Zelteb cut our influencer search time from weeks to hours. The verification system means we never deal with fake engagement anymore.",
-              name: "Sneha R.", role: "Marketing Head, FreshCart India", initials: "SR",
-              bg: "linear-gradient(135deg,#7c3aed,#a855f7)",
-            },
-            {
-              quote: "I used to spend months cold-pitching brands. Now campaigns come to me and I've tripled my monthly income from collaborations.",
-              name: "Karan M.", role: "Lifestyle Creator, 890K on Instagram", initials: "KM",
-              bg: "linear-gradient(135deg,#0891b2,#06b6d4)",
-            },
-            {
-              quote: "The analytics dashboard alone is worth it. We can see exactly what's working mid-campaign and adjust — not after it's over.",
-              name: "Divya S.", role: "Growth Lead, Nua Brand", initials: "DS",
-              bg: "linear-gradient(135deg,#059669,#10b981)",
-            },
+            { quote: "Zelteb cut our influencer search time from weeks to hours. The verification system means we never deal with fake engagement anymore.", name: "Sneha R.", role: "Marketing Head, FreshCart India", initials: "SR", bg: "linear-gradient(135deg,#7c3aed,#a855f7)" },
+            { quote: "I used to spend months cold-pitching brands. Now campaigns come to me and I've tripled my monthly income from collaborations.",         name: "Karan M.", role: "Lifestyle Creator, 890K on Instagram", initials: "KM", bg: "linear-gradient(135deg,#0891b2,#06b6d4)" },
+            { quote: "The analytics dashboard alone is worth it. We can see exactly what's working mid-campaign and adjust — not after it's over.",           name: "Divya S.", role: "Growth Lead, Nua Brand",              initials: "DS", bg: "linear-gradient(135deg,#059669,#10b981)" },
           ].map((t) => (
             <div className="test-card" key={t.name}>
               <div className="stars">
@@ -975,17 +742,14 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ── FINAL CTA ─────────────────────────────── */}
+      {/* FINAL CTA */}
       <div className="cta-section">
         <div className="cta-section-circle" />
         <h2 className="cta-h2">Your next brand deal<br />is one click away.</h2>
         <p className="cta-sub">Join 12,000+ creators and 850+ brands already growing on Zelteb.</p>
         {user ? (
           <div className="cta-btns">
-            <Link
-              href={userRole === "brand" ? "/brand/dashboard" : "/dashboard"}
-              style={{ padding: "16px 34px", background: "white", color: "var(--violet)", borderRadius: "14px", fontSize: "14px", fontWeight: 800, textDecoration: "none" }}
-            >
+            <Link href={userRole === "brand" ? "/brand/dashboard" : "/dashboard"} style={{ padding: "16px 34px", background: "white", color: "var(--violet)", borderRadius: "14px", fontSize: "14px", fontWeight: 800, textDecoration: "none" }}>
               Go to dashboard →
             </Link>
           </div>
@@ -1001,7 +765,7 @@ export default function Home() {
         )}
       </div>
 
-      {/* ── FOOTER ────────────────────────────────── */}
+      {/* FOOTER */}
       <footer className="footer">
         <div className="footer-inner">
           <div className="footer-top">
@@ -1046,18 +810,11 @@ export default function Home() {
         </div>
       </footer>
 
-      {/* JSON-LD */}
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify({
         "@context": "https://schema.org", "@type": "WebSite",
         name: "Zelteb", url: "https://zelteb.com",
-        description: "Zelteb is India's influencer marketing marketplace — connecting brands with verified creators for paid content campaigns.",
+        description: "Zelteb is India's influencer marketing marketplace.",
         potentialAction: { "@type": "SearchAction", target: "https://zelteb.com/discover?q={search_term_string}", "query-input": "required name=search_term_string" }
-      })}} />
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify({
-        "@context": "https://schema.org", "@type": "Organization",
-        name: "Zelteb", url: "https://zelteb.com",
-        description: "Influencer marketing marketplace for Indian brands and creators.",
-        contactPoint: { "@type": "ContactPoint", email: "helpzelteb@gmail.com", contactType: "customer support" }
       })}} />
     </div>
   );
