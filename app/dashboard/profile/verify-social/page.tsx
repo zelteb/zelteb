@@ -89,6 +89,27 @@ const PLATFORMS = [
 
 type PlatformValue = (typeof PLATFORMS)[number]["value"];
 
+// ─── Resolve a guaranteed full social URL ─────────────────────────────────────
+// Guards against old DB rows where profile_url was stored as just a handle/slug
+const PLATFORM_BASE: Record<string, string> = {
+  instagram: "https://www.instagram.com/",
+  youtube: "https://www.youtube.com/@",
+  x: "https://x.com/",
+  linkedin: "https://www.linkedin.com/in/",
+  reddit: "https://www.reddit.com/user/",
+};
+
+function resolveSocialUrl(platform: string, profileUrl: string, handle: string): string {
+  // Already a full URL — use as-is
+  if (profileUrl.startsWith("http://") || profileUrl.startsWith("https://")) {
+    return profileUrl;
+  }
+  // Partial/bad data — reconstruct from platform base + handle
+  const base = PLATFORM_BASE[platform];
+  if (base) return `${base}${handle}`;
+  return profileUrl;
+}
+
 interface ExistingRequest {
   id: string;
   platform: string;
@@ -429,14 +450,13 @@ export default function VerifySocialPage() {
                             <p className="text-sm font-semibold text-gray-900">
                               {meta?.label ?? req.platform}
                             </p>
-                            {/* ✅ Fix: link goes to req.profile_url (their actual social profile) */}
                             <a
-                              href={req.profile_url}
+                              href={resolveSocialUrl(req.platform, req.profile_url, req.handle)}
                               target="_blank"
                               rel="noopener noreferrer"
                               className="text-xs text-gray-400 hover:text-gray-600 flex items-center gap-1 truncate max-w-[160px]"
                             >
-                              <span className="truncate">{req.profile_url}</span>
+                              <span className="truncate">@{req.handle}</span>
                               <ExternalLink size={9} className="shrink-0" />
                             </a>
                           </div>
