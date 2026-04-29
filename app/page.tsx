@@ -69,31 +69,54 @@ export default function Home() {
         :root {
           --black:   #0a0a0a;
           --white:   #ffffff;
-          --off-white: #f5f5f3;
+          --off-white: #f8f6ff;
           --gray-50: #fafafa;
-          --gray-100: #f0f0ee;
-          --gray-200: #e2e2df;
-          --gray-300: #c8c8c4;
-          --gray-400: #a0a09c;
-          --gray-500: #737370;
-          --gray-600: #4a4a47;
-          --gray-700: #2e2e2b;
-          --gray-800: #1a1a18;
-          --gray-900: #0f0f0d;
+          --gray-100: #f0eeff;
+          --gray-200: #e0dbff;
+          --gray-300: #c5beff;
+          --gray-400: #9f96f8;
+          --gray-500: #7b72e9;
+          --gray-600: #5a52c7;
+          --gray-700: #3d37a0;
+          --gray-800: #261f7a;
+          --gray-900: #140f52;
 
-          /* Accent: brand = blue, creator = amber */
-          --blue:     #1a56db;
-          --blue-bg:  #e8f0fe;
-          --blue-mid: #3b82f6;
-          --amber:    #d97706;
-          --amber-bg: #fef3c7;
-          --amber-mid:#f59e0b;
+          /* Vivid palette */
+          --violet:    #7c3aed;
+          --violet-bg: #ede9fe;
+          --violet-mid:#8b5cf6;
+          --violet-light: #ddd6fe;
 
-          --border: rgba(0,0,0,0.10);
-          --border-dark: rgba(0,0,0,0.18);
-          --muted:  #737370;
+          --rose:      #e11d48;
+          --rose-bg:   #ffe4e6;
+          --rose-mid:  #f43f5e;
+
+          --cyan:      #0891b2;
+          --cyan-bg:   #cffafe;
+          --cyan-mid:  #06b6d4;
+
+          --emerald:   #059669;
+          --emerald-bg:#d1fae5;
+          --emerald-mid:#10b981;
+
+          --amber:     #d97706;
+          --amber-bg:  #fef3c7;
+          --amber-mid: #f59e0b;
+          --amber-light:#fde68a;
+
+          --orange:    #ea580c;
+          --orange-bg: #ffedd5;
+          --orange-mid:#f97316;
+
+          --blue:      #1d4ed8;
+          --blue-bg:   #dbeafe;
+          --blue-mid:  #3b82f6;
+
+          --border: rgba(124,58,237,0.12);
+          --border-dark: rgba(124,58,237,0.22);
+          --muted:  #6b7280;
           --surface: #ffffff;
-          --surface2: #f5f5f3;
+          --surface2: #f8f6ff;
           --ink: #0a0a0a;
         }
 
@@ -111,7 +134,11 @@ export default function Home() {
         }
         @keyframes spin { to { transform: rotate(360deg); } }
         @keyframes blink {
-          0%,100% { opacity:1; } 50% { opacity:0.4; }
+          0%,100% { opacity:1; } 50% { opacity:0.3; }
+        }
+        @keyframes float {
+          0%,100% { transform: translateY(0px); }
+          50% { transform: translateY(-6px); }
         }
 
         .anim-1 { animation: fadeUp 0.65s cubic-bezier(0.16,1,0.3,1) 0.1s both; }
@@ -123,8 +150,8 @@ export default function Home() {
         /* ── NAV ─────────────────────────────────── */
         .nav {
           position: sticky; top: 0; z-index: 100;
-          background: rgba(255,255,255,0.92);
-          backdrop-filter: blur(18px);
+          background: rgba(255,255,255,0.94);
+          backdrop-filter: blur(20px);
           border-bottom: 1px solid var(--border);
         }
         .nav-inner {
@@ -134,40 +161,54 @@ export default function Home() {
         }
         .nav-logo {
           font-family: 'Fraunces', serif;
-          font-size: 24px; font-weight: 700;
-          color: var(--black); text-decoration: none; letter-spacing: -0.5px;
+          font-size: 26px; font-weight: 900;
+          color: #000000; text-decoration: none; letter-spacing: -0.5px;
         }
-        .nav-logo span { color: var(--gray-400); }
         .nav-links { display: flex; gap: 28px; align-items: center; }
         .nav-link {
           color: var(--muted); font-size: 14px; font-weight: 500;
           text-decoration: none; transition: color 0.15s;
         }
-        .nav-link:hover { color: var(--black); }
+        .nav-link:hover { color: var(--violet); }
         .nav-cta {
-          padding: 8px 18px;
-          background: var(--black); color: var(--white);
+          padding: 9px 20px;
+          background: var(--violet); color: var(--white);
           border-radius: 100px; font-size: 13px; font-weight: 700;
           text-decoration: none; transition: all 0.15s; letter-spacing: 0.01em;
+          box-shadow: 0 2px 12px rgba(124,58,237,0.3);
         }
-        .nav-cta:hover { background: var(--gray-700); }
+        .nav-cta:hover { background: var(--gray-700); box-shadow: 0 4px 18px rgba(124,58,237,0.4); }
 
         /* ── HERO ─────────────────────────────────── */
         .hero {
           position: relative; min-height: 90vh;
           display: flex; align-items: center; overflow: hidden;
-          background: var(--white);
+          background: linear-gradient(135deg, #fdf4ff 0%, #f0f7ff 40%, #f0fdf4 100%);
         }
         .hero-grid {
           position: absolute; inset: 0;
           background-image:
-            linear-gradient(rgba(0,0,0,0.04) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(0,0,0,0.04) 1px, transparent 1px);
+            linear-gradient(rgba(124,58,237,0.05) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(124,58,237,0.05) 1px, transparent 1px);
           background-size: 60px 60px; pointer-events: none;
         }
-        .hero-glow {
-          position: absolute; inset: 0; pointer-events: none;
-          transition: background 0.3s ease;
+        .hero-blob1 {
+          position: absolute; top: -120px; right: -80px;
+          width: 520px; height: 520px; border-radius: 50%;
+          background: radial-gradient(circle, rgba(139,92,246,0.15) 0%, transparent 70%);
+          pointer-events: none;
+        }
+        .hero-blob2 {
+          position: absolute; bottom: -80px; left: 10%;
+          width: 380px; height: 380px; border-radius: 50%;
+          background: radial-gradient(circle, rgba(6,182,212,0.12) 0%, transparent 70%);
+          pointer-events: none;
+        }
+        .hero-blob3 {
+          position: absolute; top: 30%; right: 30%;
+          width: 260px; height: 260px; border-radius: 50%;
+          background: radial-gradient(circle, rgba(249,115,22,0.08) 0%, transparent 70%);
+          pointer-events: none;
         }
         .hero-inner {
           position: relative; z-index: 2;
@@ -176,15 +217,15 @@ export default function Home() {
         .hero-tag {
           display: inline-flex; align-items: center; gap: 8px;
           padding: 6px 14px 6px 10px;
-          background: var(--gray-100);
-          border: 1px solid var(--border);
-          border-radius: 100px; font-size: 13px; font-weight: 500;
-          color: var(--muted); margin-bottom: 32px;
+          background: var(--violet-bg);
+          border: 1px solid rgba(124,58,237,0.25);
+          border-radius: 100px; font-size: 13px; font-weight: 600;
+          color: var(--violet); margin-bottom: 32px;
         }
         .hero-tag-dot {
-          width: 6px; height: 6px;
-          background: var(--black); border-radius: 50%;
-          animation: blink 2.4s ease-in-out infinite;
+          width: 7px; height: 7px;
+          background: var(--rose-mid); border-radius: 50%;
+          animation: blink 2s ease-in-out infinite;
         }
         .hero-h1 {
           font-family: 'Fraunces', serif;
@@ -192,7 +233,12 @@ export default function Home() {
           font-weight: 700; line-height: 0.9;
           letter-spacing: -3px; margin-bottom: 32px; color: var(--black);
         }
-        .hero-h1 .italic { font-style: italic; color: var(--gray-400); }
+        .hero-h1 .italic { font-style: italic; }
+        .hero-h1 .grad {
+          background: linear-gradient(135deg, var(--violet) 0%, var(--rose-mid) 50%, var(--orange-mid) 100%);
+          -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+          background-clip: text;
+        }
         .hero-sub {
           font-size: clamp(16px, 1.8vw, 18px); color: var(--muted);
           max-width: 500px; line-height: 1.65; margin-bottom: 48px; font-weight: 400;
@@ -201,24 +247,26 @@ export default function Home() {
 
         .btn-primary {
           display: inline-flex; align-items: center; gap: 9px;
-          padding: 14px 28px;
-          background: var(--black); color: var(--white);
+          padding: 15px 28px;
+          background: linear-gradient(135deg, var(--violet) 0%, var(--rose-mid) 100%);
+          color: var(--white);
           border-radius: 12px; font-size: 14px; font-weight: 700;
-          border: none; cursor: pointer; transition: all 0.18s;
+          border: none; cursor: pointer; transition: all 0.2s;
           font-family: inherit; text-decoration: none;
+          box-shadow: 0 4px 20px rgba(124,58,237,0.35);
         }
-        .btn-primary:hover { background: var(--gray-700); transform: translateY(-1px); }
-        .btn-primary:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 28px rgba(124,58,237,0.45); }
+        .btn-primary:disabled { opacity: 0.45; cursor: not-allowed; transform: none; box-shadow: none; }
 
         .btn-secondary {
           display: inline-flex; align-items: center; gap: 9px;
-          padding: 14px 28px;
+          padding: 15px 28px;
           background: var(--white); color: var(--black);
           border-radius: 12px; font-size: 14px; font-weight: 600;
           border: 1.5px solid var(--border-dark); cursor: pointer;
           transition: all 0.18s; font-family: inherit; text-decoration: none;
         }
-        .btn-secondary:hover { background: var(--gray-100); transform: translateY(-1px); }
+        .btn-secondary:hover { background: var(--violet-bg); border-color: var(--violet-mid); color: var(--violet); transform: translateY(-1px); }
         .btn-secondary:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
 
         /* floating profile cards */
@@ -226,64 +274,85 @@ export default function Home() {
         .hero-card {
           padding: 14px 18px;
           background: var(--white);
-          border: 1px solid var(--border-dark);
-          border-radius: 14px;
+          border: 1px solid var(--border);
+          border-radius: 16px;
           display: flex; align-items: center; gap: 11px;
-          box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+          box-shadow: 0 2px 12px rgba(124,58,237,0.08);
+          animation: float 4s ease-in-out infinite;
         }
+        .hero-card:nth-child(2) { animation-delay: 0.8s; }
+        .hero-card:nth-child(3) { animation-delay: 1.6s; }
         .hero-card-avatar {
-          width: 34px; height: 34px; border-radius: 50%;
+          width: 36px; height: 36px; border-radius: 50%;
           display: flex; align-items: center; justify-content: center;
           font-size: 13px; font-weight: 700; flex-shrink: 0; color: var(--white);
         }
-        .hero-card-text { font-size: 13px; font-weight: 600; color: var(--black); }
+        .hero-card-text { font-size: 13px; font-weight: 700; color: var(--black); }
         .hero-card-sub { font-size: 11px; color: var(--muted); margin-top: 2px; }
 
         /* ── TICKER ───────────────────────────────── */
         .ticker-wrap {
           overflow: hidden;
-          border-top: 1px solid var(--border);
-          border-bottom: 1px solid var(--border);
-          padding: 13px 0; background: var(--gray-100);
+          border-top: 1px solid rgba(124,58,237,0.15);
+          border-bottom: 1px solid rgba(124,58,237,0.15);
+          padding: 13px 0;
+          background: linear-gradient(90deg, var(--violet-bg) 0%, #e0f2fe 50%, var(--emerald-bg) 100%);
         }
         .ticker-inner {
           display: flex; width: max-content;
           animation: ticker 28s linear infinite;
         }
         .ticker-item {
-          white-space: nowrap; padding: 0 36px;
-          font-size: 12px; font-weight: 600;
-          color: var(--muted); letter-spacing: 0.09em;
+          white-space: nowrap; padding: 0 32px;
+          font-size: 12px; font-weight: 700;
+          letter-spacing: 0.09em;
           text-transform: uppercase;
           display: flex; align-items: center; gap: 14px;
         }
         .ticker-dot {
-          width: 3px; height: 3px;
-          background: var(--gray-400); border-radius: 50%; flex-shrink: 0;
+          width: 5px; height: 5px;
+          border-radius: 50%; flex-shrink: 0;
         }
 
         /* ── STATS ────────────────────────────────── */
         .stats-section { padding: 96px 40px; max-width: 1200px; margin: 0 auto; }
         .stats-grid {
           display: grid; grid-template-columns: repeat(4, 1fr);
-          border: 1px solid var(--border-dark); border-radius: 20px; overflow: hidden;
+          gap: 0; border: 1px solid var(--border-dark); border-radius: 24px;
+          overflow: hidden; background: var(--white);
         }
-        .stat-box { padding: 44px 36px; border-right: 1px solid var(--border); }
+        .stat-box {
+          padding: 44px 36px; border-right: 1px solid var(--border);
+          position: relative; overflow: hidden;
+        }
+        .stat-box::before {
+          content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+        }
+        .stat-box:nth-child(1)::before { background: linear-gradient(90deg, var(--violet), var(--violet-mid)); }
+        .stat-box:nth-child(2)::before { background: linear-gradient(90deg, var(--cyan), var(--cyan-mid)); }
+        .stat-box:nth-child(3)::before { background: linear-gradient(90deg, var(--emerald), var(--emerald-mid)); }
+        .stat-box:nth-child(4)::before { background: linear-gradient(90deg, var(--orange), var(--orange-mid)); }
         .stat-box:last-child { border-right: none; }
         .stat-num {
           font-family: 'Fraunces', serif;
           font-size: clamp(38px, 4.5vw, 60px);
           font-weight: 700; line-height: 1; letter-spacing: -2px; color: var(--black);
         }
-        .stat-num .accent { color: var(--gray-400); }
+        .stat-num .s1 { color: var(--violet); }
+        .stat-num .s2 { color: var(--cyan); }
+        .stat-num .s3 { color: var(--emerald); }
+        .stat-num .s4 { color: var(--orange); }
         .stat-label { font-size: 13px; color: var(--muted); margin-top: 9px; font-weight: 500; }
 
         /* ── SECTIONS ─────────────────────────────── */
         .section { padding: 112px 40px; max-width: 1200px; margin: 0 auto; }
         .section-label {
+          display: inline-flex; align-items: center; gap: 7px;
           font-size: 11px; font-weight: 700;
           text-transform: uppercase; letter-spacing: 0.14em;
-          color: var(--muted); margin-bottom: 14px;
+          color: var(--violet); margin-bottom: 14px;
+          background: var(--violet-bg); padding: 4px 12px; border-radius: 100px;
+          border: 1px solid rgba(124,58,237,0.2);
         }
         .section-h2 {
           font-family: 'Fraunces', serif;
@@ -291,38 +360,59 @@ export default function Home() {
           font-weight: 700; line-height: 1.05;
           letter-spacing: -2px; margin-bottom: 14px; color: var(--black);
         }
-        .section-h2 em { font-style: italic; color: var(--gray-400); }
+        .section-h2 em {
+          font-style: italic;
+          background: linear-gradient(135deg, var(--violet), var(--cyan-mid));
+          -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+          background-clip: text;
+        }
         .section-sub {
           font-size: 16px; color: var(--muted);
           max-width: 460px; line-height: 1.65; margin-bottom: 64px; font-weight: 400;
         }
 
         /* ── DUAL PATH ────────────────────────────── */
-        .dual-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+        .dual-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
 
         .path-card {
           border: 1px solid var(--border-dark);
-          border-radius: 24px; padding: 48px 44px;
+          border-radius: 28px; padding: 48px 44px;
           background: var(--white); position: relative; overflow: hidden;
-          transition: box-shadow 0.25s;
+          transition: box-shadow 0.25s, transform 0.25s;
         }
-        .path-card:hover { box-shadow: 0 4px 24px rgba(0,0,0,0.08); }
+        .path-card:hover { box-shadow: 0 8px 40px rgba(124,58,237,0.12); transform: translateY(-2px); }
 
-        /* brand card — subtle blue top border */
-        .path-card.brand-path { border-top: 3px solid var(--blue-mid); }
-        /* creator card — subtle amber top border */
-        .path-card.creator-path { border-top: 3px solid var(--amber-mid); }
+        .path-card.brand-path {
+          background: linear-gradient(145deg, #fdf4ff 0%, #f5f3ff 100%);
+          border-top: 3px solid var(--violet-mid);
+        }
+        .path-card.creator-path {
+          background: linear-gradient(145deg, #fffbeb 0%, #fff7ed 100%);
+          border-top: 3px solid var(--orange-mid);
+        }
+
+        /* Decorative circle in card corner */
+        .path-card::after {
+          content: ''; position: absolute;
+          bottom: -60px; right: -60px;
+          width: 200px; height: 200px; border-radius: 50%;
+          pointer-events: none;
+        }
+        .path-card.brand-path::after { background: radial-gradient(circle, rgba(139,92,246,0.08) 0%, transparent 70%); }
+        .path-card.creator-path::after { background: radial-gradient(circle, rgba(249,115,22,0.08) 0%, transparent 70%); }
 
         .path-pill {
-          display: inline-block; padding: 5px 12px; border-radius: 100px;
+          display: inline-block; padding: 5px 14px; border-radius: 100px;
           font-size: 11px; font-weight: 700; letter-spacing: 0.09em;
           text-transform: uppercase; margin-bottom: 28px;
         }
         .path-pill.brand {
-          background: var(--blue-bg); color: var(--blue); border: 1px solid rgba(59,130,246,0.2);
+          background: var(--violet-bg); color: var(--violet);
+          border: 1px solid rgba(124,58,237,0.25);
         }
         .path-pill.creator {
-          background: var(--amber-bg); color: var(--amber); border: 1px solid rgba(245,158,11,0.25);
+          background: var(--orange-bg); color: var(--orange);
+          border: 1px solid rgba(249,115,22,0.25);
         }
 
         .path-h3 {
@@ -337,84 +427,151 @@ export default function Home() {
         .path-steps { display: flex; flex-direction: column; gap: 14px; margin-bottom: 40px; }
         .path-step { display: flex; align-items: flex-start; gap: 12px; }
         .step-num {
-          width: 24px; height: 24px;
-          background: var(--gray-100); border: 1px solid var(--border);
-          border-radius: 7px;
+          width: 26px; height: 26px;
+          border-radius: 8px;
           display: flex; align-items: center; justify-content: center;
-          font-size: 10px; font-weight: 700; color: var(--muted);
+          font-size: 10px; font-weight: 700;
           flex-shrink: 0; margin-top: 1px;
         }
-        .step-text { font-size: 14px; color: var(--gray-600); line-height: 1.55; }
+        .brand-path .step-num {
+          background: var(--violet-bg); color: var(--violet);
+          border: 1px solid rgba(124,58,237,0.2);
+        }
+        .creator-path .step-num {
+          background: var(--orange-bg); color: var(--orange);
+          border: 1px solid rgba(249,115,22,0.2);
+        }
+        .step-text { font-size: 14px; color: #4b5563; line-height: 1.55; }
         .step-text strong { color: var(--black); font-weight: 600; }
 
+        /* Brand & Creator primary buttons */
+        .btn-brand {
+          display: inline-flex; align-items: center; gap: 9px;
+          padding: 14px 28px;
+          background: linear-gradient(135deg, var(--violet) 0%, #a855f7 100%);
+          color: var(--white);
+          border-radius: 12px; font-size: 14px; font-weight: 700;
+          border: none; cursor: pointer; transition: all 0.2s;
+          font-family: inherit; text-decoration: none;
+          box-shadow: 0 3px 16px rgba(124,58,237,0.3);
+          width: 100%; justify-content: center;
+        }
+        .btn-brand:hover { transform: translateY(-2px); box-shadow: 0 6px 24px rgba(124,58,237,0.4); }
+        .btn-brand:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
+
+        .btn-creator {
+          display: inline-flex; align-items: center; gap: 9px;
+          padding: 14px 28px;
+          background: linear-gradient(135deg, var(--orange) 0%, var(--amber) 100%);
+          color: var(--white);
+          border-radius: 12px; font-size: 14px; font-weight: 700;
+          border: none; cursor: pointer; transition: all 0.2s;
+          font-family: inherit; text-decoration: none;
+          box-shadow: 0 3px 16px rgba(234,88,12,0.3);
+          width: 100%; justify-content: center;
+        }
+        .btn-creator:hover { transform: translateY(-2px); box-shadow: 0 6px 24px rgba(234,88,12,0.4); }
+        .btn-creator:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
+
         /* ── FEATURES ─────────────────────────────── */
-        .features-bento { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+        .features-bento { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
         .feat-card {
           padding: 32px 28px;
-          background: var(--gray-50);
+          background: var(--white);
           border: 1px solid var(--border);
-          border-radius: 18px; transition: all 0.22s;
+          border-radius: 20px; transition: all 0.22s;
+          position: relative; overflow: hidden;
         }
         .feat-card:hover {
-          background: var(--white); border-color: var(--border-dark);
-          box-shadow: 0 4px 18px rgba(0,0,0,0.07);
-          transform: translateY(-2px);
+          border-color: var(--border-dark);
+          box-shadow: 0 6px 24px rgba(124,58,237,0.1);
+          transform: translateY(-3px);
         }
+        .feat-card:nth-child(1) { background: linear-gradient(145deg, #fdf4ff, #ffffff); }
+        .feat-card:nth-child(2) { background: linear-gradient(145deg, #ecfdf5, #ffffff); }
+        .feat-card:nth-child(3) { background: linear-gradient(145deg, #eff6ff, #ffffff); }
+        .feat-card:nth-child(4) { background: linear-gradient(145deg, #fff7ed, #ffffff); }
+        .feat-card:nth-child(5) { background: linear-gradient(145deg, #fdf2f8, #ffffff); }
+        .feat-card:nth-child(6) { background: linear-gradient(145deg, #ecfeff, #ffffff); }
+
         .feat-icon {
-          width: 40px; height: 40px;
-          background: var(--gray-100);
-          border-radius: 10px; display: flex; align-items: center;
-          justify-content: center; margin-bottom: 18px; font-size: 18px;
+          width: 44px; height: 44px;
+          border-radius: 12px; display: flex; align-items: center;
+          justify-content: center; margin-bottom: 18px; font-size: 20px;
         }
+        .feat-card:nth-child(1) .feat-icon { background: var(--violet-bg); }
+        .feat-card:nth-child(2) .feat-icon { background: var(--emerald-bg); }
+        .feat-card:nth-child(3) .feat-icon { background: var(--blue-bg); }
+        .feat-card:nth-child(4) .feat-icon { background: var(--amber-bg); }
+        .feat-card:nth-child(5) .feat-icon { background: var(--rose-bg); }
+        .feat-card:nth-child(6) .feat-icon { background: var(--cyan-bg); }
+
         .feat-title { font-size: 15px; font-weight: 700; margin-bottom: 9px; color: var(--black); }
         .feat-desc { font-size: 13px; color: var(--muted); line-height: 1.6; }
 
         /* ── TESTIMONIALS ─────────────────────────── */
-        .test-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+        .test-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
         .test-card {
           padding: 32px;
           background: var(--white);
-          border: 1px solid var(--border-dark);
-          border-radius: 20px; position: relative;
+          border: 1px solid var(--border);
+          border-radius: 24px; position: relative;
+          transition: all 0.22s;
         }
+        .test-card:hover { box-shadow: 0 6px 28px rgba(124,58,237,0.1); transform: translateY(-2px); }
+        .test-card:nth-child(1) { border-top: 3px solid var(--violet-mid); }
+        .test-card:nth-child(2) { border-top: 3px solid var(--cyan-mid); }
+        .test-card:nth-child(3) { border-top: 3px solid var(--emerald-mid); }
+
         .test-quote {
           font-family: 'Fraunces', serif;
-          font-size: 40px; line-height: 1; color: var(--gray-300); margin-bottom: 14px;
+          font-size: 52px; line-height: 1; margin-bottom: 14px;
         }
+        .test-card:nth-child(1) .test-quote { color: var(--violet-light); }
+        .test-card:nth-child(2) .test-quote { color: var(--cyan-bg); }
+        .test-card:nth-child(3) .test-quote { color: var(--emerald-bg); }
+
         .test-text {
-          font-size: 14px; color: var(--gray-600);
+          font-size: 14px; color: #4b5563;
           line-height: 1.65; margin-bottom: 24px; font-weight: 400;
         }
         .test-author { display: flex; align-items: center; gap: 11px; }
         .test-avatar {
-          width: 38px; height: 38px; border-radius: 50%;
+          width: 40px; height: 40px; border-radius: 50%;
           display: flex; align-items: center; justify-content: center;
           font-weight: 700; font-size: 13px; flex-shrink: 0; color: var(--white);
         }
         .test-name { font-size: 13px; font-weight: 700; color: var(--black); }
         .test-role { font-size: 12px; color: var(--muted); margin-top: 2px; }
-        .stars { display: flex; gap: 3px; margin-bottom: 18px; }
+        .stars { display: flex; gap: 3px; margin-bottom: 16px; }
 
         /* ── CTA BLOCK ────────────────────────────── */
         .cta-section {
           margin: 0 40px 112px;
-          border-radius: 28px;
-          background: var(--black); color: var(--white);
+          border-radius: 32px;
+          background: linear-gradient(135deg, #4c1d95 0%, #7c3aed 35%, #be185d 70%, #ea580c 100%);
+          color: var(--white);
           padding: 96px 80px; text-align: center;
           position: relative; overflow: hidden;
         }
         .cta-section::before {
           content: ''; position: absolute;
-          top: -120px; left: -120px;
-          width: 360px; height: 360px;
-          border-radius: 50%; background: rgba(255,255,255,0.03);
+          top: -100px; left: -100px;
+          width: 400px; height: 400px;
+          border-radius: 50%; background: rgba(255,255,255,0.05);
           pointer-events: none;
         }
         .cta-section::after {
           content: ''; position: absolute;
           bottom: -80px; right: -80px;
-          width: 280px; height: 280px;
-          border-radius: 50%; background: rgba(255,255,255,0.02);
+          width: 300px; height: 300px;
+          border-radius: 50%; background: rgba(255,255,255,0.04);
+          pointer-events: none;
+        }
+        .cta-section-circle {
+          position: absolute; top: 50%; right: 12%;
+          width: 180px; height: 180px; border-radius: 50%;
+          background: rgba(255,255,255,0.04); transform: translateY(-50%);
           pointer-events: none;
         }
         .cta-h2 {
@@ -425,35 +582,38 @@ export default function Home() {
         }
         .cta-sub {
           font-size: 17px; margin-bottom: 48px;
-          color: rgba(255,255,255,0.5); font-weight: 400;
+          color: rgba(255,255,255,0.65); font-weight: 400;
           position: relative; z-index: 1;
         }
         .cta-btns {
-          display: flex; gap: 12px;
+          display: flex; gap: 14px;
           justify-content: center; flex-wrap: wrap;
           position: relative; z-index: 1;
         }
         .btn-cta-brand {
-          padding: 15px 32px; background: var(--white); color: var(--black);
-          border-radius: 12px; font-size: 14px; font-weight: 700;
+          padding: 16px 34px;
+          background: var(--white); color: var(--violet);
+          border-radius: 14px; font-size: 14px; font-weight: 800;
           border: none; cursor: pointer; transition: all 0.18s; font-family: inherit;
+          box-shadow: 0 4px 16px rgba(0,0,0,0.2);
         }
-        .btn-cta-brand:hover { background: var(--gray-200); transform: translateY(-1px); }
+        .btn-cta-brand:hover { background: var(--violet-bg); transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,0.25); }
         .btn-cta-creator {
-          padding: 15px 32px;
+          padding: 16px 34px;
           background: transparent; color: var(--white);
-          border-radius: 12px; font-size: 14px; font-weight: 700;
-          border: 1.5px solid rgba(255,255,255,0.25);
+          border-radius: 14px; font-size: 14px; font-weight: 800;
+          border: 2px solid rgba(255,255,255,0.4);
           cursor: pointer; transition: all 0.18s; font-family: inherit;
         }
         .btn-cta-creator:hover {
-          background: rgba(255,255,255,0.07); transform: translateY(-1px);
+          background: rgba(255,255,255,0.12); transform: translateY(-2px);
+          border-color: rgba(255,255,255,0.6);
         }
 
         /* ── FOOTER ───────────────────────────────── */
         .footer {
-          background: var(--gray-100);
-          border-top: 1px solid var(--border);
+          background: #0f0a1e;
+          border-top: 1px solid rgba(124,58,237,0.2);
           padding: 72px 40px 40px;
         }
         .footer-inner { max-width: 1200px; margin: 0 auto; }
@@ -463,61 +623,62 @@ export default function Home() {
         }
         .footer-brand {
           font-family: 'Fraunces', serif;
-          font-size: 26px; font-weight: 700; margin-bottom: 12px; color: var(--black);
+          font-size: 28px; font-weight: 900; margin-bottom: 12px; color: #ffffff;
         }
-        .footer-brand span { color: var(--gray-400); }
         .footer-tagline {
-          font-size: 13px; color: var(--muted);
+          font-size: 13px; color: rgba(255,255,255,0.4);
           line-height: 1.6; max-width: 230px; margin-bottom: 24px;
         }
         .footer-email-row {
           display: flex;
-          background: var(--white);
-          border: 1px solid var(--border-dark);
+          background: rgba(255,255,255,0.06);
+          border: 1px solid rgba(124,58,237,0.3);
           border-radius: 10px; overflow: hidden;
         }
         .footer-email-input {
           flex: 1; background: transparent; border: none;
-          padding: 11px 14px; color: var(--black); font-size: 13px;
+          padding: 11px 14px; color: #ffffff; font-size: 13px;
           outline: none; font-family: inherit;
         }
-        .footer-email-input::placeholder { color: var(--muted); }
+        .footer-email-input::placeholder { color: rgba(255,255,255,0.3); }
         .footer-email-btn {
-          padding: 11px 14px; background: var(--black);
+          padding: 11px 16px;
+          background: linear-gradient(135deg, var(--violet), var(--rose-mid));
           border: none; cursor: pointer; color: var(--white);
-          font-size: 15px; transition: background 0.15s;
+          font-size: 15px; font-weight: 700; transition: opacity 0.15s;
         }
-        .footer-email-btn:hover { background: var(--gray-700); }
+        .footer-email-btn:hover { opacity: 0.85; }
         .footer-col-title {
           font-size: 11px; font-weight: 700;
           text-transform: uppercase; letter-spacing: 0.1em;
-          color: var(--muted); margin-bottom: 18px;
+          color: rgba(255,255,255,0.3); margin-bottom: 18px;
         }
         .footer-links { display: flex; flex-direction: column; gap: 11px; }
         .footer-link {
-          font-size: 13px; color: var(--gray-600);
+          font-size: 13px; color: rgba(255,255,255,0.5);
           text-decoration: none; transition: color 0.15s;
         }
-        .footer-link:hover { color: var(--black); }
+        .footer-link:hover { color: var(--violet-mid); }
         .footer-bottom {
           display: flex; align-items: center; justify-content: space-between;
-          padding-top: 28px; border-top: 1px solid var(--border);
+          padding-top: 28px; border-top: 1px solid rgba(255,255,255,0.07);
         }
-        .footer-copy { font-size: 12px; color: var(--muted); }
+        .footer-copy { font-size: 12px; color: rgba(255,255,255,0.25); }
+        .footer-heart { color: var(--rose-mid); }
 
         /* divider */
-        .divider { border: none; border-top: 1px solid var(--border); margin: 0; }
+        .divider { border: none; border-top: 1px solid rgba(124,58,237,0.1); margin: 0; }
 
         /* spinner */
         .spinner {
           width: 15px; height: 15px;
-          border: 2px solid rgba(255,255,255,0.25);
+          border: 2px solid rgba(255,255,255,0.3);
           border-top-color: white; border-radius: 50%;
           animation: spin 0.7s linear infinite; flex-shrink: 0;
         }
         .spinner-dark {
           border-color: rgba(0,0,0,0.15);
-          border-top-color: var(--black);
+          border-top-color: var(--violet);
         }
 
         /* ── RESPONSIVE ───────────────────────────── */
@@ -547,7 +708,7 @@ export default function Home() {
       {/* ── NAVBAR ────────────────────────────────── */}
       <header className="nav">
         <div className="nav-inner">
-          <Link href="/" className="nav-logo">Zel<span>teb</span></Link>
+          <Link href="/" className="nav-logo">Zelteb</Link>
           <div className="nav-links">
             <Link href="/discover" className="nav-link">Discover</Link>
             <Link href="/pricing" className="nav-link">Pricing</Link>
@@ -568,12 +729,9 @@ export default function Home() {
       {/* ── HERO ──────────────────────────────────── */}
       <section className="hero" ref={heroRef}>
         <div className="hero-grid" />
-        <div
-          className="hero-glow"
-          style={{
-            background: `radial-gradient(ellipse 55% 45% at ${mousePos.x}% ${mousePos.y}%, rgba(0,0,0,0.03) 0%, transparent 70%)`,
-          }}
-        />
+        <div className="hero-blob1" />
+        <div className="hero-blob2" />
+        <div className="hero-blob3" />
         <div className="hero-inner">
           <div className="anim-1">
             <div className="hero-tag">
@@ -583,7 +741,7 @@ export default function Home() {
           </div>
           <h1 className="hero-h1 anim-2">
             Where brands<br />
-            meet <span className="italic">creators</span><br />
+            meet <span className="italic grad">creators</span><br />
             that convert.
           </h1>
           <p className="hero-sub anim-3">
@@ -613,15 +771,15 @@ export default function Home() {
               >
                 {loading === "influencer" ? <div className="spinner spinner-dark" /> : <GoogleIcon dark />}
                 <span>{loading === "influencer" ? "Signing in…" : "I'm a Creator"}</span>
-                {loading !== "influencer" && <span style={{ color: "var(--gray-400)" }}>→</span>}
+                {loading !== "influencer" && <span style={{ color: "var(--violet-mid)" }}>→</span>}
               </button>
             </div>
           )}
           <div className="hero-cards anim-5">
             {[
-              { initials: "RK", name: "Rohit K.", stat: "2.1M followers", bg: "#1a1a18" },
-              { initials: "PV", name: "Priya V.", stat: "₹4.2L earned",   bg: "#4a4a47" },
-              { initials: "AM", name: "Arjun M.", stat: "Brand: NikeIN",  bg: "#737370" },
+              { initials: "RK", name: "Rohit K.", stat: "2.1M followers", bg: "linear-gradient(135deg,#7c3aed,#a855f7)" },
+              { initials: "PV", name: "Priya V.", stat: "₹4.2L earned",   bg: "linear-gradient(135deg,#0891b2,#06b6d4)" },
+              { initials: "AM", name: "Arjun M.", stat: "Brand: NikeIN",  bg: "linear-gradient(135deg,#ea580c,#f97316)" },
             ].map((c) => (
               <div className="hero-card" key={c.name}>
                 <div className="hero-card-avatar" style={{ background: c.bg }}>{c.initials}</div>
@@ -640,10 +798,23 @@ export default function Home() {
         <div className="ticker-inner">
           {[...Array(2)].map((_, i) => (
             <div key={i} style={{ display: "flex" }}>
-              {["Instagram","YouTube","X (Twitter)","LinkedIn","Reddit","Medium","Paid Campaigns","Verified Creators","Brand Deals","Real Analytics","INR Payouts","Instant Matching"].map((item) => (
-                <div className="ticker-item" key={item}>
-                  <div className="ticker-dot" />
-                  {item}
+              {[
+                { label: "Instagram",        color: "#7c3aed", dot: "#a855f7" },
+                { label: "YouTube",          color: "#be185d", dot: "#f43f5e" },
+                { label: "X (Twitter)",      color: "#0891b2", dot: "#06b6d4" },
+                { label: "LinkedIn",         color: "#1d4ed8", dot: "#3b82f6" },
+                { label: "Reddit",           color: "#ea580c", dot: "#f97316" },
+                { label: "Medium",           color: "#059669", dot: "#10b981" },
+                { label: "Paid Campaigns",   color: "#7c3aed", dot: "#8b5cf6" },
+                { label: "Verified Creators",color: "#be185d", dot: "#f43f5e" },
+                { label: "Brand Deals",      color: "#0891b2", dot: "#06b6d4" },
+                { label: "Real Analytics",   color: "#d97706", dot: "#f59e0b" },
+                { label: "INR Payouts",      color: "#059669", dot: "#10b981" },
+                { label: "Instant Matching", color: "#ea580c", dot: "#f97316" },
+              ].map((item) => (
+                <div className="ticker-item" key={item.label} style={{ color: item.color }}>
+                  <div className="ticker-dot" style={{ background: item.dot }} />
+                  {item.label}
                 </div>
               ))}
             </div>
@@ -655,13 +826,13 @@ export default function Home() {
       <div className="stats-section">
         <div className="stats-grid">
           {[
-            { num: "12K", suffix: "+", label: "Verified influencers" },
-            { num: "850", suffix: "+", label: "Brands onboarded" },
-            { num: "₹2Cr", suffix: "+", label: "Creator earnings paid out" },
-            { num: "98",  suffix: "%", label: "Campaign satisfaction" },
+            { num: "12K", suffix: "+", label: "Verified influencers", cls: "s1" },
+            { num: "850", suffix: "+", label: "Brands onboarded", cls: "s2" },
+            { num: "₹2Cr", suffix: "+", label: "Creator earnings paid out", cls: "s3" },
+            { num: "98",  suffix: "%", label: "Campaign satisfaction", cls: "s4" },
           ].map((s) => (
             <div className="stat-box" key={s.label}>
-              <div className="stat-num">{s.num}<span className="accent">{s.suffix}</span></div>
+              <div className="stat-num">{s.num}<span className={s.cls}>{s.suffix}</span></div>
               <div className="stat-label">{s.label}</div>
             </div>
           ))}
@@ -672,7 +843,7 @@ export default function Home() {
 
       {/* ── HOW IT WORKS ──────────────────────────── */}
       <section className="section">
-        <p className="section-label">How it works</p>
+        <p className="section-label">✦ How it works</p>
         <h2 className="section-h2">Two sides. <em>One platform.</em></h2>
         <p className="section-sub">Whether you're a brand looking to grow or a creator ready to monetize — Zelteb has a clear path for you.</p>
 
@@ -697,8 +868,7 @@ export default function Home() {
             <button
               onClick={() => signUpWith("brand")}
               disabled={loading !== null}
-              className="btn-primary"
-              style={{ width: "100%", justifyContent: "center" }}
+              className="btn-brand"
             >
               {loading === "brand" ? <div className="spinner" /> : null}
               {loading === "brand" ? "Signing in…" : "Start hiring creators →"}
@@ -725,10 +895,9 @@ export default function Home() {
             <button
               onClick={() => signUpWith("influencer")}
               disabled={loading !== null}
-              className="btn-secondary"
-              style={{ width: "100%", justifyContent: "center" }}
+              className="btn-creator"
             >
-              {loading === "influencer" ? <div className="spinner spinner-dark" /> : null}
+              {loading === "influencer" ? <div className="spinner" /> : null}
               {loading === "influencer" ? "Signing in…" : "Join as a creator →"}
             </button>
           </div>
@@ -739,7 +908,7 @@ export default function Home() {
 
       {/* ── FEATURES ──────────────────────────────── */}
       <section className="section">
-        <p className="section-label">Platform features</p>
+        <p className="section-label">✦ Platform features</p>
         <h2 className="section-h2">Built for real <em>results.</em></h2>
         <p className="section-sub">Every tool you need to run successful influencer campaigns — from discovery to payment.</p>
         <div className="features-bento">
@@ -764,27 +933,30 @@ export default function Home() {
 
       {/* ── TESTIMONIALS ──────────────────────────── */}
       <section className="section">
-        <p className="section-label">What people say</p>
+        <p className="section-label">✦ What people say</p>
         <h2 className="section-h2">Trusted by brands & <em>creators.</em></h2>
         <div className="test-grid">
           {[
             {
               quote: "Zelteb cut our influencer search time from weeks to hours. The verification system means we never deal with fake engagement anymore.",
-              name: "Sneha R.", role: "Marketing Head, FreshCart India", initials: "SR", bg: "#1a1a18",
+              name: "Sneha R.", role: "Marketing Head, FreshCart India", initials: "SR",
+              bg: "linear-gradient(135deg,#7c3aed,#a855f7)",
             },
             {
               quote: "I used to spend months cold-pitching brands. Now campaigns come to me and I've tripled my monthly income from collaborations.",
-              name: "Karan M.", role: "Lifestyle Creator, 890K on Instagram", initials: "KM", bg: "#4a4a47",
+              name: "Karan M.", role: "Lifestyle Creator, 890K on Instagram", initials: "KM",
+              bg: "linear-gradient(135deg,#0891b2,#06b6d4)",
             },
             {
               quote: "The analytics dashboard alone is worth it. We can see exactly what's working mid-campaign and adjust — not after it's over.",
-              name: "Divya S.", role: "Growth Lead, Nua Brand", initials: "DS", bg: "#737370",
+              name: "Divya S.", role: "Growth Lead, Nua Brand", initials: "DS",
+              bg: "linear-gradient(135deg,#059669,#10b981)",
             },
           ].map((t) => (
             <div className="test-card" key={t.name}>
               <div className="stars">
                 {[1,2,3,4,5].map((s) => (
-                  <svg key={s} width="13" height="13" viewBox="0 0 24 24" fill="var(--black)">
+                  <svg key={s} width="14" height="14" viewBox="0 0 24 24" fill="#f59e0b">
                     <polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/>
                   </svg>
                 ))}
@@ -805,13 +977,14 @@ export default function Home() {
 
       {/* ── FINAL CTA ─────────────────────────────── */}
       <div className="cta-section">
+        <div className="cta-section-circle" />
         <h2 className="cta-h2">Your next brand deal<br />is one click away.</h2>
         <p className="cta-sub">Join 12,000+ creators and 850+ brands already growing on Zelteb.</p>
         {user ? (
           <div className="cta-btns">
             <Link
               href={userRole === "brand" ? "/brand/dashboard" : "/dashboard"}
-              style={{ padding: "15px 32px", background: "white", color: "var(--black)", borderRadius: "12px", fontSize: "14px", fontWeight: 700, textDecoration: "none" }}
+              style={{ padding: "16px 34px", background: "white", color: "var(--violet)", borderRadius: "14px", fontSize: "14px", fontWeight: 800, textDecoration: "none" }}
             >
               Go to dashboard →
             </Link>
@@ -833,7 +1006,7 @@ export default function Home() {
         <div className="footer-inner">
           <div className="footer-top">
             <div>
-              <div className="footer-brand">Zel<span>teb</span></div>
+              <div className="footer-brand">Zelteb</div>
               <p className="footer-tagline">India's influencer marketing marketplace connecting brands with creators who convert.</p>
               <div className="footer-email-row">
                 <input className="footer-email-input" type="email" placeholder="Get platform updates" />
@@ -868,7 +1041,7 @@ export default function Home() {
           </div>
           <div className="footer-bottom">
             <span className="footer-copy">© 2025 Zelteb. All rights reserved.</span>
-            <span className="footer-copy">Made with ♥ for Indian creators</span>
+            <span className="footer-copy">Made with <span className="footer-heart">♥</span> for Indian creators</span>
           </div>
         </div>
       </footer>
@@ -890,14 +1063,13 @@ export default function Home() {
   );
 }
 
-function GoogleIcon({ dark, light }: { dark?: boolean; light?: boolean }) {
-  const opacity = dark ? 0.6 : light ? 0.5 : 1;
+function GoogleIcon({ dark }: { dark?: boolean }) {
   return (
-    <svg width="15" height="15" viewBox="0 0 24 24" style={{ flexShrink: 0, opacity }}>
-      <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill={dark ? "#333" : "#4285F4"}/>
-      <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill={dark ? "#333" : "#34A853"}/>
-      <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill={dark ? "#333" : "#FBBC05"}/>
-      <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill={dark ? "#333" : "#EA4335"}/>
+    <svg width="15" height="15" viewBox="0 0 24 24" style={{ flexShrink: 0 }}>
+      <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill={dark ? "#7c3aed" : "#4285F4"}/>
+      <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill={dark ? "#059669" : "#34A853"}/>
+      <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill={dark ? "#d97706" : "#FBBC05"}/>
+      <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill={dark ? "#ea580c" : "#EA4335"}/>
     </svg>
   );
 }
