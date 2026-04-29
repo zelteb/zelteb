@@ -143,7 +143,6 @@ export default function VerifySocialPage() {
       ? `${window.location.protocol}//${window.location.host}`
       : "https://zelteb.com";
 
-  // ✅ Fixed: no /u/ prefix — direct /{username}
   const profilePageUrl = username ? `${APP_BASE_URL}/${username}` : null;
 
   useEffect(() => {
@@ -345,6 +344,10 @@ export default function VerifySocialPage() {
                     step: "3",
                     text: "Submit the profile URL below. Our team reviews within 1–2 business days.",
                   },
+                  {
+                    step: "4",
+                    text: "Keep your profile link in your bio — if you remove it, you will no longer be eligible for brand deals.",
+                  },
                 ].map(({ step, text }) => (
                   <div key={step} className="flex items-start gap-3">
                     <span className="w-5 h-5 rounded-lg bg-orange-50 border border-orange-100 text-orange-500 text-[10px] font-black flex items-center justify-center mt-0.5 shrink-0">
@@ -426,6 +429,7 @@ export default function VerifySocialPage() {
                             <p className="text-sm font-semibold text-gray-900">
                               {meta?.label ?? req.platform}
                             </p>
+                            {/* ✅ Fix: link goes to req.profile_url (their actual social profile) */}
                             <a
                               href={req.profile_url}
                               target="_blank"
