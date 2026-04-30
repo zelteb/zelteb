@@ -127,6 +127,7 @@ interface ExistingRequest {
   profile_url: string;
   status: "pending" | "approved" | "rejected";
   created_at: string;
+  rejection_reason: string | null;
 }
 
 // ─── Status badge ─────────────────────────────────────────────────────────────
@@ -154,12 +155,12 @@ function StatusBadge({ status }: { status: ExistingRequest["status"] }) {
 async function fetchRequests(userId: string): Promise<ExistingRequest[]> {
   const { data, error } = await supabase
     .from("verification_requests")
-    .select("id, platform, handle, profile_url, status, created_at")
+    .select("id, platform, handle, profile_url, status, created_at, rejection_reason")
     .eq("user_id", userId)
     .order("created_at", { ascending: false });
 
   if (error) throw error;
-  return data ?? [];
+  return (data ?? []) as ExistingRequest[];
 }
 
 // ─── Main page ────────────────────────────────────────────────────────────────
@@ -175,6 +176,7 @@ export default function VerifySocialPage() {
   const [copiedLink, setCopiedLink] = useState(false);
   const [delinkingId, setDelinkingId] = useState<string | null>(null);
   const [confirmDelinkId, setConfirmDelinkId] = useState<string | null>(null);
+  const [delinkError, setDelinkError] = useState<string | null>(null);
 
   // Form state
   const [selectedPlatform, setSelectedPlatform] = useState<PlatformValue | null>(null);
@@ -227,6 +229,7 @@ export default function VerifySocialPage() {
   const handleDelink = async (reqId: string) => {
     if (!user) return;
     setDelinkingId(reqId);
+    setDelinkError(null);
     try {
       const { error: delError } = await supabase
         .from("verification_requests")
@@ -236,12 +239,23 @@ export default function VerifySocialPage() {
 
       if (delError) throw delError;
 
-      // Re-fetch from DB instead of optimistic splice so a refresh shows the
-      // same state — this is the fix for the "still connected after refresh" bug.
-      const fresh = await fetchRequests(user.id);
-      setExistingRequests(fresh);
+      // Confirm deletion from DB before updating UI — fixes the "still shows
+      // after refresh" bug caused by optimistic removal when RLS blocks delete.
+      const { data: check } = await supabase
+        .from("verification_requests")
+        .select("id")
+        .eq("id", reqId)
+        .maybeSingle();
+
+      if (!check) {
+        // Confirmed gone — re-fetch to get a clean authoritative list
+        const fresh = await fetchRequests(user.id);
+        setExistingRequests(fresh);
+      } else {
+        setDelinkError("Could not remove this request — it may still appear after refresh. Check your RLS policies allow deletion.");
+      }
     } catch (err: any) {
-      alert("Failed to delink: " + err.message);
+      setDelinkError("Failed to delink: " + err.message);
     } finally {
       setDelinkingId(null);
       setConfirmDelinkId(null);
@@ -450,6 +464,15 @@ export default function VerifySocialPage() {
               </div>
             </div>
 
+            {/* ── Delink error banner ── */}
+            {delinkError && (
+              <div className="flex items-start gap-2.5 bg-red-50 border border-red-200 rounded-2xl px-4 py-3">
+                <AlertCircle size={14} className="text-red-400 mt-0.5 shrink-0" />
+                <p className="text-xs text-red-600 flex-1">{delinkError}</p>
+                <button onClick={() => setDelinkError(null)} className="text-red-400 hover:text-red-600 text-xs underline shrink-0">Dismiss</button>
+              </div>
+            )}
+
             {/* ── Existing requests ── */}
             {existingRequests.length > 0 && (
               <div className="bg-white border border-gray-200/80 rounded-2xl overflow-hidden shadow-sm">
@@ -465,65 +488,93 @@ export default function VerifySocialPage() {
                     const isDelinking = delinkingId === req.id;
                     const isConfirming = confirmDelinkId === req.id;
                     return (
-                      <div key={req.id} className="flex items-center justify-between px-5 py-3.5 gap-3 hover:bg-gray-50/50 transition-colors">
-                        <div className="flex items-center gap-3 min-w-0">
-                          <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${meta?.bg ?? "bg-gray-100"} ${meta?.color ?? "text-gray-600"} border ${meta?.border ?? "border-gray-200"}`}>
-                            {meta?.icon}
-                          </div>
-                          <div className="min-w-0">
-                            <p className="text-sm font-semibold text-gray-900">
-                              {meta?.label ?? req.platform}
-                            </p>
-                            <a
-                              href={resolveSocialUrl(req.platform, req.profile_url, req.handle)}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-xs text-gray-400 hover:text-gray-600 flex items-center gap-1 truncate max-w-[160px]"
-                            >
-                              <span className="truncate">@{req.handle}</span>
-                              <ExternalLink size={9} className="shrink-0" />
-                            </a>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-2 shrink-0">
-                          <StatusBadge status={req.status} />
-                          <p className="text-[10px] text-gray-400 hidden sm:block">
-                            {new Date(req.created_at).toLocaleDateString("en-US", {
-                              month: "short",
-                              day: "numeric",
-                              year: "numeric",
-                            })}
-                          </p>
-                          {req.status === "approved" && (
-                            isConfirming ? (
-                              <div className="flex items-center gap-1.5 bg-red-50 border border-red-100 rounded-lg px-2 py-1">
-                                <span className="text-[11px] text-gray-500">Remove?</span>
-                                <button
-                                  onClick={() => handleDelink(req.id)}
-                                  disabled={isDelinking}
-                                  className="text-[11px] font-bold text-red-500 hover:text-red-700 transition-colors disabled:opacity-50"
-                                >
-                                  {isDelinking ? <Loader2 size={11} className="animate-spin" /> : "Yes"}
-                                </button>
-                                <button
-                                  onClick={() => setConfirmDelinkId(null)}
-                                  className="text-[11px] font-semibold text-gray-400 hover:text-gray-700"
-                                >
-                                  No
-                                </button>
-                              </div>
-                            ) : (
-                              <button
-                                onClick={() => setConfirmDelinkId(req.id)}
-                                title="Delink this account"
-                                className="flex items-center gap-1 px-2 py-1.5 rounded-lg text-xs text-gray-400 border border-gray-200 hover:border-red-200 hover:text-red-500 hover:bg-red-50 transition-all"
+                      <div key={req.id} className="px-5 py-3.5 hover:bg-gray-50/50 transition-colors">
+
+                        {/* ── Main row ── */}
+                        <div className="flex items-center justify-between gap-3">
+                          <div className="flex items-center gap-3 min-w-0">
+                            <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${meta?.bg ?? "bg-gray-100"} ${meta?.color ?? "text-gray-600"} border ${meta?.border ?? "border-gray-200"}`}>
+                              {meta?.icon}
+                            </div>
+                            <div className="min-w-0">
+                              <p className="text-sm font-semibold text-gray-900">
+                                {meta?.label ?? req.platform}
+                              </p>
+                              <a
+                                href={resolveSocialUrl(req.platform, req.profile_url, req.handle)}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-xs text-gray-400 hover:text-gray-600 flex items-center gap-1 truncate max-w-[160px]"
                               >
-                                <Link2Off size={11} />
-                                <span className="hidden sm:inline text-[11px]">Delink</span>
-                              </button>
-                            )
-                          )}
+                                <span className="truncate">@{req.handle}</span>
+                                <ExternalLink size={9} className="shrink-0" />
+                              </a>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2 shrink-0">
+                            <StatusBadge status={req.status} />
+                            <p className="text-[10px] text-gray-400 hidden sm:block">
+                              {new Date(req.created_at).toLocaleDateString("en-US", {
+                                month: "short",
+                                day: "numeric",
+                                year: "numeric",
+                              })}
+                            </p>
+                            {req.status === "approved" && (
+                              isConfirming ? (
+                                <div className="flex items-center gap-1.5 bg-red-50 border border-red-100 rounded-lg px-2 py-1">
+                                  <span className="text-[11px] text-gray-500">Remove?</span>
+                                  <button
+                                    onClick={() => handleDelink(req.id)}
+                                    disabled={isDelinking}
+                                    className="text-[11px] font-bold text-red-500 hover:text-red-700 transition-colors disabled:opacity-50"
+                                  >
+                                    {isDelinking ? <Loader2 size={11} className="animate-spin" /> : "Yes"}
+                                  </button>
+                                  <button
+                                    onClick={() => setConfirmDelinkId(null)}
+                                    className="text-[11px] font-semibold text-gray-400 hover:text-gray-700"
+                                  >
+                                    No
+                                  </button>
+                                </div>
+                              ) : (
+                                <button
+                                  onClick={() => setConfirmDelinkId(req.id)}
+                                  title="Delink this account"
+                                  className="flex items-center gap-1 px-2 py-1.5 rounded-lg text-xs text-gray-400 border border-gray-200 hover:border-red-200 hover:text-red-500 hover:bg-red-50 transition-all"
+                                >
+                                  <Link2Off size={11} />
+                                  <span className="hidden sm:inline text-[11px]">Delink</span>
+                                </button>
+                              )
+                            )}
+                          </div>
                         </div>
+
+                        {/* ── Rejection reason ── */}
+                        {req.status === "rejected" && (
+                          <div className="mt-3 flex items-start gap-2 bg-red-50 border border-red-100 rounded-xl px-3 py-2.5">
+                            <AlertCircle size={13} className="text-red-400 shrink-0 mt-0.5" />
+                            <div>
+                              <p className="text-[11px] font-semibold text-red-500 mb-0.5">Reason for rejection</p>
+                              <p className="text-xs text-red-600 leading-relaxed">
+                                {req.rejection_reason
+                                  ? req.rejection_reason
+                                  : "No specific reason provided. Please resubmit with correct account details."}
+                              </p>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* ── Pending notice ── */}
+                        {req.status === "pending" && (
+                          <div className="mt-3 flex items-center gap-2 bg-amber-50 border border-amber-100 rounded-xl px-3 py-2">
+                            <Clock size={13} className="text-amber-400 shrink-0" />
+                            <p className="text-xs text-amber-600">Under review — usually takes 1–2 business days.</p>
+                          </div>
+                        )}
+
                       </div>
                     );
                   })}
