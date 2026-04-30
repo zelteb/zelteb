@@ -17,6 +17,8 @@ import {
   EyeOff,
   Ban,
   Link2Off,
+  MessageSquare,
+  X,
 } from "lucide-react";
 
 // ─── Passcode Gate ─────────────────────────────────────────────────────────────
@@ -214,15 +216,19 @@ const PLATFORM_META: Record<string, { label: string; color: string; bg: string; 
     label: "Reddit", color: "text-orange-600", bg: "bg-orange-50", border: "border-orange-200",
     icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0c-6.627 0-12 5.373-12 12s5.373 12 12 12 12-5.373 12-12-5.373-12-12-12zm5.01 4.744c.688 0 1.25.561 1.25 1.249a1.25 1.25 0 0 1-2.498.056l-2.597-.547-.8 3.747c1.824.07 3.48.632 4.674 1.488.308-.309.73-.491 1.207-.491.968 0 1.754.786 1.754 1.754 0 .716-.435 1.333-1.056 1.597.032.222.049.449.049.678 0 2.737-3.129 4.965-6.993 4.965-3.864 0-6.993-2.228-6.993-4.965 0-.213.017-.421.041-.626a1.756 1.756 0 0 1-1.103-1.648c0-.968.786-1.754 1.754-1.754.463 0 .883.18 1.189.471 1.187-.844 2.819-1.397 4.611-1.477l.871-4.081c.045-.21.23-.362.443-.362l2.991.632c.08-.37.408-.651.803-.651z" /></svg>,
   },
+  medium: {
+    label: "Medium", color: "text-gray-700", bg: "bg-gray-50", border: "border-gray-200",
+    icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M13.54 12a6.8 6.8 0 01-6.77 6.82A6.8 6.8 0 010 12a6.8 6.8 0 016.77-6.82A6.8 6.8 0 0113.54 12zM20.96 12c0 3.54-1.51 6.42-3.38 6.42-1.87 0-3.39-2.88-3.39-6.42s1.52-6.42 3.39-6.42 3.38 2.88 3.38 6.42M24 12c0 3.17-.53 5.75-1.19 5.75-.66 0-1.19-2.58-1.19-5.75s.53-5.75 1.19-5.75C23.47 6.25 24 8.83 24 12z" /></svg>,
+  },
 };
 
-// ─── Platform base URLs for resolving partial profile_url values ──────────────
 const PLATFORM_BASE: Record<string, string> = {
   instagram: "https://www.instagram.com/",
   youtube: "https://www.youtube.com/@",
   x: "https://x.com/",
   linkedin: "https://www.linkedin.com/in/",
   reddit: "https://www.reddit.com/user/",
+  medium: "https://medium.com/@",
 };
 
 function resolveSocialUrl(platform: string, profileUrl: string, handle: string): string {
@@ -246,9 +252,68 @@ interface VerificationRequest {
   full_name: string;
   avatar_url: string | null;
   influencer_type: string | null;
+  rejection_reason: string | null;
 }
 
 type FilterType = "all" | "pending" | "approved" | "rejected";
+
+// ─── Rejection reason modal ───────────────────────────────────────────────────
+function RejectModal({
+  onConfirm,
+  onCancel,
+  loading,
+}: {
+  onConfirm: (reason: string) => void;
+  onCancel: () => void;
+  loading: boolean;
+}) {
+  const [reason, setReason] = useState("");
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center px-4 bg-black/40 backdrop-blur-sm">
+      <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 border border-gray-100">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-xl bg-red-50 border border-red-100 flex items-center justify-center">
+              <MessageSquare size={15} className="text-red-500" />
+            </div>
+            <h2 className="text-sm font-bold text-gray-900">Rejection Reason</h2>
+          </div>
+          <button onClick={onCancel} className="text-gray-400 hover:text-gray-700 transition-colors">
+            <X size={18} />
+          </button>
+        </div>
+        <p className="text-xs text-gray-500 mb-3">
+          Optionally provide a reason. The user will see this on their verify social page.
+        </p>
+        <textarea
+          value={reason}
+          onChange={(e) => setReason(e.target.value)}
+          placeholder="e.g. Account appears inactive, handle doesn't match profile, follower count too low…"
+          rows={4}
+          autoFocus
+          className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-900 placeholder-gray-400 resize-none focus:outline-none focus:ring-2 focus:ring-red-200 focus:border-red-300 transition-all"
+        />
+        <div className="flex gap-2 mt-4">
+          <button
+            onClick={onCancel}
+            className="flex-1 py-2.5 rounded-xl border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={() => onConfirm(reason.trim())}
+            disabled={loading}
+            className="flex-1 py-2.5 rounded-xl bg-red-500 hover:bg-red-600 text-white text-sm font-semibold transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+          >
+            {loading ? <Loader2 size={14} className="animate-spin" /> : null}
+            Reject
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 // ─── Stat card ────────────────────────────────────────────────────────────────
 function StatCard({ label, value, icon, color }: { label: string; value: number; icon: React.ReactNode; color: string }) {
@@ -284,11 +349,7 @@ function RequestRow({
   setConfirmDelinkId: (id: string | null) => void;
 }) {
   const meta = PLATFORM_META[req.platform] ?? PLATFORM_META["x"];
-
-  // ✅ Fix 1: user profile goes to /{username} not /u/{username}
   const profileLink = `/${req.username}`;
-
-  // ✅ Fix 2: platform handle resolves to correct social URL
   const socialUrl = resolveSocialUrl(req.platform, req.profile_url, req.handle);
 
   const isUpdating = updating === req.id;
@@ -310,7 +371,6 @@ function RequestRow({
           )}
         </div>
         <div className="min-w-0">
-          {/* ✅ Fix 1: correct internal profile link */}
           <a href={profileLink} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 group">
             <span className="text-sm font-semibold text-gray-900 truncate group-hover:underline">
               {req.full_name || req.username}
@@ -328,7 +388,6 @@ function RequestRow({
 
       {/* ── Col 2: Platform handle ── */}
       <div className="flex-1 min-w-0">
-        {/* ✅ Fix 2: correct social platform URL */}
         <a href={socialUrl} target="_blank" rel="noopener noreferrer" className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border ${meta.bg} ${meta.border} group`}>
           <span className={meta.color}>{meta.icon}</span>
           <span className={`text-xs font-medium ${meta.color} truncate max-w-[160px]`}>@{req.handle}</span>
@@ -337,6 +396,12 @@ function RequestRow({
         <p className="text-[10px] text-gray-400 mt-1">
           {new Date(req.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
         </p>
+        {/* Show rejection reason inline if rejected */}
+        {req.status === "rejected" && req.rejection_reason && (
+          <p className="text-[10px] text-red-400 mt-1 max-w-[200px] truncate" title={req.rejection_reason}>
+            Reason: {req.rejection_reason}
+          </p>
+        )}
       </div>
 
       {/* ── Col 3: Action / Status ── */}
@@ -350,6 +415,7 @@ function RequestRow({
                 <path d="M3 8l3.5 3.5 6.5-7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
             </button>
+            {/* Reject button — triggers modal via parent */}
             <button onClick={() => onReject(req.id)} title="Reject" className="w-9 h-9 rounded-xl bg-red-50 hover:bg-red-100 border border-red-200 flex items-center justify-center text-red-500 transition-colors active:scale-90">
               <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
                 <path d="M2 2l10 10M12 2L2 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
@@ -357,7 +423,6 @@ function RequestRow({
             </button>
           </>
         ) : req.status === "approved" ? (
-          // ✅ Fix 3: Approved rows show status + delink option
           <div className="flex items-center gap-2">
             <div className="flex items-center gap-1.5 px-3 py-1.5 bg-green-50 border border-green-200 rounded-xl">
               <CheckCircle2 size={14} className="text-green-500" />
@@ -391,9 +456,11 @@ function RequestRow({
             )}
           </div>
         ) : (
-          <div className="flex items-center gap-1.5 px-3 py-1.5 bg-red-50 border border-red-200 rounded-xl">
-            <XCircle size={14} className="text-red-400" />
-            <span className="text-xs font-semibold text-red-500">Rejected</span>
+          <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5 px-3 py-1.5 bg-red-50 border border-red-200 rounded-xl">
+              <XCircle size={14} className="text-red-400" />
+              <span className="text-xs font-semibold text-red-500">Rejected</span>
+            </div>
           </div>
         )}
       </div>
@@ -413,6 +480,10 @@ export default function ZeltebEmployeesPage() {
   const [confirmDelinkId, setConfirmDelinkId] = useState<string | null>(null);
   const [fetchError, setFetchError] = useState<string | null>(null);
 
+  // Rejection modal state
+  const [rejectModalId, setRejectModalId] = useState<string | null>(null);
+  const [rejecting, setRejecting] = useState(false);
+
   useEffect(() => {
     if (!unlocked) return;
 
@@ -421,7 +492,7 @@ export default function ZeltebEmployeesPage() {
 
       const { data: verifications, error: verErr } = await supabase
         .from("verification_requests")
-        .select("id, user_id, platform, handle, profile_url, status, created_at")
+        .select("id, user_id, platform, handle, profile_url, status, created_at, rejection_reason")
         .order("created_at", { ascending: false });
 
       if (verErr) { setFetchError(verErr.message); setLoading(false); return; }
@@ -452,6 +523,7 @@ export default function ZeltebEmployeesPage() {
           full_name: profile.full_name ?? "",
           avatar_url: profile.avatar_url ?? null,
           influencer_type: profile.influencer_type ?? null,
+          rejection_reason: row.rejection_reason ?? null,
         };
       });
 
@@ -466,34 +538,77 @@ export default function ZeltebEmployeesPage() {
     setUpdating(id);
     const { error } = await supabase
       .from("verification_requests")
-      .update({ status: "approved", reviewed_at: new Date().toISOString() })
+      .update({ status: "approved", reviewed_at: new Date().toISOString(), rejection_reason: null })
       .eq("id", id);
-    if (!error) setRequests((prev) => prev.map((r) => (r.id === id ? { ...r, status: "approved" } : r)));
-    else console.error("Accept error:", error.message);
+    if (!error) {
+      setRequests((prev) => prev.map((r) => r.id === id ? { ...r, status: "approved", rejection_reason: null } : r));
+    } else {
+      console.error("Accept error:", error.message);
+    }
     setUpdating(null);
   };
 
-  const handleReject = async (id: string) => {
-    setUpdating(id);
+  // Opens modal — actual DB update happens in handleRejectConfirm
+  const handleReject = (id: string) => {
+    setRejectModalId(id);
+  };
+
+  const handleRejectConfirm = async (reason: string) => {
+    if (!rejectModalId) return;
+    setRejecting(true);
     const { error } = await supabase
       .from("verification_requests")
-      .update({ status: "rejected", reviewed_at: new Date().toISOString() })
-      .eq("id", id);
-    if (!error) setRequests((prev) => prev.map((r) => (r.id === id ? { ...r, status: "rejected" } : r)));
-    else console.error("Reject error:", error.message);
-    setUpdating(null);
+      .update({
+        status: "rejected",
+        reviewed_at: new Date().toISOString(),
+        rejection_reason: reason || null,
+      })
+      .eq("id", rejectModalId);
+    if (!error) {
+      setRequests((prev) =>
+        prev.map((r) =>
+          r.id === rejectModalId
+            ? { ...r, status: "rejected", rejection_reason: reason || null }
+            : r
+        )
+      );
+    } else {
+      console.error("Reject error:", error.message);
+    }
+    setRejecting(false);
+    setRejectModalId(null);
   };
 
   const handleDelink = async (id: string) => {
     setDelinking(id);
+    setConfirmDelinkId(null);
+
     const { error } = await supabase
       .from("verification_requests")
       .delete()
       .eq("id", id);
-    if (!error) setRequests((prev) => prev.filter((r) => r.id !== id));
-    else console.error("Delink error:", error.message);
+
+    if (!error) {
+      // Verify the row is actually gone before updating local state
+      const { data: check } = await supabase
+        .from("verification_requests")
+        .select("id")
+        .eq("id", id)
+        .maybeSingle();
+
+      if (!check) {
+        // Confirmed deleted — remove from local state
+        setRequests((prev) => prev.filter((r) => r.id !== id));
+      } else {
+        console.error("Delink: row still exists after delete — check RLS policies");
+        setFetchError("Delink failed: row could not be deleted. Check RLS policies allow deletion.");
+      }
+    } else {
+      console.error("Delink error:", error.message);
+      setFetchError(`Delink failed: ${error.message}`);
+    }
+
     setDelinking(null);
-    setConfirmDelinkId(null);
   };
 
   if (!unlocked) return <PasscodeGate onSuccess={() => setUnlocked(true)} />;
@@ -522,116 +637,128 @@ export default function ZeltebEmployeesPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#f9f9f8]">
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
+    <>
+      {/* Rejection reason modal */}
+      {rejectModalId && (
+        <RejectModal
+          onConfirm={handleRejectConfirm}
+          onCancel={() => setRejectModalId(null)}
+          loading={rejecting}
+        />
+      )}
 
-        {/* ── Header ── */}
-        <div className="mb-6">
-          <div className="flex items-center gap-2 mb-1">
-            <ShieldCheck size={20} className="text-orange-500" />
-            <h1 className="text-xl font-bold text-gray-900">Verification Requests</h1>
+      <div className="min-h-screen bg-[#f9f9f8]">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
+
+          {/* ── Header ── */}
+          <div className="mb-6">
+            <div className="flex items-center gap-2 mb-1">
+              <ShieldCheck size={20} className="text-orange-500" />
+              <h1 className="text-xl font-bold text-gray-900">Verification Requests</h1>
+            </div>
+            <p className="text-sm text-gray-400">Review and manage social media verification submissions.</p>
           </div>
-          <p className="text-sm text-gray-400">Review and manage social media verification submissions.</p>
-        </div>
 
-        {/* ── Fetch error ── */}
-        {fetchError && (
-          <div className="mb-4 bg-red-50 border border-red-200 rounded-2xl px-5 py-4 text-sm text-red-600">
-            <strong>Error loading data:</strong> {fetchError}
-            <br />
-            <span className="text-xs text-red-400">Make sure RLS policies allow reading all verification_requests.</span>
+          {/* ── Fetch error ── */}
+          {fetchError && (
+            <div className="mb-4 bg-red-50 border border-red-200 rounded-2xl px-5 py-4 text-sm text-red-600">
+              <strong>Error:</strong> {fetchError}
+              <br />
+              <span className="text-xs text-red-400">Make sure RLS policies allow reading and deleting verification_requests.</span>
+              <button onClick={() => setFetchError(null)} className="ml-3 text-xs underline text-red-400">Dismiss</button>
+            </div>
+          )}
+
+          {/* ── Stat cards ── */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+            <StatCard label="Total" value={counts.all} icon={<Users size={18} className="text-gray-600" />} color="bg-gray-100" />
+            <StatCard label="Pending" value={counts.pending} icon={<Clock size={18} className="text-amber-500" />} color="bg-amber-50" />
+            <StatCard label="Approved" value={counts.approved} icon={<CheckCircle2 size={18} className="text-green-500" />} color="bg-green-50" />
+            <StatCard label="Rejected" value={counts.rejected} icon={<XCircle size={18} className="text-red-400" />} color="bg-red-50" />
           </div>
-        )}
 
-        {/* ── Stat cards ── */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
-          <StatCard label="Total" value={counts.all} icon={<Users size={18} className="text-gray-600" />} color="bg-gray-100" />
-          <StatCard label="Pending" value={counts.pending} icon={<Clock size={18} className="text-amber-500" />} color="bg-amber-50" />
-          <StatCard label="Approved" value={counts.approved} icon={<CheckCircle2 size={18} className="text-green-500" />} color="bg-green-50" />
-          <StatCard label="Rejected" value={counts.rejected} icon={<XCircle size={18} className="text-red-400" />} color="bg-red-50" />
-        </div>
-
-        {/* ── Filter bar ── */}
-        <div className="flex flex-wrap items-center gap-2 mb-4">
-          <div className="flex items-center gap-1.5 mr-1">
-            <Filter size={13} className="text-gray-400" />
-            <span className="text-xs text-gray-400 font-medium">Filter:</span>
-          </div>
-          {(["all", "pending", "approved", "rejected"] as FilterType[]).map((f) => (
-            <button
-              key={f}
-              onClick={() => setFilter(f)}
-              className={`px-3 py-1.5 rounded-xl text-xs font-medium border transition-all capitalize ${
-                filter === f
-                  ? f === "pending" ? "bg-amber-500 text-white border-amber-500"
-                  : f === "approved" ? "bg-green-500 text-white border-green-500"
-                  : f === "rejected" ? "bg-red-400 text-white border-red-400"
-                  : "bg-gray-900 text-white border-gray-900"
-                  : "bg-white text-gray-600 border-gray-200 hover:bg-gray-50"
-              }`}
-            >
-              {f} {f !== "all" && `(${counts[f as keyof typeof counts]})`}
-            </button>
-          ))}
-          {platforms.length > 1 && (
-            <div className="flex items-center gap-1.5 ml-2">
-              <span className="text-xs text-gray-300">|</span>
-              <select
-                value={platformFilter}
-                onChange={(e) => setPlatformFilter(e.target.value)}
-                className="text-xs border border-gray-200 rounded-xl px-2.5 py-1.5 bg-white text-gray-600 focus:outline-none focus:ring-2 focus:ring-black"
+          {/* ── Filter bar ── */}
+          <div className="flex flex-wrap items-center gap-2 mb-4">
+            <div className="flex items-center gap-1.5 mr-1">
+              <Filter size={13} className="text-gray-400" />
+              <span className="text-xs text-gray-400 font-medium">Filter:</span>
+            </div>
+            {(["all", "pending", "approved", "rejected"] as FilterType[]).map((f) => (
+              <button
+                key={f}
+                onClick={() => setFilter(f)}
+                className={`px-3 py-1.5 rounded-xl text-xs font-medium border transition-all capitalize ${
+                  filter === f
+                    ? f === "pending" ? "bg-amber-500 text-white border-amber-500"
+                    : f === "approved" ? "bg-green-500 text-white border-green-500"
+                    : f === "rejected" ? "bg-red-400 text-white border-red-400"
+                    : "bg-gray-900 text-white border-gray-900"
+                    : "bg-white text-gray-600 border-gray-200 hover:bg-gray-50"
+                }`}
               >
-                <option value="all">All platforms</option>
-                {platforms.map((p) => (
-                  <option key={p} value={p}>{PLATFORM_META[p]?.label ?? p}</option>
-                ))}
-              </select>
-            </div>
-          )}
-        </div>
-
-        {/* ── Table ── */}
-        <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden">
-          <div className="flex items-center gap-3 px-4 py-3 bg-gray-50 border-b border-gray-200">
-            <div className="w-[260px] shrink-0">
-              <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">User</span>
-            </div>
-            <div className="flex-1">
-              <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Platform Handle</span>
-            </div>
-            <div className="shrink-0 w-[200px] text-right">
-              <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Action / Status</span>
-            </div>
+                {f} {f !== "all" && `(${counts[f as keyof typeof counts]})`}
+              </button>
+            ))}
+            {platforms.length > 1 && (
+              <div className="flex items-center gap-1.5 ml-2">
+                <span className="text-xs text-gray-300">|</span>
+                <select
+                  value={platformFilter}
+                  onChange={(e) => setPlatformFilter(e.target.value)}
+                  className="text-xs border border-gray-200 rounded-xl px-2.5 py-1.5 bg-white text-gray-600 focus:outline-none focus:ring-2 focus:ring-black"
+                >
+                  <option value="all">All platforms</option>
+                  {platforms.map((p) => (
+                    <option key={p} value={p}>{PLATFORM_META[p]?.label ?? p}</option>
+                  ))}
+                </select>
+              </div>
+            )}
           </div>
 
-          {filtered.length === 0 ? (
-            <div className="py-16 text-center">
-              <ShieldCheck size={32} className="text-gray-200 mx-auto mb-3" />
-              <p className="text-sm text-gray-400">No requests found</p>
+          {/* ── Table ── */}
+          <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden">
+            <div className="flex items-center gap-3 px-4 py-3 bg-gray-50 border-b border-gray-200">
+              <div className="w-[260px] shrink-0">
+                <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">User</span>
+              </div>
+              <div className="flex-1">
+                <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Platform Handle</span>
+              </div>
+              <div className="shrink-0 w-[200px] text-right">
+                <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Action / Status</span>
+              </div>
             </div>
-          ) : (
-            filtered.map((req) => (
-              <RequestRow
-                key={req.id}
-                req={req}
-                onAccept={handleAccept}
-                onReject={handleReject}
-                onDelink={handleDelink}
-                updating={updating}
-                delinking={delinking}
-                confirmDelinkId={confirmDelinkId}
-                setConfirmDelinkId={setConfirmDelinkId}
-              />
-            ))
+
+            {filtered.length === 0 ? (
+              <div className="py-16 text-center">
+                <ShieldCheck size={32} className="text-gray-200 mx-auto mb-3" />
+                <p className="text-sm text-gray-400">No requests found</p>
+              </div>
+            ) : (
+              filtered.map((req) => (
+                <RequestRow
+                  key={req.id}
+                  req={req}
+                  onAccept={handleAccept}
+                  onReject={handleReject}
+                  onDelink={handleDelink}
+                  updating={updating}
+                  delinking={delinking}
+                  confirmDelinkId={confirmDelinkId}
+                  setConfirmDelinkId={setConfirmDelinkId}
+                />
+              ))
+            )}
+          </div>
+
+          {filtered.length > 0 && (
+            <p className="text-xs text-gray-400 mt-3 text-right">
+              Showing {filtered.length} of {requests.length} requests
+            </p>
           )}
         </div>
-
-        {filtered.length > 0 && (
-          <p className="text-xs text-gray-400 mt-3 text-right">
-            Showing {filtered.length} of {requests.length} requests
-          </p>
-        )}
       </div>
-    </div>
+    </>
   );
 }
