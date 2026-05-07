@@ -15,7 +15,7 @@ import {
 // ─── Sidebar nav items ───────────────────────────────────────────────────────
 const NAV_ITEMS = [
   { key: "edit-profile",     label: "Edit profile",        icon: Building2,   route: null },
-  { key: "account-security", label: "Verify social media", icon: ShieldCheck, route: "/dashboard/profile/verify-social" },
+  { key: "account-security", label: "Verify social media", icon: ShieldCheck, route: "/dashboard/brand/verify-social" },
 ] as const;
 
 type NavKey = (typeof NAV_ITEMS)[number]["key"];
