@@ -32,7 +32,7 @@ export default function BrandSidebar() {
     { name: "Find Creators", icon: "🔍", link: "/brand/dashboard/creators" },
     { name: "My Campaigns", icon: "📣", link: "/brand/dashboard/campaigns" },
     { name: "Messages", icon: "💬", link: "/brand/dashboard/messages" },
-    { name: "Settings", icon: "⚙️", link: "/brand/dashboard/settings" },
+    { name: "profile", icon: "⚙️", link: "/brand/dashboard/profile" },
   ];
 
   return (
