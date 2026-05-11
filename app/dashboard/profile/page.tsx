@@ -10,7 +10,95 @@ import {
   ImagePlus,
   UserCircle,
   ShieldCheck,
+  Link2,
+  CheckCircle2,
 } from "lucide-react";
+
+// ─── Platform definitions ──────────────────────────────────────────────────────
+const PLATFORMS = [
+  {
+    key: "instagram",
+    label: "Instagram",
+    color: "#E1306C",
+    bg: "#fff0f5",
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" className="w-5 h-5" xmlns="http://www.w3.org/2000/svg">
+        <rect width="24" height="24" rx="6" fill="url(#ig-grad)" />
+        <defs>
+          <radialGradient id="ig-grad" cx="30%" cy="107%" r="120%">
+            <stop offset="0%" stopColor="#fdf497" />
+            <stop offset="15%" stopColor="#fdf497" />
+            <stop offset="45%" stopColor="#fd5949" />
+            <stop offset="70%" stopColor="#d6249f" />
+            <stop offset="100%" stopColor="#285AEB" />
+          </radialGradient>
+        </defs>
+        <rect x="4.5" y="4.5" width="15" height="15" rx="4" stroke="white" strokeWidth="1.5" />
+        <circle cx="12" cy="12" r="3.2" stroke="white" strokeWidth="1.5" />
+        <circle cx="16.2" cy="7.8" r="0.9" fill="white" />
+      </svg>
+    ),
+  },
+  {
+    key: "youtube",
+    label: "YouTube",
+    color: "#FF0000",
+    bg: "#fff5f5",
+    icon: (
+      <svg viewBox="0 0 24 24" className="w-5 h-5" xmlns="http://www.w3.org/2000/svg">
+        <rect width="24" height="24" rx="6" fill="#FF0000" />
+        <path d="M19.6 8.2a2 2 0 0 0-1.4-1.4C16.8 6.5 12 6.5 12 6.5s-4.8 0-6.2.3A2 2 0 0 0 4.4 8.2C4.1 9.6 4 11 4 12s.1 2.4.4 3.8a2 2 0 0 0 1.4 1.4c1.4.3 6.2.3 6.2.3s4.8 0 6.2-.3a2 2 0 0 0 1.4-1.4c.3-1.4.4-2.8.4-3.8s-.1-2.4-.4-3.8z" fill="white" />
+        <polygon points="10,9.5 15,12 10,14.5" fill="#FF0000" />
+      </svg>
+    ),
+  },
+  {
+    key: "x",
+    label: "X (Twitter)",
+    color: "#000000",
+    bg: "#f5f5f5",
+    icon: (
+      <svg viewBox="0 0 24 24" className="w-5 h-5" xmlns="http://www.w3.org/2000/svg">
+        <rect width="24" height="24" rx="6" fill="#000000" />
+        <path d="M17.5 5h-2.3L12 9.2 8.8 5H4.5l5.3 7L4.5 19h2.3L10 14.6l3.3 4.4h4.2l-5.5-7.1L17.5 5z" fill="white" />
+      </svg>
+    ),
+  },
+  {
+    key: "linkedin",
+    label: "LinkedIn",
+    color: "#0A66C2",
+    bg: "#f0f6ff",
+    icon: (
+      <svg viewBox="0 0 24 24" className="w-5 h-5" xmlns="http://www.w3.org/2000/svg">
+        <rect width="24" height="24" rx="6" fill="#0A66C2" />
+        <rect x="5" y="9" width="3" height="10" fill="white" />
+        <circle cx="6.5" cy="6.5" r="1.7" fill="white" />
+        <path d="M10 9h2.8v1.4c.4-.8 1.4-1.6 2.9-1.6 3.1 0 3.3 2 3.3 4.6V19H16v-5c0-1.2 0-2.7-1.6-2.7-1.7 0-1.9 1.3-1.9 2.6V19H10V9z" fill="white" />
+      </svg>
+    ),
+  },
+  {
+    key: "reddit",
+    label: "Reddit",
+    color: "#FF4500",
+    bg: "#fff5f0",
+    icon: (
+      <svg viewBox="0 0 24 24" className="w-5 h-5" xmlns="http://www.w3.org/2000/svg">
+        <rect width="24" height="24" rx="6" fill="#FF4500" />
+        <circle cx="12" cy="13" r="5" fill="white" />
+        <circle cx="9.5" cy="13" r="1" fill="#FF4500" />
+        <circle cx="14.5" cy="13" r="1" fill="#FF4500" />
+        <path d="M9.5 15.5s1 1 2.5 1 2.5-1 2.5-1" stroke="#FF4500" strokeWidth="0.8" fill="none" strokeLinecap="round" />
+        <circle cx="17" cy="8.5" r="1.5" fill="white" />
+        <path d="M12 8c0-1 .8-1.5 2-1.5l.5-2.5 2 .5-.3 1.5" stroke="white" strokeWidth="0.8" fill="none" />
+        <circle cx="18.5" cy="6" r="1" fill="white" />
+      </svg>
+    ),
+  },
+] as const;
+
+type PlatformKey = (typeof PLATFORMS)[number]["key"];
 
 // ─── Influencer types ─────────────────────────────────────────────────────────
 const INFLUENCER_TYPES = [
@@ -30,11 +118,9 @@ const INFLUENCER_TYPES = [
 type InfluencerType = (typeof INFLUENCER_TYPES)[number]["value"] | "";
 type Gender = "male" | "female" | "";
 
-// ─── Shared input style ───────────────────────────────────────────────────────
 const inputClass =
   "w-full border border-gray-300 rounded-xl px-4 py-3 text-base sm:text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-black transition-shadow";
 
-// ─── Main page ────────────────────────────────────────────────────────────────
 export default function Profile() {
   const router = useRouter();
   const fileInputRef  = useRef<HTMLInputElement>(null);
@@ -56,6 +142,8 @@ export default function Profile() {
   const [saving, setSaving]                   = useState(false);
   const [saved, setSaved]                     = useState(false);
   const [usernameError, setUsernameError]     = useState("");
+  const [connectedPlatforms, setConnectedPlatforms] = useState<Set<PlatformKey>>(new Set());
+  const [activeNav, setActiveNav]             = useState<"edit" | "verify" | "connect">("edit");
 
   useEffect(() => {
     const load = async () => {
@@ -78,6 +166,16 @@ export default function Profile() {
         setAvatarUrl(profile.avatar_url || null);
         setCoverUrl(profile.cover_url || null);
       }
+
+      // Load connected platforms
+      const { data: connections } = await supabase
+        .from("platform_connections")
+        .select("platform")
+        .eq("user_id", auth.user.id);
+      if (connections) {
+        setConnectedPlatforms(new Set(connections.map((c: any) => c.platform as PlatformKey)));
+      }
+
       setLoading(false);
     };
     load();
@@ -192,201 +290,246 @@ export default function Profile() {
           {/* ── Left sidebar nav ── */}
           <aside className="hidden md:flex flex-col w-56 shrink-0 bg-white border border-gray-200 rounded-2xl p-2 sticky top-8">
             <button
-              className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors text-left w-full bg-gray-100 text-gray-900"
+              onClick={() => setActiveNav("edit")}
+              className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors text-left w-full ${
+                activeNav === "edit" ? "bg-gray-100 text-gray-900" : "text-gray-500 hover:bg-gray-50 hover:text-gray-900"
+              }`}
             >
               <UserCircle size={17} className="text-gray-900" />
               Edit profile
             </button>
             <button
-  onClick={() => router.push("/dashboard/profile/verify-social")}
-  className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors text-left w-full text-gray-500 hover:bg-gray-50 hover:text-gray-900"
->
-  <ShieldCheck size={17} className="text-orange-500" />
-  Verify social media
-</button>
+              onClick={() => router.push("/dashboard/profile/verify-social")}
+              className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors text-left w-full ${
+                activeNav === "verify" ? "bg-gray-100 text-gray-900" : "text-gray-500 hover:bg-gray-50 hover:text-gray-900"
+              }`}
+            >
+              <ShieldCheck size={17} className="text-orange-500" />
+              Verify social media
+            </button>
+            <button
+              onClick={() => setActiveNav("connect")}
+              className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors text-left w-full ${
+                activeNav === "connect" ? "bg-gray-100 text-gray-900" : "text-gray-500 hover:bg-gray-50 hover:text-gray-900"
+              }`}
+            >
+              <Link2 size={17} className="text-blue-500" />
+              Connect platforms
+            </button>
           </aside>
 
           {/* ── Right content panel ── */}
           <div className="flex-1 min-w-0 space-y-4 pb-24 sm:pb-12">
 
-            {/* Cover Photo */}
-            <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden">
-              <div
-                className="relative w-full bg-gray-200 group cursor-pointer"
-                style={{ height: "clamp(120px, 25vw, 176px)" }}
-                onClick={() => coverInputRef.current?.click()}
-              >
-                {coverUrl ? (
-                  <Image src={coverUrl} alt="Cover" fill className="object-cover" unoptimized />
-                ) : (
-                  <div className="absolute inset-0 bg-gray-300 flex items-center justify-center">
-                    <ImagePlus size={26} className="text-gray-400" />
-                  </div>
-                )}
-                <div className="absolute inset-0 bg-black/0 hover:bg-black/30 active:bg-black/40 transition-colors flex flex-col items-center justify-center gap-2">
-                  {coverUploading ? (
-                    <Loader2 size={22} className="text-white animate-spin" />
-                  ) : (
-                    <>
-                      <ImagePlus size={20} className="text-white opacity-0 group-hover:opacity-100 transition-opacity" />
-                      <span className="text-xs text-white bg-black/50 px-2 py-0.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
-                        1600 × 500 px recommended
-                      </span>
-                    </>
-                  )}
+            {activeNav === "connect" ? (
+              /* ══ Connect Platforms Panel ══ */
+              <div className="bg-white border border-gray-200 rounded-2xl p-5 space-y-4">
+                <div>
+                  <p className="text-sm font-bold text-gray-900">Connect Platforms</p>
+                  <p className="text-xs text-gray-400 mt-1">
+                    Link your social accounts so brands can see your reach across platforms.
+                  </p>
+                </div>
+
+                <div className="space-y-3">
+                  {PLATFORMS.map((platform) => {
+                    const isConnected = connectedPlatforms.has(platform.key);
+                    return (
+                      <div
+                        key={platform.key}
+                        className="flex items-center justify-between p-4 rounded-xl border border-gray-200 hover:border-gray-300 transition-all"
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style={{ background: platform.bg }}>
+                            {platform.icon}
+                          </div>
+                          <div>
+                            <p className="text-sm font-semibold text-gray-900">{platform.label}</p>
+                            {isConnected ? (
+                              <p className="text-xs text-green-600 flex items-center gap-1 mt-0.5">
+                                <CheckCircle2 size={11} /> Connected
+                              </p>
+                            ) : (
+                              <p className="text-xs text-gray-400 mt-0.5">Not connected</p>
+                            )}
+                          </div>
+                        </div>
+
+                        <button
+                          onClick={() =>
+                            router.push(`/dashboard/profile/connect/${platform.key}`)
+                          }
+                          className={`text-xs font-semibold px-4 py-2 rounded-xl border transition-all ${
+                            isConnected
+                              ? "border-gray-200 text-gray-500 hover:border-red-200 hover:text-red-500 hover:bg-red-50"
+                              : "border-gray-900 text-gray-900 hover:bg-gray-900 hover:text-white"
+                          }`}
+                        >
+                          {isConnected ? "Disconnect" : "Connect"}
+                        </button>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
-              <div className="px-4 py-3 flex items-center justify-between border-t border-gray-100">
-                <p className="text-xs text-gray-400">Cover Photo · 16:5 ratio</p>
-                <button onClick={() => coverInputRef.current?.click()} className="text-xs font-medium text-gray-600 hover:text-black underline">Change</button>
-              </div>
-              <input ref={coverInputRef} type="file" accept="image/*" className="hidden" onChange={handleCoverChange} />
-            </div>
-
-            {/* Profile Photo */}
-            <div className="bg-white border border-gray-200 rounded-2xl p-5">
-              <p className="text-sm font-bold text-gray-900 mb-4">Profile Photo</p>
-              <div className="flex items-center gap-4">
-                <div className="relative group shrink-0">
-                  <div className="w-20 h-20 rounded-2xl bg-gray-200 overflow-hidden border border-gray-200">
-                    {displayAvatar ? (
-                      <Image src={displayAvatar} alt="Avatar" width={80} height={80} className="object-cover w-full h-full" unoptimized />
+            ) : (
+              /* ══ Edit Profile Panels ══ */
+              <>
+                {/* Cover Photo */}
+                <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden">
+                  <div
+                    className="relative w-full bg-gray-200 group cursor-pointer"
+                    style={{ height: "clamp(120px, 25vw, 176px)" }}
+                    onClick={() => coverInputRef.current?.click()}
+                  >
+                    {coverUrl ? (
+                      <Image src={coverUrl} alt="Cover" fill className="object-cover" unoptimized />
                     ) : (
-                      <div className="w-full h-full flex items-center justify-center bg-gray-800">
-                        <span className="text-2xl font-bold text-amber-400 uppercase">
-                          {username?.charAt(0) || fullName?.charAt(0) || "?"}
-                        </span>
+                      <div className="absolute inset-0 bg-gray-300 flex items-center justify-center">
+                        <ImagePlus size={26} className="text-gray-400" />
                       </div>
                     )}
+                    <div className="absolute inset-0 bg-black/0 hover:bg-black/30 active:bg-black/40 transition-colors flex flex-col items-center justify-center gap-2">
+                      {coverUploading ? (
+                        <Loader2 size={22} className="text-white animate-spin" />
+                      ) : (
+                        <>
+                          <ImagePlus size={20} className="text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                          <span className="text-xs text-white bg-black/50 px-2 py-0.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
+                            1600 × 500 px recommended
+                          </span>
+                        </>
+                      )}
+                    </div>
                   </div>
-                  <button onClick={() => fileInputRef.current?.click()} className="absolute inset-0 rounded-2xl bg-black/0 hover:bg-black/40 flex items-center justify-center">
-                    {avatarUploading
-                      ? <Loader2 size={18} className="text-white animate-spin" />
-                      : <Camera size={18} className="text-white opacity-0 group-hover:opacity-100" />}
-                  </button>
+                  <div className="px-4 py-3 flex items-center justify-between border-t border-gray-100">
+                    <p className="text-xs text-gray-400">Cover Photo · 16:5 ratio</p>
+                    <button onClick={() => coverInputRef.current?.click()} className="text-xs font-medium text-gray-600 hover:text-black underline">Change</button>
+                  </div>
+                  <input ref={coverInputRef} type="file" accept="image/*" className="hidden" onChange={handleCoverChange} />
                 </div>
-                <div>
-                  <p className="text-sm font-medium text-gray-800">Profile picture</p>
-                  <p className="text-xs text-gray-400 mt-0.5">Square image, 400x400 px</p>
-                  <button onClick={() => fileInputRef.current?.click()} className="mt-2 text-xs font-medium text-gray-600 underline">Change photo</button>
+
+                {/* Profile Photo */}
+                <div className="bg-white border border-gray-200 rounded-2xl p-5">
+                  <p className="text-sm font-bold text-gray-900 mb-4">Profile Photo</p>
+                  <div className="flex items-center gap-4">
+                    <div className="relative group shrink-0">
+                      <div className="w-20 h-20 rounded-2xl bg-gray-200 overflow-hidden border border-gray-200">
+                        {displayAvatar ? (
+                          <Image src={displayAvatar} alt="Avatar" width={80} height={80} className="object-cover w-full h-full" unoptimized />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center bg-gray-800">
+                            <span className="text-2xl font-bold text-amber-400 uppercase">
+                              {username?.charAt(0) || fullName?.charAt(0) || "?"}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                      <button onClick={() => fileInputRef.current?.click()} className="absolute inset-0 rounded-2xl bg-black/0 hover:bg-black/40 flex items-center justify-center">
+                        {avatarUploading
+                          ? <Loader2 size={18} className="text-white animate-spin" />
+                          : <Camera size={18} className="text-white opacity-0 group-hover:opacity-100" />}
+                      </button>
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-gray-800">Profile picture</p>
+                      <p className="text-xs text-gray-400 mt-0.5">Square image, 400x400 px</p>
+                      <button onClick={() => fileInputRef.current?.click()} className="mt-2 text-xs font-medium text-gray-600 underline">Change photo</button>
+                    </div>
+                  </div>
+                  <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarChange} />
                 </div>
-              </div>
-              <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarChange} />
-            </div>
 
-            {/* Account Details */}
-            <div className="bg-white border border-gray-200 rounded-2xl p-5 space-y-5">
-              <p className="text-sm font-bold text-gray-900">Account Details</p>
+                {/* Account Details */}
+                <div className="bg-white border border-gray-200 rounded-2xl p-5 space-y-5">
+                  <p className="text-sm font-bold text-gray-900">Account Details</p>
 
-              {/* Full Name */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">Full Name</label>
-                <input
-                  value={fullName}
-                  onChange={(e) => setFullName(e.target.value)}
-                  placeholder="Eg: Basil Biju"
-                  className={inputClass}
-                />
-              </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1.5">Full Name</label>
+                    <input value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="Eg: Basil Biju" className={inputClass} />
+                  </div>
 
-              {/* Username */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">Username</label>
-                <input
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  className={`${inputClass} ${usernameError ? "border-red-400 focus:ring-red-200" : ""}`}
-                />
-                {usernameError && <p className="text-red-500 text-xs mt-1.5">{usernameError}</p>}
-              </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1.5">Username</label>
+                    <input
+                      value={username}
+                      onChange={(e) => setUsername(e.target.value)}
+                      className={`${inputClass} ${usernameError ? "border-red-400 focus:ring-red-200" : ""}`}
+                    />
+                    {usernameError && <p className="text-red-500 text-xs mt-1.5">{usernameError}</p>}
+                  </div>
 
-              {/* Gender */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Gender</label>
-                <div className="flex gap-3">
-                  {(["male", "female"] as const).map((g) => (
-                    <button
-                      key={g}
-                      type="button"
-                      onClick={() => setGender(gender === g ? "" : g)}
-                      className={`flex-1 py-2.5 rounded-xl text-sm font-medium border transition-all capitalize ${
-                        gender === g
-                          ? "bg-gray-900 text-white border-gray-900"
-                          : "bg-white text-gray-600 border-gray-200 hover:border-gray-400 hover:text-gray-900"
-                      }`}
-                    >
-                      {g === "male" ? "♂ Male" : "♀ Female"}
-                    </button>
-                  ))}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Gender</label>
+                    <div className="flex gap-3">
+                      {(["male", "female"] as const).map((g) => (
+                        <button
+                          key={g}
+                          type="button"
+                          onClick={() => setGender(gender === g ? "" : g)}
+                          className={`flex-1 py-2.5 rounded-xl text-sm font-medium border transition-all capitalize ${
+                            gender === g
+                              ? "bg-gray-900 text-white border-gray-900"
+                              : "bg-white text-gray-600 border-gray-200 hover:border-gray-400 hover:text-gray-900"
+                          }`}
+                        >
+                          {g === "male" ? "♂ Male" : "♀ Female"}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1.5">Mobile Number</label>
+                    <input type="tel" value={mobile} onChange={(e) => setMobile(e.target.value)} placeholder="Eg: +91 98765 43210" className={inputClass} />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">What kind of influencer are you?</label>
+                    <div className="flex flex-wrap gap-2">
+                      {INFLUENCER_TYPES.map((type) => (
+                        <button
+                          key={type.value}
+                          type="button"
+                          onClick={() => setInfluencerType(influencerType === type.value ? "" : type.value)}
+                          className={`px-3.5 py-2 rounded-xl text-sm font-medium border transition-all ${
+                            influencerType === type.value
+                              ? "bg-gray-900 text-white border-gray-900"
+                              : "bg-white text-gray-600 border-gray-200 hover:border-gray-400 hover:text-gray-900"
+                          }`}
+                        >
+                          {type.label}
+                        </button>
+                      ))}
+                    </div>
+                    {influencerType && <p className="text-xs text-gray-400 mt-2">Click again to deselect</p>}
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1.5">Bio</label>
+                    <textarea
+                      value={bio}
+                      onChange={(e) => setBio(e.target.value)}
+                      className="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm h-28 resize-none focus:ring-2 focus:ring-black outline-none"
+                    />
+                  </div>
                 </div>
-              </div>
 
-              {/* Mobile Number */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">Mobile Number</label>
-                <input
-                  type="tel"
-                  value={mobile}
-                  onChange={(e) => setMobile(e.target.value)}
-                  placeholder="Eg: +91 98765 43210"
-                  className={inputClass}
-                />
-              </div>
-
-              {/* Influencer Type */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  What kind of influencer are you?
-                </label>
-                <div className="flex flex-wrap gap-2">
-                  {INFLUENCER_TYPES.map((type) => (
-                    <button
-                      key={type.value}
-                      type="button"
-                      onClick={() =>
-                        setInfluencerType(
-                          influencerType === type.value ? "" : type.value
-                        )
-                      }
-                      className={`px-3.5 py-2 rounded-xl text-sm font-medium border transition-all ${
-                        influencerType === type.value
-                          ? "bg-gray-900 text-white border-gray-900"
-                          : "bg-white text-gray-600 border-gray-200 hover:border-gray-400 hover:text-gray-900"
-                      }`}
-                    >
-                      {type.label}
-                    </button>
-                  ))}
-                </div>
-                {influencerType && (
-                  <p className="text-xs text-gray-400 mt-2">Click again to deselect</p>
+                {saved && (
+                  <div className="bg-green-50 border border-green-100 text-green-700 px-4 py-3 rounded-xl text-sm">
+                    Saved successfully
+                  </div>
                 )}
-              </div>
 
-              {/* Bio */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">Bio</label>
-                <textarea
-                  value={bio}
-                  onChange={(e) => setBio(e.target.value)}
-                  className="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm h-28 resize-none focus:ring-2 focus:ring-black outline-none"
-                />
-              </div>
-            </div>
-
-            {saved && (
-              <div className="bg-green-50 border border-green-100 text-green-700 px-4 py-3 rounded-xl text-sm">
-                Saved successfully
-              </div>
+                <button
+                  onClick={save}
+                  disabled={saving || !!usernameError}
+                  className="w-full sm:w-auto sm:px-10 bg-black text-white py-3.5 rounded-xl text-sm font-semibold active:scale-95 transition-all disabled:opacity-50"
+                >
+                  {saving ? "Saving..." : "Save profile"}
+                </button>
+              </>
             )}
-
-            <button
-              onClick={save}
-              disabled={saving || !!usernameError}
-              className="w-full sm:w-auto sm:px-10 bg-black text-white py-3.5 rounded-xl text-sm font-semibold active:scale-95 transition-all disabled:opacity-50"
-            >
-              {saving ? "Saving..." : "Save profile"}
-            </button>
           </div>
         </div>
       </div>
