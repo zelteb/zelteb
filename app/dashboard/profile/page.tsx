@@ -9,6 +9,7 @@ import {
   Loader2,
   ImagePlus,
   UserCircle,
+  ShieldCheck,
 } from "lucide-react";
 
 // ─── Influencer types ─────────────────────────────────────────────────────────
@@ -195,6 +196,13 @@ export default function Profile() {
             >
               <UserCircle size={17} className="text-gray-900" />
               Edit profile
+            </button>
+            <button
+              onClick={() => router.push("/dashboard/verify-social")}
+              className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors text-left w-full text-gray-500 hover:bg-gray-50 hover:text-gray-900"
+            >
+              <ShieldCheck size={17} className="text-orange-500" />
+              Verify social media
             </button>
           </aside>
 
